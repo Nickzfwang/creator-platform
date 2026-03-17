@@ -1,0 +1,557 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgvector(map: "vector")]
+}
+
+// ─── Enums ───
+
+enum TenantPlan {
+  FREE
+  PRO
+  ENTERPRISE
+  WHITELABEL
+}
+
+enum UserRole {
+  CREATOR
+  ADMIN
+  AGENCY_MANAGER
+  FAN
+}
+
+enum SocialPlatform {
+  YOUTUBE
+  INSTAGRAM
+  TIKTOK
+  FACEBOOK
+  TWITTER
+  THREADS
+}
+
+enum VideoStatus {
+  UPLOADING
+  UPLOADED
+  PROCESSING
+  PROCESSED
+  FAILED
+}
+
+enum ClipStatus {
+  GENERATING
+  READY
+  PUBLISHED
+  ARCHIVED
+}
+
+enum PostType {
+  ORIGINAL
+  CLIP_SHARE
+  AFFILIATE
+  SPONSORED
+}
+
+enum PostStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHING
+  PUBLISHED
+  FAILED
+  CANCELLED
+}
+
+enum AffiliateEventType {
+  CLICK
+  ADD_TO_CART
+  PURCHASE
+  REFUND
+}
+
+enum KnowledgeSourceType {
+  DOCUMENT
+  URL
+  VIDEO_TRANSCRIPT
+  MANUAL
+  QA_PAIRS
+}
+
+enum KnowledgeStatus {
+  PROCESSING
+  READY
+  ERROR
+}
+
+enum BotAccessTier {
+  FREE
+  MEMBER
+  PREMIUM
+}
+
+enum MembershipStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+enum DealType {
+  SPONSORED_POST
+  AFFILIATE
+  AMBASSADOR
+  PRODUCT_REVIEW
+  EVENT
+}
+
+enum DealStatus {
+  DRAFT
+  PROPOSAL_SENT
+  NEGOTIATING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum SubscriptionPlan {
+  FREE
+  STARTER
+  PRO
+  BUSINESS
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELLED
+}
+
+// ─── Models ───
+
+model Tenant {
+  id             String     @id @default(uuid()) @db.Uuid
+  name           String     @db.VarChar(255)
+  slug           String     @unique @db.VarChar(100)
+  customDomain   String?    @map("custom_domain") @db.VarChar(255)
+  logoUrl        String?    @map("logo_url")
+  themeConfig    Json?      @default("{}") @map("theme_config")
+  plan           TenantPlan @default(FREE)
+  stripeCustomerId String?  @map("stripe_customer_id") @db.VarChar(255)
+  settings       Json?      @default("{}")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  users          User[]
+  socialAccounts SocialAccount[]
+  videos         Video[]
+  videoClips     VideoClip[]
+  posts          Post[]
+  affiliateLinks AffiliateLink[]
+  affiliateEvents AffiliateEvent[]
+  knowledgeBases KnowledgeBase[]
+  botConfigs     BotConfig[]
+  conversations  Conversation[]
+  membershipTiers MembershipTier[]
+  memberships    Membership[]
+  brandDeals     BrandDeal[]
+  platformAnalytics PlatformAnalytics[]
+  subscriptions  Subscription[]
+
+  @@map("tenants")
+}
+
+model User {
+  id                   String   @id @default(uuid()) @db.Uuid
+  tenantId             String   @map("tenant_id") @db.Uuid
+  email                String   @db.VarChar(255)
+  passwordHash         String?  @map("password_hash") @db.VarChar(255)
+  displayName          String   @map("display_name") @db.VarChar(255)
+  avatarUrl            String?  @map("avatar_url")
+  role                 UserRole @default(CREATOR)
+  locale               String   @default("zh-TW") @db.VarChar(10)
+  timezone             String?  @db.VarChar(50)
+  stripeCustomerId     String?  @map("stripe_customer_id") @db.VarChar(255)
+  stripeConnectId      String?  @map("stripe_connect_id") @db.VarChar(255)
+  onboardingCompleted  Boolean  @default(false) @map("onboarding_completed")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  tenant               Tenant   @relation(fields: [tenantId], references: [id])
+  socialAccounts       SocialAccount[]
+  videos               Video[]
+  posts                Post[]
+  affiliateLinks       AffiliateLink[]
+  knowledgeBases       KnowledgeBase[]
+  botConfigs           BotConfig[]
+  membershipTiersOwned MembershipTier[]
+  membershipsAsFan     Membership[]     @relation("FanMemberships")
+  membershipsAsCreator Membership[]     @relation("CreatorMemberships")
+  brandDeals           BrandDeal[]
+  platformAnalytics    PlatformAnalytics[]
+  subscriptions        Subscription[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("users")
+}
+
+model SocialAccount {
+  id               String         @id @default(uuid()) @db.Uuid
+  userId           String         @map("user_id") @db.Uuid
+  tenantId         String         @map("tenant_id") @db.Uuid
+  platform         SocialPlatform
+  platformUserId   String         @map("platform_user_id") @db.VarChar(255)
+  platformUsername  String         @map("platform_username") @db.VarChar(255)
+  accessToken      String         @map("access_token")
+  refreshToken     String?        @map("refresh_token")
+  tokenExpiresAt   DateTime?      @map("token_expires_at")
+  scopes           String[]
+  followerCount    Int?           @default(0) @map("follower_count")
+  isActive         Boolean        @default(true) @map("is_active")
+  lastSyncedAt     DateTime?      @map("last_synced_at")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  user             User           @relation(fields: [userId], references: [id])
+  tenant           Tenant         @relation(fields: [tenantId], references: [id])
+  platformAnalytics PlatformAnalytics[]
+
+  @@unique([userId, platform, platformUserId])
+  @@index([tenantId, userId])
+  @@map("social_accounts")
+}
+
+model Video {
+  id              String      @id @default(uuid()) @db.Uuid
+  userId          String      @map("user_id") @db.Uuid
+  tenantId        String      @map("tenant_id") @db.Uuid
+  title           String      @db.VarChar(500)
+  description     String?
+  originalUrl     String      @map("original_url")
+  durationSeconds Int?        @map("duration_seconds")
+  fileSizeBytes   BigInt?     @map("file_size_bytes")
+  mimeType        String?     @map("mime_type") @db.VarChar(100)
+  status          VideoStatus @default(UPLOADING)
+  transcript      Json?
+  aiSummary       String?     @map("ai_summary")
+  thumbnailUrl    String?     @map("thumbnail_url")
+  metadata        Json?
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  user            User        @relation(fields: [userId], references: [id])
+  tenant          Tenant      @relation(fields: [tenantId], references: [id])
+  clips           VideoClip[]
+
+  @@index([tenantId, userId, status])
+  @@map("videos")
+}
+
+model VideoClip {
+  id              String     @id @default(uuid()) @db.Uuid
+  videoId         String     @map("video_id") @db.Uuid
+  tenantId        String     @map("tenant_id") @db.Uuid
+  title           String     @db.VarChar(500)
+  description     String?
+  startTime       Float      @map("start_time")
+  endTime         Float      @map("end_time")
+  clipUrl         String?    @map("clip_url")
+  thumbnailUrl    String?    @map("thumbnail_url")
+  durationSeconds Int?       @map("duration_seconds")
+  aiScore         Float?     @map("ai_score")
+  hashtags        String[]
+  status          ClipStatus @default(GENERATING)
+  createdAt       DateTime   @default(now()) @map("created_at")
+
+  video           Video      @relation(fields: [videoId], references: [id])
+  tenant          Tenant     @relation(fields: [tenantId], references: [id])
+  posts           Post[]
+
+  @@index([videoId])
+  @@index([tenantId])
+  @@map("video_clips")
+}
+
+model Post {
+  id             String     @id @default(uuid()) @db.Uuid
+  userId         String     @map("user_id") @db.Uuid
+  tenantId       String     @map("tenant_id") @db.Uuid
+  contentText    String?    @map("content_text")
+  mediaUrls      String[]   @map("media_urls")
+  clipId         String?    @map("clip_id") @db.Uuid
+  platforms      Json?
+  type           PostType   @default(ORIGINAL)
+  aiGenerated    Boolean    @default(false) @map("ai_generated")
+  affiliateLinks Json?      @map("affiliate_links")
+  hashtags       String[]
+  status         PostStatus @default(DRAFT)
+  scheduledAt    DateTime?  @map("scheduled_at")
+  publishedAt    DateTime?  @map("published_at")
+  errorMessage   String?    @map("error_message")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  user           User       @relation(fields: [userId], references: [id])
+  tenant         Tenant     @relation(fields: [tenantId], references: [id])
+  clip           VideoClip? @relation(fields: [clipId], references: [id])
+
+  @@index([tenantId, userId, status])
+  @@map("posts")
+}
+
+model AffiliateLink {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  originalUrl     String   @map("original_url")
+  trackingCode    String   @unique @map("tracking_code") @db.VarChar(50)
+  shortUrl        String?  @map("short_url")
+  productName     String?  @map("product_name") @db.VarChar(500)
+  commissionRate  Decimal? @map("commission_rate") @db.Decimal(5, 4)
+  clickCount      Int      @default(0) @map("click_count")
+  conversionCount Int      @default(0) @map("conversion_count")
+  revenueTotal    Decimal  @default(0) @map("revenue_total") @db.Decimal(12, 2)
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user            User     @relation(fields: [userId], references: [id])
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  events          AffiliateEvent[]
+
+  @@index([tenantId, userId])
+  @@map("affiliate_links")
+}
+
+model AffiliateEvent {
+  id            String             @id @default(uuid()) @db.Uuid
+  linkId        String             @map("link_id") @db.Uuid
+  tenantId      String             @map("tenant_id") @db.Uuid
+  eventType     AffiliateEventType @map("event_type")
+  sourcePostId  String?            @map("source_post_id") @db.Uuid
+  visitorId     String?            @map("visitor_id") @db.VarChar(255)
+  ipHash        String?            @map("ip_hash") @db.VarChar(64)
+  userAgent     String?            @map("user_agent")
+  referrer      String?
+  revenueAmount Decimal?           @map("revenue_amount") @db.Decimal(12, 2)
+  metadata      Json?
+  createdAt     DateTime           @default(now()) @map("created_at")
+
+  link          AffiliateLink      @relation(fields: [linkId], references: [id])
+  tenant        Tenant             @relation(fields: [tenantId], references: [id])
+
+  @@index([linkId, eventType])
+  @@index([tenantId, createdAt])
+  @@map("affiliate_events")
+}
+
+model KnowledgeBase {
+  id            String              @id @default(uuid()) @db.Uuid
+  userId        String              @map("user_id") @db.Uuid
+  tenantId      String              @map("tenant_id") @db.Uuid
+  name          String              @db.VarChar(255)
+  description   String?
+  sourceType    KnowledgeSourceType @map("source_type")
+  status        KnowledgeStatus     @default(PROCESSING)
+  documentCount Int                 @default(0) @map("document_count")
+  chunkCount    Int                 @default(0) @map("chunk_count")
+  settings      Json?
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+
+  user          User                @relation(fields: [userId], references: [id])
+  tenant        Tenant              @relation(fields: [tenantId], references: [id])
+  chunks        KnowledgeChunk[]
+  botConfigs    BotConfig[]
+
+  @@index([tenantId, userId])
+  @@map("knowledge_bases")
+}
+
+model KnowledgeChunk {
+  id              String        @id @default(uuid()) @db.Uuid
+  knowledgeBaseId String        @map("knowledge_base_id") @db.Uuid
+  content         String
+  embedding       Unsupported("vector(1536)")?
+  sourceRef       String?       @map("source_ref") @db.VarChar(500)
+  chunkIndex      Int           @map("chunk_index")
+  tokenCount      Int?          @map("token_count")
+  metadata        Json?
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id])
+
+  @@index([knowledgeBaseId])
+  @@map("knowledge_chunks")
+}
+
+model BotConfig {
+  id                String        @id @default(uuid()) @db.Uuid
+  userId            String        @map("user_id") @db.Uuid
+  tenantId          String        @map("tenant_id") @db.Uuid
+  name              String        @db.VarChar(255)
+  avatarUrl         String?       @map("avatar_url")
+  welcomeMessage    String?       @map("welcome_message")
+  systemPrompt      String?       @map("system_prompt")
+  knowledgeBaseId   String?       @map("knowledge_base_id") @db.Uuid
+  personality       Json?
+  isPublic          Boolean       @default(false) @map("is_public")
+  accessTier        BotAccessTier @default(FREE) @map("access_tier")
+  pricing           Json?
+  embedConfig       Json?         @map("embed_config")
+  totalConversations Int          @default(0) @map("total_conversations")
+  totalMessages     Int           @default(0) @map("total_messages")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  user              User          @relation(fields: [userId], references: [id])
+  tenant            Tenant        @relation(fields: [tenantId], references: [id])
+  knowledgeBase     KnowledgeBase? @relation(fields: [knowledgeBaseId], references: [id])
+  conversations     Conversation[]
+
+  @@index([tenantId, userId])
+  @@map("bot_configs")
+}
+
+model Conversation {
+  id                String    @id @default(uuid()) @db.Uuid
+  botId             String    @map("bot_id") @db.Uuid
+  tenantId          String    @map("tenant_id") @db.Uuid
+  fanUserId         String?   @map("fan_user_id") @db.Uuid
+  anonymousId       String?   @map("anonymous_id") @db.VarChar(255)
+  messages          Json[]
+  messageCount      Int       @default(0) @map("message_count")
+  satisfactionScore Float?    @map("satisfaction_score")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  bot               BotConfig @relation(fields: [botId], references: [id])
+  tenant            Tenant    @relation(fields: [tenantId], references: [id])
+
+  @@index([botId, createdAt])
+  @@index([tenantId])
+  @@map("conversations")
+}
+
+model MembershipTier {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  name          String   @db.VarChar(255)
+  description   String?
+  priceMonthly  Decimal  @map("price_monthly") @db.Decimal(10, 2)
+  priceYearly   Decimal? @map("price_yearly") @db.Decimal(10, 2)
+  benefits      Json?
+  stripePriceId String?  @map("stripe_price_id") @db.VarChar(255)
+  botAccessTier BotAccessTier @default(FREE) @map("bot_access_tier")
+  maxMembers    Int?     @map("max_members")
+  isActive      Boolean  @default(true) @map("is_active")
+  sortOrder     Int      @default(0) @map("sort_order")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user          User     @relation(fields: [userId], references: [id])
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  memberships   Membership[]
+
+  @@index([tenantId, userId])
+  @@map("membership_tiers")
+}
+
+model Membership {
+  id                     String           @id @default(uuid()) @db.Uuid
+  fanUserId              String           @map("fan_user_id") @db.Uuid
+  creatorUserId          String           @map("creator_user_id") @db.Uuid
+  tierId                 String           @map("tier_id") @db.Uuid
+  tenantId               String           @map("tenant_id") @db.Uuid
+  stripeSubscriptionId   String?          @map("stripe_subscription_id") @db.VarChar(255)
+  status                 MembershipStatus @default(ACTIVE)
+  currentPeriodStart     DateTime?        @map("current_period_start")
+  currentPeriodEnd       DateTime?        @map("current_period_end")
+  cancelledAt            DateTime?        @map("cancelled_at")
+  createdAt              DateTime         @default(now()) @map("created_at")
+
+  fan                    User             @relation("FanMemberships", fields: [fanUserId], references: [id])
+  creator                User             @relation("CreatorMemberships", fields: [creatorUserId], references: [id])
+  tier                   MembershipTier   @relation(fields: [tierId], references: [id])
+  tenant                 Tenant           @relation(fields: [tenantId], references: [id])
+
+  @@unique([fanUserId, creatorUserId, tierId])
+  @@index([tenantId, creatorUserId, status])
+  @@map("memberships")
+}
+
+model BrandDeal {
+  id            String     @id @default(uuid()) @db.Uuid
+  userId        String     @map("user_id") @db.Uuid
+  tenantId      String     @map("tenant_id") @db.Uuid
+  brandName     String     @map("brand_name") @db.VarChar(255)
+  brandContact  Json?      @map("brand_contact")
+  dealType      DealType   @map("deal_type")
+  status        DealStatus @default(DRAFT)
+  budgetRange   Json?      @map("budget_range")
+  deliverables  Json?
+  aiProposal    String?    @map("ai_proposal")
+  proposalPdfUrl String?   @map("proposal_pdf_url")
+  timelineStart DateTime?  @map("timeline_start") @db.Date
+  timelineEnd   DateTime?  @map("timeline_end") @db.Date
+  actualRevenue Decimal?   @map("actual_revenue") @db.Decimal(12, 2)
+  notes         String?
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  user          User       @relation(fields: [userId], references: [id])
+  tenant        Tenant     @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, userId, status])
+  @@map("brand_deals")
+}
+
+model PlatformAnalytics {
+  id              String        @id @default(uuid()) @db.Uuid
+  userId          String        @map("user_id") @db.Uuid
+  tenantId        String        @map("tenant_id") @db.Uuid
+  socialAccountId String        @map("social_account_id") @db.Uuid
+  date            DateTime      @db.Date
+  followers       Int?
+  views           Int?
+  likes           Int?
+  comments        Int?
+  shares          Int?
+  revenue         Decimal?      @db.Decimal(12, 2)
+  engagementRate  Float?        @map("engagement_rate")
+  topContent      Json?         @map("top_content")
+  rawData         Json?         @map("raw_data")
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  user            User          @relation(fields: [userId], references: [id])
+  tenant          Tenant        @relation(fields: [tenantId], references: [id])
+  socialAccount   SocialAccount @relation(fields: [socialAccountId], references: [id])
+
+  @@unique([socialAccountId, date])
+  @@index([tenantId, userId, date])
+  @@map("platform_analytics")
+}
+
+model Subscription {
+  id                     String             @id @default(uuid()) @db.Uuid
+  tenantId               String             @map("tenant_id") @db.Uuid
+  userId                 String             @map("user_id") @db.Uuid
+  plan                   SubscriptionPlan   @default(FREE)
+  stripeSubscriptionId   String?            @map("stripe_subscription_id") @db.VarChar(255)
+  status                 SubscriptionStatus @default(ACTIVE)
+  currentPeriodEnd       DateTime?          @map("current_period_end")
+  usage                  Json?
+  limits                 Json?
+  createdAt              DateTime           @default(now()) @map("created_at")
+  updatedAt              DateTime           @updatedAt @map("updated_at")
+
+  tenant                 Tenant             @relation(fields: [tenantId], references: [id])
+  user                   User               @relation(fields: [userId], references: [id])
+
+  @@index([tenantId, userId])
+  @@map("subscriptions")
+}
