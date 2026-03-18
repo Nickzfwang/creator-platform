@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 內容收藏助手</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">
+        <span class="logo-icon">✨</span>
+        <span class="logo-text">AI 內容收藏</span>
+      </div>
+    </div>
+
+    <!-- Login section (shown when not connected) -->
+    <div id="login-section" class="section" style="display:none;">
+      <p class="description">請先設定 API 連線資訊</p>
+      <div class="input-group">
+        <label>API 位址</label>
+        <input type="text" id="api-url" value="http://localhost:4000/api" placeholder="http://localhost:4000/api">
+      </div>
+      <div class="input-group">
+        <label>Email</label>
+        <input type="email" id="email" placeholder="your@email.com">
+      </div>
+      <div class="input-group">
+        <label>密碼</label>
+        <input type="password" id="password" placeholder="密碼">
+      </div>
+      <button id="login-btn" class="btn btn-primary">連線登入</button>
+      <p id="login-error" class="error" style="display:none;"></p>
+    </div>
+
+    <!-- Connected section -->
+    <div id="connected-section" class="section" style="display:none;">
+      <div class="status-bar">
+        <span class="status-dot"></span>
+        <span id="user-name">已連線</span>
+        <button id="logout-btn" class="btn-link">登出</button>
+      </div>
+
+      <!-- Content preview -->
+      <div id="content-preview" class="preview" style="display:none;">
+        <div class="preview-platform">
+          <span id="platform-badge" class="badge">—</span>
+        </div>
+        <h3 id="preview-title" class="preview-title">—</h3>
+        <p id="preview-content" class="preview-text">—</p>
+        <p id="preview-author" class="preview-author"></p>
+      </div>
+
+      <!-- Actions -->
+      <div class="actions">
+        <button id="extract-btn" class="btn btn-secondary">
+          <span>🔍</span> 擷取此頁內容
+        </button>
+        <button id="save-btn" class="btn btn-primary" style="display:none;">
+          <span>✨</span> AI 摘要並收藏
+        </button>
+      </div>
+
+      <!-- Status -->
+      <div id="save-status" class="save-status" style="display:none;">
+        <div class="spinner"></div>
+        <span>AI 正在分析並收藏...</span>
+      </div>
+      <div id="save-success" class="save-success" style="display:none;">
+        ✅ 已收藏！可在 Dashboard「收藏庫」查看
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

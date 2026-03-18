@@ -20,6 +20,9 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { ApiGatewayModule } from './modules/api-gateway/api-gateway.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { AiModule } from './modules/ai/ai.module';
+import { TrendRadarModule } from './modules/trend-radar/trend-radar.module';
+import { ContentClipModule } from './modules/content-clip/content-clip.module';
+import { AutoBrowseModule } from './modules/auto-browse/auto-browse.module';
 
 @Module({
   imports: [
@@ -56,6 +59,9 @@ import { AiModule } from './modules/ai/ai.module';
     SocialModule,
     DashboardModule,
     ApiGatewayModule,
+    TrendRadarModule,
+    ContentClipModule,
+    AutoBrowseModule,
   ],
 })
 export class AppModule {}

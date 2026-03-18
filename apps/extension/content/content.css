@@ -1,0 +1,29 @@
+/* Minimal styles for the content script - floating save indicator */
+.cp-clip-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999999;
+  background: linear-gradient(135deg, #7c3aed, #2563eb);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  box-shadow: 0 8px 32px rgba(124, 58, 237, 0.3);
+  animation: cp-slide-up 0.3s ease-out, cp-fade-out 0.3s ease-in 2.5s forwards;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@keyframes cp-slide-up {
+  from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+@keyframes cp-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}

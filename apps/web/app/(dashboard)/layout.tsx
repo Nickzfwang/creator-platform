@@ -15,6 +15,9 @@ import {
   Settings,
   Menu,
   Bell,
+  Radar,
+  Bookmark,
+  Globe,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRequireAuth } from "@/hooks/use-require-auth";
@@ -39,6 +42,9 @@ const sidebarItems = [
   { label: "Bot 設定", href: "/bot", icon: Bot },
   { label: "會員管理", href: "/members", icon: Users },
   { label: "品牌合作", href: "/brand", icon: Handshake },
+  { label: "趨勢雷達", href: "/trends", icon: Radar },
+  { label: "收藏庫", href: "/clips", icon: Bookmark },
+  { label: "AI 瀏覽", href: "/browse", icon: Globe },
   { label: "數據分析", href: "/analytics", icon: BarChart3 },
   { label: "設定", href: "/settings", icon: Settings },
 ];
@@ -50,6 +56,9 @@ const pageTitles: Record<string, string> = {
   "/bot": "Bot 設定",
   "/members": "會員管理",
   "/brand": "品牌合作",
+  "/trends": "趨勢雷達",
+  "/clips": "收藏庫",
+  "/browse": "AI 瀏覽",
   "/analytics": "數據分析",
   "/settings": "設定",
 };
