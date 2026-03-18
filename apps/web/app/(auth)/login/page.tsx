@@ -1,73 +1,121 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
+import { useAuthStore } from "@/lib/auth-store";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
+const loginSchema = z.object({
+  email: z.string().email("請輸入有效的電子郵件"),
+  password: z.string().min(1, "請輸入密碼"),
+});
+
+type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const router = useRouter();
+  const { login, isLoading } = useAuthStore();
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // TODO: Implement authentication
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
+  });
+
+  const onSubmit = async (data: LoginForm) => {
+    setError(null);
+    try {
+      await login(data.email, data.password);
+      toast.success("登入成功");
+      router.push("/");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "登入失敗，請稍後再試";
+      setError(message);
+      toast.error(message);
+    }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="w-full max-w-sm space-y-6 rounded-lg border p-8">
-        <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-bold">登入</h1>
-          <p className="text-sm text-muted-foreground">
-            登入您的 Creator Platform 帳號
-          </p>
-        </div>
+    <Card className="w-full">
+      <CardHeader className="space-y-1 text-center">
+        <CardTitle className="text-2xl font-bold">登入</CardTitle>
+        <CardDescription>登入您的 Creator Platform 帳號</CardDescription>
+      </CardHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <CardContent>
+        {error && (
+          <div className="mb-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium">
-              電子郵件
-            </label>
-            <input
+            <Label htmlFor="email">電子郵件</Label>
+            <Input
               id="email"
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              required
+              {...register("email")}
             />
+            {errors.email && (
+              <p className="text-xs text-destructive">
+                {errors.email.message}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium">
-              密碼
-            </label>
-            <input
+            <Label htmlFor="password">密碼</Label>
+            <Input
               id="password"
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              required
+              {...register("password")}
             />
+            {errors.password && (
+              <p className="text-xs text-destructive">
+                {errors.password.message}
+              </p>
+            )}
           </div>
 
-          <button
-            type="submit"
-            className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            登入
-          </button>
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? "登入中..." : "登入"}
+          </Button>
         </form>
+      </CardContent>
 
-        <div className="text-center text-sm text-muted-foreground">
+      <CardFooter className="justify-center">
+        <p className="text-sm text-muted-foreground">
           還沒有帳號？{" "}
-          <Link href="/login" className="font-medium text-primary hover:underline">
+          <Link
+            href="/register"
+            className="font-medium text-primary hover:underline"
+          >
             註冊
           </Link>
-        </div>
-      </div>
-    </div>
+        </p>
+      </CardFooter>
+    </Card>
   );
 }

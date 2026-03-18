@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { BullModule } from '@nestjs/bullmq';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 import { VideoModule } from './modules/video/video.module';
@@ -14,14 +15,22 @@ import { BrandDealModule } from './modules/brand-deal/brand-deal.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { TenantModule } from './modules/tenant/tenant.module';
+import { SocialModule } from './modules/social/social.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { ApiGatewayModule } from './modules/api-gateway/api-gateway.module';
+import { PrismaModule } from './prisma/prisma.module';
+import { AiModule } from './modules/ai/ai.module';
 
 @Module({
   imports: [
+    PrismaModule,
+    AiModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env.local', '.env'],
     }),
     EventEmitterModule.forRoot(),
+    ScheduleModule.forRoot(),
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -44,6 +53,9 @@ import { TenantModule } from './modules/tenant/tenant.module';
     AnalyticsModule,
     PaymentModule,
     TenantModule,
+    SocialModule,
+    DashboardModule,
+    ApiGatewayModule,
   ],
 })
 export class AppModule {}

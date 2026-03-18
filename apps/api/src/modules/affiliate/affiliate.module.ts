@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { AffiliateController } from './affiliate.controller';
+import { AffiliateController, AffiliateRedirectController } from './affiliate.controller';
 import { AffiliateService } from './affiliate.service';
 
 @Module({
-  controllers: [AffiliateController],
+  controllers: [AffiliateController, AffiliateRedirectController],
   providers: [AffiliateService],
   exports: [AffiliateService],
 })
