@@ -151,4 +151,20 @@ export class VideoController {
   ) {
     return this.videoService.updateClip(videoId, clipId, userId, dto);
   }
+
+  @Post(':id/subtitles')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Generate AI subtitles (Whisper + GPT polish)' })
+  async generateSubtitles(
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) videoId: string,
+    @Body() body: { language?: string; polish?: boolean },
+  ) {
+    return this.videoService.generateSubtitles(videoId, userId, {
+      language: body.language,
+      polish: body.polish,
+    });
+  }
 }

@@ -113,6 +113,30 @@ export function useVideoTranscript(videoId: string | undefined) {
   });
 }
 
+export function useGenerateSubtitles() {
+  return useMutation({
+    mutationFn: ({
+      videoId,
+      data,
+    }: {
+      videoId: string;
+      data?: { language?: string; polish?: boolean };
+    }) =>
+      api<{
+        videoId: string;
+        srtUrl: string;
+        vttUrl: string;
+        segmentCount: number;
+        preview: string;
+        language: string;
+        polished: boolean;
+      }>(`/v1/videos/${videoId}/subtitles`, {
+        method: "POST",
+        body: JSON.stringify(data ?? {}),
+      }),
+  });
+}
+
 export function useUploadUrl() {
   return useMutation({
     mutationFn: (data: { filename: string; contentType: string; fileSize: number }) =>

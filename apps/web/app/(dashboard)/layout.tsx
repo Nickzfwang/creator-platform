@@ -18,6 +18,9 @@ import {
   Radar,
   Bookmark,
   Globe,
+  PanelTop,
+  ShoppingBag,
+  Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRequireAuth } from "@/hooks/use-require-auth";
@@ -45,6 +48,9 @@ const sidebarItems = [
   { label: "趨勢雷達", href: "/trends", icon: Radar },
   { label: "收藏庫", href: "/clips", icon: Bookmark },
   { label: "AI 社群探索", href: "/browse", icon: Globe },
+  { label: "Landing Page", href: "/landing", icon: PanelTop },
+  { label: "商品商店", href: "/store", icon: ShoppingBag },
+  { label: "Email 行銷", href: "/email", icon: Mail },
   { label: "數據分析", href: "/analytics", icon: BarChart3 },
   { label: "設定", href: "/settings", icon: Settings },
 ];
@@ -59,6 +65,9 @@ const pageTitles: Record<string, string> = {
   "/trends": "趨勢雷達",
   "/clips": "收藏庫",
   "/browse": "AI 社群探索",
+  "/landing": "Landing Page",
+  "/store": "商品商店",
+  "/email": "Email 行銷",
   "/analytics": "數據分析",
   "/settings": "設定",
 };

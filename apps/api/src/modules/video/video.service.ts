@@ -351,4 +351,98 @@ export class VideoService {
     this.logger.log(`Clip ${clipId} updated`);
     return updated;
   }
+
+  // ─── Subtitle Generation ───
+
+  async generateSubtitles(
+    videoId: string,
+    userId: string,
+    options?: { language?: string; polish?: boolean },
+  ) {
+    const video = await this.prisma.video.findUnique({ where: { id: videoId } });
+    if (!video || video.userId !== userId) throw new NotFoundException('Video not found');
+
+    const sourceFile = this.findSourceFile(video.originalUrl);
+    if (!sourceFile) throw new NotFoundException('影片檔案不存在');
+
+    const subtitlesDir = join(process.cwd(), 'uploads', 'subtitles');
+    const { mkdirSync: mkdir, writeFileSync, existsSync: exists } = require('fs');
+    if (!exists(subtitlesDir)) mkdir(subtitlesDir, { recursive: true });
+
+    // Step 1: Extract audio with FFmpeg
+    const ffmpeg = require('fluent-ffmpeg');
+    const audioFile = join(subtitlesDir, `${videoId}-audio.mp3`);
+
+    await new Promise<void>((resolve, reject) => {
+      ffmpeg(sourceFile)
+        .outputOptions(['-vn', '-acodec', 'libmp3lame', '-ar', '16000', '-ac', '1', '-y'])
+        .output(audioFile)
+        .on('end', () => resolve())
+        .on('error', (err: Error) => reject(err))
+        .run();
+    });
+
+    this.logger.log(`Audio extracted for ${videoId}`);
+
+    // Step 2: Whisper transcription → SRT
+    let srtContent = await this.aiService.transcribe(audioFile, {
+      language: options?.language ?? 'zh',
+      responseFormat: 'srt',
+    });
+
+    this.logger.log(`Whisper transcription complete (${srtContent.length} chars)`);
+
+    // Step 3: GPT polish (optional, default true)
+    if (options?.polish !== false) {
+      srtContent = await this.aiService.polishSubtitles(srtContent);
+      this.logger.log('Subtitles polished by GPT');
+    }
+
+    // Step 4: Save SRT file
+    const srtFile = join(subtitlesDir, `${videoId}.srt`);
+    writeFileSync(srtFile, srtContent, 'utf-8');
+
+    // Also generate VTT format
+    const vttContent = this.srtToVtt(srtContent);
+    const vttFile = join(subtitlesDir, `${videoId}.vtt`);
+    writeFileSync(vttFile, vttContent, 'utf-8');
+
+    // Clean up audio
+    try { unlinkSync(audioFile); } catch {}
+
+    const srtUrl = `/uploads/subtitles/${videoId}.srt`;
+    const vttUrl = `/uploads/subtitles/${videoId}.vtt`;
+
+    // Count segments
+    const segmentCount = (srtContent.match(/\d+\n\d{2}:\d{2}:\d{2}/g) || []).length;
+
+    return {
+      videoId,
+      srtUrl,
+      vttUrl,
+      segmentCount,
+      preview: srtContent.slice(0, 500),
+      language: options?.language ?? 'zh',
+      polished: options?.polish !== false,
+    };
+  }
+
+  private findSourceFile(originalUrl: string | null): string | null {
+    if (!originalUrl) return null;
+    if (originalUrl.startsWith('/uploads/')) {
+      const filePath = join(process.cwd(), originalUrl);
+      return existsSync(filePath) ? filePath : null;
+    }
+    if (originalUrl.startsWith('http://') || originalUrl.startsWith('https://')) {
+      return originalUrl;
+    }
+    return null;
+  }
+
+  private srtToVtt(srt: string): string {
+    const vtt = srt
+      .replace(/(\d{2}):(\d{2}):(\d{2}),(\d{3})/g, '$1:$2:$3.$4')
+      .replace(/^\d+\n/gm, '');
+    return 'WEBVTT\n\n' + vtt;
+  }
 }

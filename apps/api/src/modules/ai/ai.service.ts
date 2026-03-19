@@ -112,6 +112,61 @@ export class AiService {
     }
   }
 
+  /**
+   * Transcribe audio/video to text using Whisper
+   */
+  async transcribe(
+    filePath: string,
+    options?: { language?: string; responseFormat?: 'json' | 'srt' | 'vtt' | 'text' },
+  ): Promise<string> {
+    if (!this.openai) throw new Error('OpenAI not configured');
+
+    const { createReadStream } = require('fs');
+    const format = options?.responseFormat ?? 'srt';
+
+    const result = await this.openai.audio.transcriptions.create({
+      file: createReadStream(filePath),
+      model: 'whisper-1',
+      response_format: format,
+      language: options?.language ?? 'zh',
+    });
+
+    // Whisper returns string for srt/vtt/text formats
+    return typeof result === 'string' ? result : JSON.stringify(result);
+  }
+
+  /**
+   * Polish/correct subtitle text using GPT
+   */
+  async polishSubtitles(srtContent: string): Promise<string> {
+    if (!this.openai) return srtContent;
+
+    try {
+      const response = await this.openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        max_tokens: 2000,
+        messages: [
+          {
+            role: 'system',
+            content: `你是字幕校正專家。請修正以下 SRT 字幕的錯別字和斷句，保持 SRT 格式不變。
+規則：
+- 修正明顯的語音辨識錯誤
+- 改善斷句，讓每行不超過15個中文字
+- 加入適當的標點符號
+- 不改變時間軸
+- 直接回覆修正後的完整 SRT 內容`,
+          },
+          { role: 'user', content: srtContent },
+        ],
+      });
+
+      return response.choices[0]?.message?.content?.trim() ?? srtContent;
+    } catch (error) {
+      this.logger.error(`Subtitle polishing failed: ${error}`);
+      return srtContent;
+    }
+  }
+
   private fallbackReply(message: string): string {
     return `感謝您的訊息！目前 AI 功能尚未啟用（OPENAI_API_KEY 未設定），請聯繫管理員。您的訊息：「${message.slice(0, 50)}...」`;
   }

@@ -24,6 +24,9 @@ import { TrendRadarModule } from './modules/trend-radar/trend-radar.module';
 import { ContentClipModule } from './modules/content-clip/content-clip.module';
 import { AutoBrowseModule } from './modules/auto-browse/auto-browse.module';
 import { ShortVideoModule } from './modules/short-video/short-video.module';
+import { LandingPageModule } from './modules/landing-page/landing-page.module';
+import { DigitalProductModule } from './modules/digital-product/digital-product.module';
+import { EmailMarketingModule } from './modules/email-marketing/email-marketing.module';
 
 @Module({
   imports: [
@@ -64,6 +67,9 @@ import { ShortVideoModule } from './modules/short-video/short-video.module';
     ContentClipModule,
     AutoBrowseModule,
     ShortVideoModule,
+    LandingPageModule,
+    DigitalProductModule,
+    EmailMarketingModule,
   ],
 })
 export class AppModule {}

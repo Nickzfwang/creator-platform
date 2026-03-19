@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Plus, Upload, Trash2, Film, Scissors, Clock, Sparkles, Play, Share2, Loader2, Copy, Check, FileText, Smartphone, Download } from "lucide-react";
+import { Plus, Upload, Trash2, Film, Scissors, Clock, Sparkles, Play, Share2, Loader2, Copy, Check, FileText, Smartphone, Download, Captions } from "lucide-react";
 import { toast } from "sonner";
-import { useVideos, useCreateVideo, useDeleteVideo, useDirectUpload, useVideoClips, useGenerateClips, useGenerateShort, useGenerateAllShorts } from "@/hooks/use-videos";
+import { useVideos, useCreateVideo, useDeleteVideo, useDirectUpload, useVideoClips, useGenerateClips, useGenerateShort, useGenerateAllShorts, useGenerateSubtitles } from "@/hooks/use-videos";
 import { useAiGeneratePost } from "@/hooks/use-posts";
 import { api } from "@/lib/api";
 import {
@@ -375,6 +375,8 @@ export default function VideosPage() {
   const createVideo = useCreateVideo();
   const deleteVideo = useDeleteVideo();
   const directUpload = useDirectUpload();
+  const subtitleMutation = useGenerateSubtitles();
+  const [subtitleResult, setSubtitleResult] = useState<{ srtUrl: string; vttUrl: string; segmentCount: number; preview: string } | null>(null);
 
   const handleCreate = () => {
     if (!title.trim()) {
@@ -577,6 +579,69 @@ export default function VideosPage() {
                   <p className="mt-1 text-sm text-blue-900 dark:text-blue-200">{selectedVideo.aiSummary}</p>
                 </div>
               )}
+              {/* Subtitle Generation */}
+              <div className="rounded-lg border p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="flex items-center gap-2 text-sm font-medium">
+                    <Captions className="h-4 w-4" /> AI 字幕生成
+                  </h4>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={subtitleMutation.isPending}
+                    onClick={() => {
+                      subtitleMutation.mutate(
+                        { videoId: selectedVideo.id, data: { language: "zh", polish: true } },
+                        {
+                          onSuccess: (res) => {
+                            setSubtitleResult(res);
+                            toast.success(`字幕已生成（${res.segmentCount} 段）`);
+                          },
+                          onError: (e) => toast.error(e.message),
+                        },
+                      );
+                    }}
+                  >
+                    {subtitleMutation.isPending ? (
+                      <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> Whisper 轉錄中...</>
+                    ) : (
+                      <><Sparkles className="mr-1 h-3 w-3" /> 生成字幕</>
+                    )}
+                  </Button>
+                </div>
+                {subtitleMutation.isPending && (
+                  <p className="text-xs text-muted-foreground">Whisper 正在辨識語音 → GPT 校正斷句中，約需 30-60 秒...</p>
+                )}
+                {subtitleResult && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Badge variant="secondary">{subtitleResult.segmentCount} 段字幕</Badge>
+                      <span>已由 GPT 校正潤飾</span>
+                    </div>
+                    <pre className="max-h-32 overflow-y-auto rounded-md bg-muted p-3 text-xs whitespace-pre-wrap">{subtitleResult.preview}</pre>
+                    <div className="flex gap-2">
+                      <a
+                        href={`http://localhost:4000${subtitleResult.srtUrl}`}
+                        download
+                        className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+                      >
+                        <Download className="h-3 w-3" /> 下載 SRT
+                      </a>
+                      <a
+                        href={`http://localhost:4000${subtitleResult.vttUrl}`}
+                        download
+                        className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted"
+                      >
+                        <Download className="h-3 w-3" /> 下載 VTT
+                      </a>
+                    </div>
+                  </div>
+                )}
+                {!subtitleResult && !subtitleMutation.isPending && (
+                  <p className="text-xs text-muted-foreground">使用 OpenAI Whisper 自動辨識影片語音，GPT 校正後生成 SRT/VTT 字幕檔</p>
+                )}
+              </div>
+
               <VideoClipsPanel
                 videoId={selectedVideo.id}
                 onRepurpose={(clipId, clipTitle) => setRepurpose({ clipId, clipTitle, suggestions: null })}
