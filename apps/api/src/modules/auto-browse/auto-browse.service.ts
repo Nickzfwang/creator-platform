@@ -1,43 +1,61 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import * as puppeteer from 'puppeteer-core';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
-import { FacebookScraper } from './scrapers/facebook.scraper';
-import { YouTubeScraper } from './scrapers/youtube.scraper';
+import { parseStringPromise } from 'xml2js';
+import { DcardScraper } from './scrapers/dcard.scraper';
 import { ThreadsScraper } from './scrapers/threads.scraper';
+import { TikTokScraper } from './scrapers/tiktok.scraper';
 
-export interface ScrapedPost {
+export interface FetchedPost {
   platform: string;
-  author: string;
+  title: string;
   content: string;
   url: string;
-  likes?: number;
-  comments?: number;
-  shares?: number;
+  author?: string;
+  publishedAt?: string;
   imageUrl?: string;
-  timestamp?: string;
 }
 
-export interface BrowseResult {
-  id: string;
-  platform: string;
-  totalPosts: number;
-  posts: SavedPost[];
-  startedAt: string;
-  completedAt: string;
-}
-
-export interface SavedPost extends ScrapedPost {
+export interface AnalyzedPost extends FetchedPost {
   aiSummary: string;
   aiCategory: string;
   aiTags: string[];
   relevanceScore: number;
+  contentIdea?: string;
 }
+
+export interface ExploreResult {
+  id: string;
+  source: string;
+  totalPosts: number;
+  posts: AnalyzedPost[];
+  startedAt: string;
+  completedAt: string;
+}
+
+// RSS sources organized by category
+const RSS_SOURCES: Record<string, { name: string; url: string; category: string }[]> = {
+  tech: [
+    { name: 'TechNews 科技新報', url: 'https://technews.tw/feed/', category: '科技' },
+    { name: 'iThome', url: 'https://www.ithome.com.tw/rss', category: '科技' },
+  ],
+  global: [
+    { name: 'TechCrunch', url: 'https://techcrunch.com/feed/', category: '科技' },
+    { name: 'The Verge', url: 'https://www.theverge.com/rss/index.xml', category: '科技' },
+    { name: 'Hacker News Best', url: 'https://hnrss.org/best', category: '科技' },
+  ],
+  lifestyle: [
+    { name: '食力 foodNEXT', url: 'https://www.foodnext.net/feed', category: '美食' },
+    { name: '女人迷', url: 'https://womany.net/rss', category: '生活' },
+  ],
+};
+
+// Browser-based sources (Playwright)
+const BROWSER_SOURCES = ['dcard', 'threads', 'tiktok'];
 
 @Injectable()
 export class AutoBrowseService {
   private readonly logger = new Logger(AutoBrowseService.name);
-  private browser: puppeteer.Browser | null = null;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -45,133 +63,216 @@ export class AutoBrowseService {
   ) {}
 
   /**
-   * Connect to user's Chrome browser via CDP
-   * User must launch Chrome with: --remote-debugging-port=9222
+   * Explore a category of sources and return AI-analyzed trending content
    */
-  async connectToChrome(debuggingPort = 9222): Promise<puppeteer.Browser> {
-    try {
-      // Try to connect to existing Chrome session
-      const browserURL = `http://127.0.0.1:${debuggingPort}`;
-      this.browser = await puppeteer.connect({
-        browserURL,
-        defaultViewport: null, // Use existing viewport
-      });
-      this.logger.log(`Connected to Chrome on port ${debuggingPort}`);
-      return this.browser;
-    } catch (error) {
-      throw new BadRequestException(
-        `無法連接到 Chrome 瀏覽器。請先用以下指令啟動 Chrome：\n\n` +
-        `Mac: open -a "Google Chrome" --args --remote-debugging-port=${debuggingPort}\n` +
-        `Windows: chrome.exe --remote-debugging-port=${debuggingPort}\n\n` +
-        `確保已在 Chrome 中登入你的社群帳號（Facebook、YouTube 等）`,
-      );
-    }
-  }
-
-  async disconnect() {
-    if (this.browser) {
-      this.browser.disconnect(); // disconnect, NOT close (don't close user's browser)
-      this.browser = null;
-      this.logger.log('Disconnected from Chrome');
-    }
-  }
-
-  /**
-   * Browse a platform and collect trending posts
-   */
-  async browsePlatform(
+  async explore(
     userId: string,
     tenantId: string,
-    platform: string,
-    options?: { maxPosts?: number; scrollCount?: number },
-  ): Promise<BrowseResult> {
+    options?: {
+      category?: string;    // tech, creator, global, lifestyle, or 'all'
+      maxPosts?: number;
+      customRssUrl?: string; // User can add their own RSS feed
+    },
+  ): Promise<ExploreResult> {
     const startedAt = new Date().toISOString();
     const maxPosts = options?.maxPosts ?? 15;
-    const scrollCount = options?.scrollCount ?? 8;
+    const category = options?.category ?? 'all';
 
-    // Connect to Chrome
-    const browser = await this.connectToChrome();
+    // Collect RSS sources to fetch
+    let sources: { name: string; url: string; category: string }[] = [];
 
-    try {
-      // Open a new tab (don't mess with user's existing tabs)
-      const page = await browser.newPage();
+    if (options?.customRssUrl) {
+      sources = [{ name: '自訂來源', url: options.customRssUrl, category: '自訂' }];
+    } else if (category === 'all') {
+      sources = Object.values(RSS_SOURCES).flat();
+    } else if (RSS_SOURCES[category]) {
+      sources = RSS_SOURCES[category];
+    } else if (!BROWSER_SOURCES.includes(category)) {
+      throw new BadRequestException(`不支援的分類: ${category}。可用: ${[...Object.keys(RSS_SOURCES), ...BROWSER_SOURCES, 'all'].join(', ')}`);
+    }
 
-      let rawPosts: ScrapedPost[] = [];
+    // Fetch all sources in parallel
+    const allPosts: FetchedPost[] = [];
 
-      // Select scraper based on platform
-      switch (platform.toLowerCase()) {
-        case 'facebook':
-          rawPosts = await new FacebookScraper().scrape(page, { maxPosts, scrollCount });
-          break;
-        case 'youtube':
-          rawPosts = await new YouTubeScraper().scrape(page, { maxPosts, scrollCount });
-          break;
-        case 'threads':
-          rawPosts = await new ThreadsScraper().scrape(page, { maxPosts, scrollCount });
-          break;
-        default:
-          throw new BadRequestException(`不支援的平台: ${platform}`);
+    // RSS feeds
+    const fetchPromises = sources.map(async (source) => {
+      try {
+        const posts = await this.fetchRss(source.url, source.name, source.category);
+        allPosts.push(...posts);
+      } catch (e) {
+        this.logger.warn(`Failed to fetch ${source.name}: ${e.message}`);
       }
+    });
 
-      // Close the tab we opened
-      await page.close();
+    await Promise.all(fetchPromises);
 
-      this.logger.log(`Scraped ${rawPosts.length} posts from ${platform}`);
+    // Browser-based sources
+    if (category === 'dcard' || category === 'all') {
+      try {
+        const posts = await new DcardScraper().scrape({ maxPosts: category === 'dcard' ? maxPosts : 8 });
+        allPosts.push(...posts);
+        this.logger.log(`Scraped ${posts.length} posts from Dcard`);
+      } catch (e) {
+        this.logger.warn(`Dcard scraping failed: ${e.message}`);
+      }
+    }
 
-      // Use AI to analyze and summarize all posts in batch
-      const savedPosts = await this.analyzePostsBatch(rawPosts);
+    if (category === 'threads' || category === 'all') {
+      try {
+        const posts = await new ThreadsScraper().scrape({ maxPosts: category === 'threads' ? maxPosts : 8 });
+        allPosts.push(...posts);
+        this.logger.log(`Scraped ${posts.length} posts from Threads`);
+      } catch (e) {
+        this.logger.warn(`Threads scraping failed: ${e.message}`);
+      }
+    }
 
-      // Save to database
-      for (const post of savedPosts) {
+    if (category === 'tiktok' || category === 'all') {
+      try {
+        const posts = await new TikTokScraper().scrape({ maxPosts: category === 'tiktok' ? maxPosts : 8 });
+        allPosts.push(...posts);
+        this.logger.log(`Scraped ${posts.length} posts from TikTok`);
+      } catch (e) {
+        this.logger.warn(`TikTok scraping failed: ${e.message}`);
+      }
+    }
+
+    this.logger.log(`Fetched ${allPosts.length} posts from all sources`);
+
+    // Sort by date (newest first) and limit
+    const recentPosts = allPosts
+      .sort((a, b) => {
+        const da = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
+        const db = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
+        return db - da;
+      })
+      .slice(0, maxPosts);
+
+    // AI analyze
+    const analyzedPosts = await this.analyzePostsBatch(recentPosts);
+
+    // Save to content_clips for persistence
+    for (const post of analyzedPosts.slice(0, 10)) {
+      try {
         await this.prisma.contentClip.create({
           data: {
             userId,
             tenantId,
             platform: post.platform,
             url: post.url,
-            title: post.aiSummary?.slice(0, 100) || post.content.slice(0, 100),
+            title: post.title.slice(0, 200),
             rawContent: post.content.slice(0, 5000),
             aiSummary: post.aiSummary,
             aiCategory: post.aiCategory,
             aiTags: post.aiTags,
-            author: post.author || null,
-            imageUrl: post.imageUrl || null,
+            author: post.author ?? null,
+            imageUrl: post.imageUrl ?? null,
           },
         });
+      } catch {
+        // Skip duplicate URLs
+      }
+    }
+
+    return {
+      id: `explore-${Date.now()}`,
+      source: category,
+      totalPosts: analyzedPosts.length,
+      posts: analyzedPosts,
+      startedAt,
+      completedAt: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Fetch and parse an RSS feed
+   */
+  private async fetchRss(url: string, sourceName: string, category: string): Promise<FetchedPost[]> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
+    try {
+      const res = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'CreatorPlatform/1.0 RSS Reader',
+          'Accept': 'application/rss+xml, application/xml, text/xml',
+        },
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const xml = await res.text();
+      const parsed = await parseStringPromise(xml, { trim: true, explicitArray: false });
+
+      const posts: FetchedPost[] = [];
+
+      // Handle RSS 2.0
+      if (parsed.rss?.channel?.item) {
+        const items = Array.isArray(parsed.rss.channel.item)
+          ? parsed.rss.channel.item
+          : [parsed.rss.channel.item];
+
+        for (const item of items.slice(0, 10)) {
+          posts.push({
+            platform: sourceName,
+            title: this.cleanText(item.title || ''),
+            content: this.cleanText(this.stripHtml(item.description || item['content:encoded'] || '')).slice(0, 500),
+            url: item.link || '',
+            author: item['dc:creator'] || item.author || undefined,
+            publishedAt: item.pubDate || undefined,
+            imageUrl: this.extractImageUrl(item),
+          });
+        }
       }
 
-      const completedAt = new Date().toISOString();
+      // Handle Atom feeds
+      if (parsed.feed?.entry) {
+        const entries = Array.isArray(parsed.feed.entry)
+          ? parsed.feed.entry
+          : [parsed.feed.entry];
 
-      return {
-        id: `browse-${Date.now()}`,
-        platform,
-        totalPosts: savedPosts.length,
-        posts: savedPosts,
-        startedAt,
-        completedAt,
-      };
-    } catch (error) {
-      this.logger.error(`Browse failed for ${platform}: ${error.message}`);
-      throw error;
+        for (const entry of entries.slice(0, 10)) {
+          const link = Array.isArray(entry.link)
+            ? entry.link.find((l: any) => l.$?.rel === 'alternate')?.$.href || entry.link[0]?.$.href
+            : entry.link?.$.href || entry.link;
+
+          posts.push({
+            platform: sourceName,
+            title: this.cleanText(typeof entry.title === 'string' ? entry.title : entry.title?._ || ''),
+            content: this.cleanText(this.stripHtml(
+              typeof entry.content === 'string' ? entry.content : entry.content?._ ||
+              typeof entry.summary === 'string' ? entry.summary : entry.summary?._ || ''
+            )).slice(0, 500),
+            url: link || '',
+            author: entry.author?.name || undefined,
+            publishedAt: entry.published || entry.updated || undefined,
+          });
+        }
+      }
+
+      return posts;
+    } catch (e) {
+      this.logger.warn(`RSS fetch error for ${sourceName}: ${e.message}`);
+      return [];
     } finally {
-      await this.disconnect();
+      clearTimeout(timeout);
     }
   }
 
   /**
-   * Use GPT to analyze a batch of posts
+   * AI batch analysis
    */
-  private async analyzePostsBatch(posts: ScrapedPost[]): Promise<SavedPost[]> {
+  private async analyzePostsBatch(posts: FetchedPost[]): Promise<AnalyzedPost[]> {
     if (posts.length === 0) return [];
 
-    // Analyze in chunks of 5 to avoid token limits
     const chunkSize = 5;
-    const results: SavedPost[] = [];
+    const results: AnalyzedPost[] = [];
 
     for (let i = 0; i < posts.length; i += chunkSize) {
       const chunk = posts.slice(i, i + chunkSize);
       const postsText = chunk.map((p, idx) =>
-        `[${idx}] 作者: ${p.author}\n內容: ${p.content.slice(0, 300)}\n互動: ${p.likes ?? '?'} 讚, ${p.comments ?? '?'} 留言`
+        `[${idx}] 來源: ${p.platform}\n標題: ${p.title}\n摘要: ${p.content.slice(0, 200)}`
       ).join('\n---\n');
 
       const aiResult = await this.aiService.generateJson<{
@@ -181,33 +282,36 @@ export class AutoBrowseService {
           category: string;
           tags: string[];
           relevanceScore: number;
+          contentIdea: string;
         }>;
       }>(
-        `你是社群趨勢分析師。分析以下${chunk.length}則社群貼文，為每一則提供：
-- summary: 30-60字繁體中文摘要
-- category: 分類（科技/生活/商業/娛樂/教育/設計/行銷/健康/美食/旅遊/時事/其他）
-- tags: 3個相關標籤
-- relevanceScore: 0-100 的內容創作參考價值分數（對創作者有多大啟發？）
+        `你是內容創作顧問。分析以下${chunk.length}則熱門文章，為每一則提供：
+- summary: 40-70字繁體中文摘要
+- category: 分類（科技/AI/商業/生活/娛樂/教育/設計/行銷/健康/其他）
+- tags: 3個標籤
+- relevanceScore: 0-100 對創作者的參考價值
+- contentIdea: 基於此內容，創作者可以製作什麼影片/貼文（一句話建議）
 
-回覆 JSON: { "analyses": [{ "index": 0, "summary": "...", "category": "...", "tags": [...], "relevanceScore": 85 }, ...] }`,
+回覆 JSON: { "analyses": [{ "index": 0, "summary": "...", "category": "...", "tags": [...], "relevanceScore": 85, "contentIdea": "..." }, ...] }`,
         postsText,
         { maxTokens: 800 },
       );
 
       for (const analysis of aiResult?.analyses ?? []) {
-        const originalPost = chunk[analysis.index];
-        if (originalPost) {
+        const original = chunk[analysis.index];
+        if (original) {
           results.push({
-            ...originalPost,
+            ...original,
             aiSummary: analysis.summary,
             aiCategory: analysis.category,
             aiTags: analysis.tags,
             relevanceScore: analysis.relevanceScore,
+            contentIdea: analysis.contentIdea,
           });
         }
       }
 
-      // Add any posts that AI didn't analyze
+      // Fill in posts AI didn't analyze
       for (let j = 0; j < chunk.length; j++) {
         if (!aiResult?.analyses?.find(a => a.index === j)) {
           results.push({
@@ -221,30 +325,47 @@ export class AutoBrowseService {
       }
     }
 
-    // Sort by relevance score
     return results.sort((a, b) => b.relevanceScore - a.relevanceScore);
   }
 
   /**
-   * Check if Chrome is accessible
+   * List available source categories
    */
-  async checkConnection(port = 9222): Promise<{ connected: boolean; message: string }> {
-    try {
-      const browser = await puppeteer.connect({
-        browserURL: `http://127.0.0.1:${port}`,
-        defaultViewport: null,
-      });
-      const pages = await browser.pages();
-      browser.disconnect();
-      return {
-        connected: true,
-        message: `已連接到 Chrome（${pages.length} 個分頁）`,
-      };
-    } catch {
-      return {
-        connected: false,
-        message: '無法連接。請用以下指令啟動 Chrome：\nopen -a "Google Chrome" --args --remote-debugging-port=9222',
-      };
-    }
+  getAvailableSources() {
+    const rssSources = Object.entries(RSS_SOURCES).map(([key, sources]) => ({
+      id: key,
+      label: key === 'tech' ? '科技' : key === 'creator' ? '創作者' : key === 'global' ? '國際' : '生活',
+      sources: sources.map(s => ({ name: s.name, category: s.category })),
+    }));
+
+    // Add browser-based sources
+    rssSources.push(
+      { id: 'dcard', label: 'Dcard 熱門', sources: [{ name: 'Dcard 熱門文章', category: '社群' }] },
+      { id: 'threads', label: 'Threads', sources: [{ name: 'Threads 熱門', category: '社群' }] },
+      { id: 'tiktok', label: 'TikTok', sources: [{ name: 'TikTok 熱門', category: '短影片' }] },
+    );
+
+    return rssSources;
+  }
+
+  // --- Utility methods ---
+
+  private stripHtml(html: string): string {
+    return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"');
+  }
+
+  private cleanText(text: string): string {
+    return text.replace(/\s+/g, ' ').trim();
+  }
+
+  private extractImageUrl(item: any): string | undefined {
+    // Try media:content
+    if (item['media:content']?.$?.url) return item['media:content'].$.url;
+    // Try enclosure
+    if (item.enclosure?.$?.url && item.enclosure.$.type?.startsWith('image')) return item.enclosure.$.url;
+    // Try to extract from description
+    const imgMatch = (item.description || '').match(/<img[^>]+src="([^"]+)"/);
+    if (imgMatch) return imgMatch[1];
+    return undefined;
   }
 }

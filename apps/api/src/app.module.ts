@@ -23,6 +23,7 @@ import { AiModule } from './modules/ai/ai.module';
 import { TrendRadarModule } from './modules/trend-radar/trend-radar.module';
 import { ContentClipModule } from './modules/content-clip/content-clip.module';
 import { AutoBrowseModule } from './modules/auto-browse/auto-browse.module';
+import { ShortVideoModule } from './modules/short-video/short-video.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { AutoBrowseModule } from './modules/auto-browse/auto-browse.module';
     TrendRadarModule,
     ContentClipModule,
     AutoBrowseModule,
+    ShortVideoModule,
   ],
 })
 export class AppModule {}

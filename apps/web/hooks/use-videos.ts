@@ -123,6 +123,65 @@ export function useUploadUrl() {
   });
 }
 
+export function useGenerateShort() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      videoId,
+      clipId,
+      data,
+    }: {
+      videoId: string;
+      clipId: string;
+      data?: { format?: "9:16" | "1:1"; addSubtitles?: boolean; platform?: string };
+    }) =>
+      api<{
+        id: string;
+        title: string;
+        outputUrl: string;
+        format: string;
+        durationSeconds: number;
+        thumbnailUrl?: string;
+        hashtags: string[];
+        suggestedCaption: string;
+      }>(`/v1/videos/${videoId}/clips/${clipId}/generate-short`, {
+        method: "POST",
+        body: JSON.stringify(data ?? {}),
+      }),
+    onSuccess: (_, { videoId }) => {
+      qc.invalidateQueries({ queryKey: ["videos", videoId, "clips"] });
+    },
+  });
+}
+
+export function useGenerateAllShorts() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      videoId,
+      data,
+    }: {
+      videoId: string;
+      data?: { format?: "9:16" | "1:1"; addSubtitles?: boolean; platform?: string };
+    }) =>
+      api<Array<{
+        id: string;
+        title: string;
+        outputUrl: string;
+        format: string;
+        durationSeconds: number;
+        hashtags: string[];
+        suggestedCaption: string;
+      }>>(`/v1/videos/${videoId}/generate-all-shorts`, {
+        method: "POST",
+        body: JSON.stringify(data ?? {}),
+      }),
+    onSuccess: (_, { videoId }) => {
+      qc.invalidateQueries({ queryKey: ["videos", videoId, "clips"] });
+    },
+  });
+}
+
 export function useDirectUpload() {
   const qc = useQueryClient();
   return useMutation({

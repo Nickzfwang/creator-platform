@@ -44,7 +44,7 @@ const sidebarItems = [
   { label: "品牌合作", href: "/brand", icon: Handshake },
   { label: "趨勢雷達", href: "/trends", icon: Radar },
   { label: "收藏庫", href: "/clips", icon: Bookmark },
-  { label: "AI 瀏覽", href: "/browse", icon: Globe },
+  { label: "AI 社群探索", href: "/browse", icon: Globe },
   { label: "數據分析", href: "/analytics", icon: BarChart3 },
   { label: "設定", href: "/settings", icon: Settings },
 ];
@@ -58,7 +58,7 @@ const pageTitles: Record<string, string> = {
   "/brand": "品牌合作",
   "/trends": "趨勢雷達",
   "/clips": "收藏庫",
-  "/browse": "AI 瀏覽",
+  "/browse": "AI 社群探索",
   "/analytics": "數據分析",
   "/settings": "設定",
 };

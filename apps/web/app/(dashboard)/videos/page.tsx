@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Plus, Upload, Trash2, Film, Scissors, Clock, Sparkles, Play, Share2, Loader2, Copy, Check, FileText } from "lucide-react";
+import { Plus, Upload, Trash2, Film, Scissors, Clock, Sparkles, Play, Share2, Loader2, Copy, Check, FileText, Smartphone, Download } from "lucide-react";
 import { toast } from "sonner";
-import { useVideos, useCreateVideo, useDeleteVideo, useDirectUpload, useVideoClips, useGenerateClips } from "@/hooks/use-videos";
+import { useVideos, useCreateVideo, useDeleteVideo, useDirectUpload, useVideoClips, useGenerateClips, useGenerateShort, useGenerateAllShorts } from "@/hooks/use-videos";
 import { useAiGeneratePost } from "@/hooks/use-posts";
 import { api } from "@/lib/api";
 import {
@@ -61,6 +61,9 @@ function fmt(seconds: number | null | undefined): string {
 function VideoClipsPanel({ videoId, onRepurpose }: { videoId: string; onRepurpose?: (clipId: string, clipTitle: string) => void }) {
   const { data: clips, isLoading } = useVideoClips(videoId);
   const generateClips = useGenerateClips();
+  const generateShort = useGenerateShort();
+  const generateAllShorts = useGenerateAllShorts();
+  const [shortResult, setShortResult] = useState<{ title: string; outputUrl: string; suggestedCaption: string; hashtags: string[] } | null>(null);
 
   if (isLoading) return <div className="p-4 text-sm text-muted-foreground">載入中...</div>;
 
@@ -87,6 +90,28 @@ function VideoClipsPanel({ videoId, onRepurpose }: { videoId: string; onRepurpos
           <Sparkles className="mr-1 h-3 w-3" />
           {generateClips.isPending ? "生成中..." : "AI 生成片段"}
         </Button>
+        {clips && clips.length > 0 && (
+          <Button
+            size="sm"
+            variant="default"
+            onClick={() => {
+              generateAllShorts.mutate(
+                { videoId, data: { format: "9:16", addSubtitles: true } },
+                {
+                  onSuccess: (res) => {
+                    toast.success(`已生成 ${res.length} 支短影片`);
+                    if (res.length > 0) setShortResult(res[0]);
+                  },
+                  onError: (e) => toast.error(e.message),
+                },
+              );
+            }}
+            disabled={generateAllShorts.isPending}
+          >
+            <Smartphone className="mr-1 h-3 w-3" />
+            {generateAllShorts.isPending ? "生成中..." : "一鍵生成 Shorts"}
+          </Button>
+        )}
       </div>
       {!clips?.length ? (
         <div className="rounded-lg border border-dashed p-6 text-center">
@@ -119,6 +144,27 @@ function VideoClipsPanel({ videoId, onRepurpose }: { videoId: string; onRepurpos
                 <Badge variant={clip.status === "READY" ? "secondary" : "outline"}>
                   {clip.status === "READY" ? "就緒" : clip.status}
                 </Badge>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-blue-600 hover:text-blue-700"
+                  disabled={generateShort.isPending}
+                  onClick={() => {
+                    generateShort.mutate(
+                      { videoId, clipId: clip.id, data: { format: "9:16", addSubtitles: true, platform: "youtube_shorts" } },
+                      {
+                        onSuccess: (res) => {
+                          setShortResult(res);
+                          toast.success("短影片已生成！");
+                        },
+                        onError: (e) => toast.error(e.message),
+                      },
+                    );
+                  }}
+                  title="生成直式短影片"
+                >
+                  {generateShort.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Smartphone className="h-3 w-3" />}
+                </Button>
                 {onRepurpose && (
                   <Button
                     size="sm"
@@ -132,6 +178,51 @@ function VideoClipsPanel({ videoId, onRepurpose }: { videoId: string; onRepurpos
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Short Video Result */}
+      {shortResult && (
+        <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-900 dark:bg-green-950/20">
+          <div className="flex items-center gap-2 mb-3">
+            <Smartphone className="h-4 w-4 text-green-700" />
+            <h4 className="text-sm font-semibold text-green-900 dark:text-green-100">短影片已生成</h4>
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm font-medium">{shortResult.title}</p>
+            <p className="text-xs text-green-800 dark:text-green-300">{shortResult.suggestedCaption}</p>
+            {shortResult.hashtags?.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {shortResult.hashtags.map((tag) => (
+                  <span key={tag} className="rounded-full bg-green-200 px-2 py-0.5 text-xs text-green-800 dark:bg-green-900 dark:text-green-200">
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2 mt-2">
+              <a
+                href={`http://localhost:4000${shortResult.outputUrl}`}
+                download={`${shortResult.title || "short"}.mp4`}
+                className="inline-flex items-center gap-1 rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700"
+              >
+                <Download className="h-3 w-3" /> 下載短影片
+              </a>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs"
+                onClick={() => {
+                  navigator.clipboard.writeText(
+                    shortResult.suggestedCaption + "\n\n" + shortResult.hashtags.map(t => `#${t}`).join(" ")
+                  );
+                  toast.success("文案已複製");
+                }}
+              >
+                <Copy className="mr-1 h-3 w-3" /> 複製文案
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -440,7 +531,7 @@ export default function VideosPage() {
 
       {/* Video Detail Dialog */}
       <Dialog open={!!selectedVideo} onOpenChange={() => setSelectedVideo(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Film className="h-5 w-5" /> {selectedVideo?.title}
