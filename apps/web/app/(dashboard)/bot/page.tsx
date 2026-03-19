@@ -93,14 +93,22 @@ function ChatPanel({ botId }: { botId: string }) {
           </div>
         )}
       </div>
-      <div className="flex gap-2 border-t p-3">
-        <Input
+      <div className="flex items-end gap-2 border-t p-3">
+        <Textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder="輸入訊息..."
-          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+          placeholder="輸入訊息...（Shift+Enter 換行）"
+          className="min-h-[40px] max-h-[120px] resize-none"
+          rows={1}
+          onKeyDown={(e) => {
+            // e.nativeEvent.isComposing: 注音/日文等 IME 正在組字時不送出
+            if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
         />
-        <Button size="icon" onClick={handleSend} disabled={chat.isPending}>
+        <Button size="icon" className="shrink-0" onClick={handleSend} disabled={chat.isPending}>
           <Send className="h-4 w-4" />
         </Button>
       </div>
