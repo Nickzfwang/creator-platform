@@ -113,7 +113,7 @@ ${creatorContext}
     const reply = await this.aiService.chatWithHistory(
       systemPrompt,
       messages,
-      { model: 'gpt-4o-mini', maxTokens: 512, temperature: 0.7 },
+      { model: 'gpt-4o', maxTokens: 512, temperature: 0.7 },
     );
 
     return { reply };
@@ -156,7 +156,7 @@ ${creatorContext}
     const script = await this.aiService.chat(
       systemPrompt,
       userMsg,
-      { model: 'gpt-4o-mini', maxTokens: 2048, temperature: 0.8 },
+      { model: 'gpt-4o', maxTokens: 2048, temperature: 0.8 },
     );
 
     return { script, topic: dto.topic, generatedAt: new Date().toISOString() };

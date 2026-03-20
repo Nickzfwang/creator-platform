@@ -5,6 +5,8 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { PostStatus, PostType, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -20,6 +22,7 @@ export class PostSchedulerService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiService: AiService,
+    @InjectQueue('post-publish') private readonly publishQueue: Queue,
   ) {}
 
   async create(userId: string, tenantId: string, dto: CreatePostDto) {
@@ -60,9 +63,15 @@ export class PostSchedulerService {
       },
     });
 
-    // TODO: If SCHEDULED, create BullMQ delayed job
-    // const delay = new Date(dto.scheduledAt).getTime() - Date.now();
-    // await this.postQueue.add('publish', { postId: post.id }, { delay });
+    // If SCHEDULED, create BullMQ delayed job
+    if (status === PostStatus.SCHEDULED && dto.scheduledAt) {
+      const delay = new Date(dto.scheduledAt).getTime() - Date.now();
+      await this.publishQueue.add(
+        'publish',
+        { postId: post.id },
+        { delay, jobId: `post-${post.id}`, attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
+      );
+    }
 
     this.logger.log(`Post ${post.id} created with status ${status}`);
     return {
@@ -150,7 +159,14 @@ export class PostSchedulerService {
         throw new BadRequestException('scheduledAt must be in the future');
       }
       newStatus = PostStatus.SCHEDULED;
-      // TODO: Remove old BullMQ job, create new delayed job
+      // Remove old BullMQ job, create new delayed job
+      try { await this.publishQueue.remove(`post-${postId}`); } catch { /* may not exist */ }
+      const delay = new Date(dto.scheduledAt).getTime() - Date.now();
+      await this.publishQueue.add(
+        'publish',
+        { postId },
+        { delay, jobId: `post-${postId}`, attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
+      );
     }
 
     const data: Record<string, unknown> = { status: newStatus };
@@ -180,7 +196,10 @@ export class PostSchedulerService {
       );
     }
 
-    // TODO: If SCHEDULED, remove BullMQ delayed job
+    // Remove BullMQ delayed job if SCHEDULED
+    if (post.status === PostStatus.SCHEDULED) {
+      try { await this.publishQueue.remove(`post-${postId}`); } catch { /* may not exist */ }
+    }
     await this.prisma.post.delete({ where: { id: postId } });
     this.logger.log(`Post ${postId} deleted`);
   }
@@ -199,9 +218,13 @@ export class PostSchedulerService {
       data: { status: PostStatus.PUBLISHING },
     });
 
-    // TODO: Remove existing BullMQ job if SCHEDULED
-    // TODO: Create BullMQ immediate job
-    // await this.postQueue.add('publish', { postId }, { delay: 0 });
+    // Remove existing delayed job if SCHEDULED, then create immediate job
+    try { await this.publishQueue.remove(`post-${postId}`); } catch { /* may not exist */ }
+    await this.publishQueue.add(
+      'publish',
+      { postId },
+      { jobId: `post-${postId}-now`, attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
+    );
 
     this.logger.log(`Post ${postId} queued for immediate publishing`);
     return {
@@ -256,7 +279,7 @@ ${dto.additionalContext ? `\n額外資訊：${dto.additionalContext}` : ''}`;
 
     const result = await this.aiService.generateJson<{
       suggestions: Array<{ platform: string; contentText: string; hashtags: string[] }>;
-    }>(systemPrompt, userMsg);
+    }>(systemPrompt, userMsg, { model: 'gpt-4o' });
 
     if (result?.suggestions) {
       this.logger.log(`AI content generated for user ${userId} via GPT`);

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Plus, Trash2, Eye, EyeOff, Link as LinkIcon, Copy, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/lib/auth-store";
@@ -330,11 +331,30 @@ function ApiKeysTab() {
 
 // ─── Main Page ───
 export default function SettingsPage() {
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const connected = searchParams.get("connected");
+    const error = searchParams.get("error");
+    if (connected) {
+      toast.success(`${connected} 帳號已成功連結`);
+      window.history.replaceState({}, "", "/settings");
+    } else if (error) {
+      const messages: Record<string, string> = {
+        missing_params: "OAuth 參數不完整",
+        invalid_state: "OAuth 驗證失敗，請重試",
+        server_error: "伺服器錯誤，請稍後重試",
+      };
+      toast.error(messages[error] ?? `連結失敗：${error}`);
+      window.history.replaceState({}, "", "/settings");
+    }
+  }, [searchParams]);
+
   return (
     <div className="space-y-6">
       <PageHeader title="設定" description="管理您的帳號、社群連結和 API 設定" />
 
-      <Tabs defaultValue="profile">
+      <Tabs defaultValue={searchParams.get("connected") || searchParams.get("error") ? "social" : "profile"}>
         <TabsList>
           <TabsTrigger value="profile">個人資料</TabsTrigger>
           <TabsTrigger value="social">社群帳號</TabsTrigger>

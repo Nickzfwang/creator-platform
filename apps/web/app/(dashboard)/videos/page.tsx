@@ -420,13 +420,16 @@ export default function VideosPage() {
               <FileText className="mr-2 h-4 w-4" />
               AI 腳本
             </Button>
-            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-              <Upload className="mr-2 h-4 w-4" />
-              上傳影片
-            </Button>
-            <Button onClick={() => setCreateOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              新增影片
+            <Button
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={directUpload.isPending}
+            >
+              {directUpload.isPending ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />上傳中...</>
+              ) : (
+                <><Upload className="mr-2 h-4 w-4" />上傳影片</>
+              )}
             </Button>
             <input
               ref={fileInputRef}
@@ -438,6 +441,21 @@ export default function VideosPage() {
           </div>
         }
       />
+
+      {/* Upload Loading Overlay */}
+      {directUpload.isPending && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="rounded-xl bg-white p-8 shadow-2xl dark:bg-gray-900">
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+              <div className="text-center">
+                <p className="text-lg font-semibold">影片上傳中...</p>
+                <p className="text-sm text-muted-foreground">AI 正在分析並自動生成精華片段</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isLoading ? (
         <CardsSkeleton />
@@ -507,29 +525,6 @@ export default function VideosPage() {
           })}
         </div>
       )}
-
-      {/* Create Video Dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>新增影片</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>標題</Label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="影片標題" />
-            </div>
-            <div className="space-y-2">
-              <Label>描述</Label>
-              <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="影片描述（選填）" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>取消</Button>
-            <Button onClick={handleCreate} disabled={createVideo.isPending}>
-              {createVideo.isPending ? "建立中..." : "建立"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Video Detail Dialog */}
       <Dialog open={!!selectedVideo} onOpenChange={() => setSelectedVideo(null)}>

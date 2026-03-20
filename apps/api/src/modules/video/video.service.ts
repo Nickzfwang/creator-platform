@@ -8,6 +8,7 @@ import {
 import { VideoStatus, Prisma } from '@prisma/client';
 import { join } from 'path';
 import { unlinkSync, existsSync } from 'fs';
+import { execSync } from 'child_process';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { RequestUploadUrlDto } from './dto/request-upload-url.dto';
@@ -52,8 +53,21 @@ export class VideoService {
     const decodedName = Buffer.from(file.originalname, 'latin1').toString('utf8');
     const title = decodedName.replace(/\.[^/.]+$/, '');
 
-    // Use ffprobe-like duration detection; fallback to estimate from file size
-    const estimatedDuration = Math.max(30, Math.round(file.size / 500_000)); // ~500KB/s rough estimate
+    // Use ffprobe to get actual video duration; fallback to estimate from file size
+    let estimatedDuration: number;
+    try {
+      const ffprobeOutput = execSync(
+        `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${file.path}"`,
+        { encoding: 'utf8', timeout: 10000 },
+      ).trim();
+      estimatedDuration = Math.round(parseFloat(ffprobeOutput));
+      if (isNaN(estimatedDuration) || estimatedDuration <= 0) {
+        throw new Error('Invalid duration from ffprobe');
+      }
+    } catch (e) {
+      this.logger.warn(`ffprobe failed, falling back to estimate: ${e}`);
+      estimatedDuration = Math.max(30, Math.round(file.size / 500_000));
+    }
 
     // Generate AI summary based on video title
     const aiSummary = await this.generateAiSummary(title, estimatedDuration);
@@ -122,7 +136,30 @@ export class VideoService {
   }
 
   private async generateAiClips(videoId: string, tenantId: string, title: string, duration: number) {
-    // Ask GPT to generate clip suggestions
+    // For very short videos (< 60s), create a single clip of the full video
+    if (duration <= 60) {
+      this.logger.log(`Video ${videoId} is ${duration}s (short), creating single full-length clip`);
+      const clip = await this.prisma.videoClip.create({
+        data: {
+          videoId,
+          tenantId,
+          title: `${title} — 完整短片`,
+          startTime: 0,
+          endTime: duration,
+          durationSeconds: duration,
+          aiScore: 0.95,
+          hashtags: ['#Shorts', '#精華', '#推薦'],
+          status: 'READY',
+        },
+        select: { id: true, title: true, startTime: true, endTime: true, durationSeconds: true, aiScore: true, hashtags: true, status: true, createdAt: true },
+      });
+      return [clip];
+    }
+
+    // For longer videos, ask GPT to suggest clip segments
+    const minClipDuration = Math.min(30, Math.floor(duration * 0.1));
+    const maxClipDuration = Math.min(120, Math.floor(duration * 0.3));
+
     const result = await this.aiService.generateJson<{
       clips: Array<{ title: string; startPct: number; endPct: number; score: number; hashtags: string[] }>;
     }>(
@@ -130,7 +167,7 @@ export class VideoService {
 每個片段包含：
 - title: 吸引人的片段標題（繁體中文）
 - startPct: 開始位置（0-1 之間的比例）
-- endPct: 結束位置（大於 startPct，每個片段 30-120 秒）
+- endPct: 結束位置（大於 startPct，每個片段 ${minClipDuration}-${maxClipDuration} 秒）
 - score: AI 推薦分數（0.7-0.98 之間）
 - hashtags: 3-4 個相關 hashtag
 

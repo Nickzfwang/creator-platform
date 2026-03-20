@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { SocialPlatform } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EncryptionService } from './encryption.service';
+import { YouTubeApiService } from './youtube-api.service';
 
 interface OAuthConfig {
   clientId: string;
@@ -73,6 +74,7 @@ export class SocialService {
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     private readonly encryption: EncryptionService,
+    private readonly youtubeApi: YouTubeApiService,
   ) {}
 
   getConnectUrl(platform: SocialPlatform, userId: string, tenantId: string): string {
@@ -125,21 +127,29 @@ export class SocialService {
     // const exists = await this.redis.del(`oauth:state:${state}`);
     // if (!exists) throw new BadRequestException('OAuth state expired or already used');
 
-    // TODO: Exchange authorization code for tokens
-    // const tokens = await this.exchangeCodeForTokens(platform, code);
-    // const profile = await this.fetchPlatformProfile(platform, tokens.accessToken);
+    // Exchange authorization code for tokens and fetch profile
+    let tokens: { accessToken: string; refreshToken?: string; expiresIn: number };
+    let profile: { platformUserId: string; platformUsername: string; followerCount: number };
 
-    // Placeholder — will be replaced when platform APIs are integrated
-    const tokens = {
-      accessToken: `placeholder_access_${code}`,
-      refreshToken: `placeholder_refresh_${code}`,
-      expiresIn: 3600,
-    };
-    const profile = {
-      platformUserId: `user_${Date.now()}`,
-      platformUsername: `@connected_${platform.toLowerCase()}`,
-      followerCount: 0,
-    };
+    if (platform === SocialPlatform.YOUTUBE) {
+      const oauthConfig = this.getOAuthConfig(platform);
+      const ytTokens = await this.youtubeApi.exchangeCodeForTokens(code, oauthConfig.redirectUri);
+      const channelInfo = await this.youtubeApi.getChannelInfo(ytTokens.accessToken);
+
+      tokens = {
+        accessToken: ytTokens.accessToken,
+        refreshToken: ytTokens.refreshToken,
+        expiresIn: Math.floor((ytTokens.expiresAt.getTime() - Date.now()) / 1000),
+      };
+      profile = {
+        platformUserId: channelInfo.channelId,
+        platformUsername: channelInfo.title,
+        followerCount: channelInfo.subscriberCount ?? 0,
+      };
+    } else {
+      // Other platforms not yet implemented
+      throw new BadRequestException(`Platform ${platform} OAuth is not yet implemented`);
+    }
 
     // Encrypt tokens before storage
     const encryptedAccessToken = this.encryption.encrypt(tokens.accessToken);
@@ -217,11 +227,15 @@ export class SocialService {
       throw new ForbiddenException('Not the account owner');
     }
 
-    // TODO: Best-effort revoke platform token
-    // try {
-    //   const token = this.encryption.decrypt(account.accessToken);
-    //   await this.revokePlatformToken(account.platform, token);
-    // } catch (e) { this.logger.warn(`Failed to revoke ${account.platform} token`); }
+    // Best-effort revoke platform token
+    try {
+      const token = this.encryption.decrypt(account.accessToken);
+      if (account.platform === SocialPlatform.YOUTUBE) {
+        await this.youtubeApi.revokeToken(token);
+      }
+    } catch (e) {
+      this.logger.warn(`Failed to revoke ${account.platform} token: ${e}`);
+    }
 
     await this.prisma.socialAccount.delete({ where: { id: accountId } });
 
@@ -247,22 +261,32 @@ export class SocialService {
       throw new BadRequestException('No refresh token available for this account');
     }
 
-    // TODO: Use refresh token to get new access token from platform API
-    // const refreshToken = this.encryption.decrypt(account.refreshToken);
-    // const newTokens = await this.refreshPlatformToken(account.platform, refreshToken);
+    const decryptedRefreshToken = this.encryption.decrypt(account.refreshToken);
 
-    // Placeholder
-    const newAccessToken = `refreshed_${Date.now()}`;
-    const newExpiresAt = new Date(Date.now() + 3600 * 1000);
+    let newAccessToken: string;
+    let newRefreshToken: string | undefined;
+    let newExpiresAt: Date;
 
-    const encryptedToken = this.encryption.encrypt(newAccessToken);
+    if (account.platform === SocialPlatform.YOUTUBE) {
+      const ytTokens = await this.youtubeApi.refreshAccessToken(decryptedRefreshToken);
+      newAccessToken = ytTokens.accessToken;
+      newRefreshToken = ytTokens.refreshToken;
+      newExpiresAt = ytTokens.expiresAt;
+    } else {
+      throw new BadRequestException(`Token refresh not implemented for ${account.platform}`);
+    }
+
+    const updateData: Record<string, unknown> = {
+      accessToken: this.encryption.encrypt(newAccessToken),
+      tokenExpiresAt: newExpiresAt,
+    };
+    if (newRefreshToken && newRefreshToken !== decryptedRefreshToken) {
+      updateData.refreshToken = this.encryption.encrypt(newRefreshToken);
+    }
 
     await this.prisma.socialAccount.update({
       where: { id: accountId },
-      data: {
-        accessToken: encryptedToken,
-        tokenExpiresAt: newExpiresAt,
-      },
+      data: updateData,
     });
 
     this.logger.log(`Token refreshed for social account ${accountId}`);
@@ -293,47 +317,49 @@ export class SocialService {
       throw new BadRequestException(`Platform ${platform} is not supported`);
     }
 
+    const platformLower = platform.toLowerCase();
+
     switch (platform) {
       case SocialPlatform.YOUTUBE:
         return {
           clientId: this.config.get<string>('YOUTUBE_CLIENT_ID', ''),
           clientSecret: this.config.get<string>('YOUTUBE_CLIENT_SECRET', ''),
-          redirectUri: `${baseUrl}/api/v1/social/callback/YOUTUBE`,
+          redirectUri: `${baseUrl}/api/v1/social/callback/${platformLower}`,
           ...platformConfig,
         };
       case SocialPlatform.INSTAGRAM:
         return {
           clientId: this.config.get<string>('INSTAGRAM_APP_ID', ''),
           clientSecret: this.config.get<string>('INSTAGRAM_APP_SECRET', ''),
-          redirectUri: `${baseUrl}/api/v1/social/callback/INSTAGRAM`,
+          redirectUri: `${baseUrl}/api/v1/social/callback/${platformLower}`,
           ...platformConfig,
         };
       case SocialPlatform.TIKTOK:
         return {
           clientId: this.config.get<string>('TIKTOK_CLIENT_KEY', ''),
           clientSecret: this.config.get<string>('TIKTOK_CLIENT_SECRET', ''),
-          redirectUri: `${baseUrl}/api/v1/social/callback/TIKTOK`,
+          redirectUri: `${baseUrl}/api/v1/social/callback/${platformLower}`,
           ...platformConfig,
         };
       case SocialPlatform.FACEBOOK:
         return {
           clientId: this.config.get<string>('FACEBOOK_APP_ID', ''),
           clientSecret: this.config.get<string>('FACEBOOK_APP_SECRET', ''),
-          redirectUri: `${baseUrl}/api/v1/social/callback/FACEBOOK`,
+          redirectUri: `${baseUrl}/api/v1/social/callback/${platformLower}`,
           ...platformConfig,
         };
       case SocialPlatform.TWITTER:
         return {
           clientId: this.config.get<string>('TWITTER_CLIENT_ID', ''),
           clientSecret: this.config.get<string>('TWITTER_CLIENT_SECRET', ''),
-          redirectUri: `${baseUrl}/api/v1/social/callback/TWITTER`,
+          redirectUri: `${baseUrl}/api/v1/social/callback/${platformLower}`,
           ...platformConfig,
         };
       case SocialPlatform.THREADS:
         return {
           clientId: this.config.get<string>('THREADS_APP_ID', ''),
           clientSecret: this.config.get<string>('THREADS_APP_SECRET', ''),
-          redirectUri: `${baseUrl}/api/v1/social/callback/THREADS`,
+          redirectUri: `${baseUrl}/api/v1/social/callback/${platformLower}`,
           ...platformConfig,
         };
       default:

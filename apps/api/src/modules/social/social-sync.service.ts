@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { SocialPlatform, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EncryptionService } from './encryption.service';
+import { YouTubeApiService } from './youtube-api.service';
 
 interface PlatformMetrics {
   followers: number;
@@ -21,6 +22,7 @@ export class SocialSyncService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly encryption: EncryptionService,
+    private readonly youtubeApi: YouTubeApiService,
   ) {}
 
   /**
@@ -82,20 +84,41 @@ export class SocialSyncService {
   }) {
     this.logger.debug(`Syncing ${account.platform} account ${account.id}`);
 
-    // Check if token is expired
+    // Auto-refresh expired token
+    let accessToken = this.encryption.decrypt(account.accessToken);
+
     if (account.tokenExpiresAt && account.tokenExpiresAt < new Date()) {
-      if (account.refreshToken) {
-        // TODO: Auto-refresh token
-        // const newTokens = await this.refreshToken(account);
-        this.logger.warn(`Token expired for account ${account.id}, needs refresh`);
+      if (!account.refreshToken) {
+        this.logger.warn(`Token expired for account ${account.id}, no refresh token available`);
         return;
       }
-      this.logger.warn(`Token expired for account ${account.id}, no refresh token available`);
-      return;
+
+      const refreshToken = this.encryption.decrypt(account.refreshToken);
+
+      if (account.platform === SocialPlatform.YOUTUBE) {
+        const newTokens = await this.youtubeApi.refreshAccessToken(refreshToken);
+        accessToken = newTokens.accessToken;
+
+        await this.prisma.socialAccount.update({
+          where: { id: account.id },
+          data: {
+            accessToken: this.encryption.encrypt(newTokens.accessToken),
+            tokenExpiresAt: newTokens.expiresAt,
+            ...(newTokens.refreshToken !== refreshToken
+              ? { refreshToken: this.encryption.encrypt(newTokens.refreshToken!) }
+              : {}),
+          },
+        });
+
+        this.logger.log(`Auto-refreshed token for account ${account.id}`);
+      } else {
+        this.logger.warn(`Token expired for account ${account.id}, refresh not implemented for ${account.platform}`);
+        return;
+      }
     }
 
     // Fetch metrics from platform API
-    const metrics = await this.fetchPlatformMetrics(account.platform, account.platformUserId);
+    const metrics = await this.fetchPlatformMetrics(account.platform, accessToken);
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -211,53 +234,36 @@ export class SocialSyncService {
 
   /**
    * Fetch metrics from platform API
-   * TODO: Replace placeholders with actual API calls per platform
+   * @param platform - social platform
+   * @param accessToken - decrypted access token
    */
   private async fetchPlatformMetrics(
     platform: SocialPlatform,
-    _platformUserId: string,
+    accessToken: string,
   ): Promise<PlatformMetrics> {
-    // TODO: Implement actual API calls for each platform
-    switch (platform) {
-      case SocialPlatform.YOUTUBE:
-        // TODO: Use YouTube Data API v3
-        // GET https://www.googleapis.com/youtube/v3/channels?part=statistics&id={channelId}
-        break;
-      case SocialPlatform.INSTAGRAM:
-        // TODO: Use Instagram Graph API
-        // GET https://graph.facebook.com/v18.0/{ig-user-id}?fields=followers_count,media_count
-        break;
-      case SocialPlatform.TIKTOK:
-        // TODO: Use TikTok Content Posting API
-        // GET https://open.tiktokapis.com/v2/user/info/?fields=follower_count,likes_count
-        break;
-      case SocialPlatform.FACEBOOK:
-        // TODO: Use Facebook Graph API
-        // GET https://graph.facebook.com/v18.0/{page-id}?fields=fan_count,engagement
-        break;
-      case SocialPlatform.TWITTER:
-        // TODO: Use Twitter/X API v2
-        // GET https://api.twitter.com/2/users/{id}?user.fields=public_metrics
-        break;
-      case SocialPlatform.THREADS:
-        // TODO: Use Threads API
-        // GET https://graph.threads.net/v1.0/me?fields=followers_count
-        break;
-      default:
-        break;
+    if (platform === SocialPlatform.YOUTUBE) {
+      const stats = await this.youtubeApi.getChannelStats(accessToken);
+      return {
+        followers: stats.subscriberCount,
+        views: stats.viewCount,
+        likes: 0,
+        comments: 0,
+        shares: 0,
+        engagementRate: 0,
+        topContent: [],
+      };
     }
 
-    // Placeholder metrics — will be replaced when platform APIs are integrated
+    // Other platforms not yet implemented — return zeros
+    this.logger.warn(`Metrics not implemented for ${platform}, returning zeros`);
     return {
-      followers: Math.floor(Math.random() * 10000),
-      views: Math.floor(Math.random() * 50000),
-      likes: Math.floor(Math.random() * 5000),
-      comments: Math.floor(Math.random() * 500),
-      shares: Math.floor(Math.random() * 200),
-      engagementRate: Math.random() * 10,
-      topContent: [
-        { id: `content_${Date.now()}`, title: `[Placeholder] Top content for ${platform}`, views: Math.floor(Math.random() * 10000) },
-      ],
+      followers: 0,
+      views: 0,
+      likes: 0,
+      comments: 0,
+      shares: 0,
+      engagementRate: 0,
+      topContent: [],
     };
   }
 

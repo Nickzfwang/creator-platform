@@ -53,7 +53,7 @@ export class SocialController {
     @Res() res: Response,
   ) {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const redirectBase = `${frontendUrl}/settings/social`;
+    const redirectBase = `${frontendUrl}/settings`;
 
     if (error) {
       res.redirect(`${redirectBase}?error=${error}`);

@@ -34,7 +34,7 @@ export class AiService {
 
     try {
       const response = await this.openai.chat.completions.create({
-        model: options?.model ?? 'gpt-4o-mini',
+        model: options?.model ?? 'gpt-4o',
         max_tokens: options?.maxTokens ?? 1024,
         temperature: options?.temperature ?? 0.7,
         messages: [
@@ -65,7 +65,7 @@ export class AiService {
 
     try {
       const response = await this.openai.chat.completions.create({
-        model: options?.model ?? 'gpt-4o-mini',
+        model: options?.model ?? 'gpt-4o',
         max_tokens: options?.maxTokens ?? 1024,
         temperature: options?.temperature ?? 0.7,
         messages: [
@@ -94,7 +94,7 @@ export class AiService {
 
     try {
       const response = await this.openai.chat.completions.create({
-        model: options?.model ?? 'gpt-4o-mini',
+        model: options?.model ?? 'gpt-4o',
         max_tokens: options?.maxTokens ?? 2048,
         temperature: 0.5,
         response_format: { type: 'json_object' },
@@ -143,7 +143,7 @@ export class AiService {
 
     try {
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4o',
         max_tokens: 2000,
         messages: [
           {

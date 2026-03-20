@@ -11,6 +11,7 @@ import {
   usePublishNow,
   useAiGeneratePost,
 } from "@/hooks/use-posts";
+import { useVideos, useVideoClips } from "@/hooks/use-videos";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -65,6 +66,12 @@ export default function SchedulePage() {
   const [contentText, setContentText] = useState("");
   const [platform, setPlatform] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
+  const [selectedVideoId, setSelectedVideoId] = useState("");
+  const [selectedClipId, setSelectedClipId] = useState("");
+
+  // Video & clip data for the selector
+  const { data: videosData } = useVideos();
+  const { data: clipsData } = useVideoClips(selectedVideoId || undefined);
 
   const statusFilter = tab === "all" ? undefined : tab.toUpperCase();
   const { data, isLoading } = usePosts({ status: statusFilter });
@@ -80,6 +87,8 @@ export default function SchedulePage() {
     setContentText("");
     setPlatform("");
     setScheduledAt("");
+    setSelectedVideoId("");
+    setSelectedClipId("");
   };
 
   const handleCreate = () => {
@@ -91,6 +100,7 @@ export default function SchedulePage() {
       {
         contentText: contentText || undefined,
         platforms: [{ platform }],
+        clipId: selectedClipId || undefined,
         scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
       },
       {
@@ -276,6 +286,49 @@ export default function SchedulePage() {
                 </SelectContent>
               </Select>
             </div>
+            {/* Video & Clip selector — required for YouTube */}
+            {!editPost && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>影片（選填）</Label>
+                  <Select
+                    value={selectedVideoId}
+                    onValueChange={(v) => { setSelectedVideoId(v); setSelectedClipId(""); }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="選擇影片" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {videosData?.data?.map((v: { id: string; title: string; durationSeconds: number }) => (
+                        <SelectItem key={v.id} value={v.id}>
+                          {v.title} ({v.durationSeconds}s)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>片段 Clip</Label>
+                  <Select
+                    value={selectedClipId}
+                    onValueChange={setSelectedClipId}
+                    disabled={!selectedVideoId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={selectedVideoId ? "選擇片段" : "先選影片"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clipsData?.map((c: { id: string; title: string; durationSeconds: number }) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.title} ({c.durationSeconds}s)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>內容</Label>
