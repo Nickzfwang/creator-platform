@@ -116,7 +116,7 @@ export class AnalyticsController {
 語氣要專業但親切，像一個私人數據顧問在跟創作者對話。使用 emoji 增加可讀性。
 每個區塊用標題分隔，總字數控制在 300-500 字。`,
       `以下是創作者的數據分析報告：\n${dataContext}`,
-      { model: 'gpt-4o-mini', maxTokens: 800, temperature: 0.7 },
+      { model: 'gpt-4o', maxTokens: 800, temperature: 0.7 },
     );
 
     return { insights, period: query.period ?? '30d', generatedAt: new Date().toISOString() };

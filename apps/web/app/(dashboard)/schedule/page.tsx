@@ -120,7 +120,7 @@ export default function SchedulePage() {
       return;
     }
     aiGenerate.mutate(
-      { platforms: [platform], tone: "professional" },
+      { platforms: [platform], tone: "professional", clipId: selectedClipId || undefined },
       {
         onSuccess: (result) => {
           setContentText(result.content);

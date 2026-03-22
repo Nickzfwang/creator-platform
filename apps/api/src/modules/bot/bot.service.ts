@@ -221,7 +221,7 @@ export class BotService {
     const reply = await this.aiService.chatWithHistory(
       systemPrompt,
       [...history, { role: 'user' as const, content: dto.message }],
-      { model: 'gpt-4o-mini', maxTokens: 512 },
+      { model: 'gpt-4o', maxTokens: 512 },
     );
 
     // Append messages to conversation

@@ -122,6 +122,86 @@ export class YouTubeApiService {
     };
   }
 
+  /**
+   * Fetch recent video performance — likes, comments, views for top videos
+   */
+  async getRecentVideoStats(
+    accessToken: string,
+    maxResults = 10,
+  ): Promise<{
+    videos: Array<{
+      id: string;
+      title: string;
+      views: number;
+      likes: number;
+      comments: number;
+      publishedAt: string;
+    }>;
+    totalLikes: number;
+    totalComments: number;
+    engagementRate: number;
+  }> {
+    const youtube = this.getYouTubeClient(accessToken);
+
+    // Step 1: Get the uploads playlist ID
+    const channelRes = await youtube.channels.list({
+      part: ['contentDetails'],
+      mine: true,
+    });
+    const uploadsPlaylistId =
+      channelRes.data.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+
+    if (!uploadsPlaylistId) {
+      return { videos: [], totalLikes: 0, totalComments: 0, engagementRate: 0 };
+    }
+
+    // Step 2: Get recent video IDs from uploads playlist
+    const playlistRes = await youtube.playlistItems.list({
+      part: ['contentDetails'],
+      playlistId: uploadsPlaylistId,
+      maxResults,
+    });
+
+    const videoIds = playlistRes.data.items
+      ?.map((item) => item.contentDetails?.videoId)
+      .filter(Boolean) as string[];
+
+    if (!videoIds || videoIds.length === 0) {
+      return { videos: [], totalLikes: 0, totalComments: 0, engagementRate: 0 };
+    }
+
+    // Step 3: Get statistics for each video
+    const videosRes = await youtube.videos.list({
+      part: ['snippet', 'statistics'],
+      id: videoIds,
+    });
+
+    const videos = (videosRes.data.items ?? []).map((v) => ({
+      id: v.id!,
+      title: v.snippet?.title ?? '',
+      views: Number(v.statistics?.viewCount ?? 0),
+      likes: Number(v.statistics?.likeCount ?? 0),
+      comments: Number(v.statistics?.commentCount ?? 0),
+      publishedAt: v.snippet?.publishedAt ?? '',
+    }));
+
+    const totalLikes = videos.reduce((sum, v) => sum + v.likes, 0);
+    const totalComments = videos.reduce((sum, v) => sum + v.comments, 0);
+    const totalViews = videos.reduce((sum, v) => sum + v.views, 0);
+
+    // Engagement rate = (likes + comments) / views * 100
+    const engagementRate =
+      totalViews > 0
+        ? Math.round(((totalLikes + totalComments) / totalViews) * 10000) / 100
+        : 0;
+
+    this.logger.log(
+      `Fetched stats for ${videos.length} videos: ${totalViews} views, ${totalLikes} likes, ${totalComments} comments`,
+    );
+
+    return { videos, totalLikes, totalComments, engagementRate };
+  }
+
   async uploadVideo(
     accessToken: string,
     fileStream: Readable,

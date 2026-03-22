@@ -4,6 +4,9 @@ import { SocialPlatform, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EncryptionService } from './encryption.service';
 import { YouTubeApiService } from './youtube-api.service';
+import { TwitterApiService } from './twitter-api.service';
+import { MetaApiService } from './meta-api.service';
+import { TikTokApiService } from './tiktok-api.service';
 
 interface PlatformMetrics {
   followers: number;
@@ -23,6 +26,9 @@ export class SocialSyncService {
     private readonly prisma: PrismaService,
     private readonly encryption: EncryptionService,
     private readonly youtubeApi: YouTubeApiService,
+    private readonly twitterApi: TwitterApiService,
+    private readonly metaApi: MetaApiService,
+    private readonly tiktokApi: TikTokApiService,
   ) {}
 
   /**
@@ -95,30 +101,48 @@ export class SocialSyncService {
 
       const refreshToken = this.encryption.decrypt(account.refreshToken);
 
-      if (account.platform === SocialPlatform.YOUTUBE) {
-        const newTokens = await this.youtubeApi.refreshAccessToken(refreshToken);
-        accessToken = newTokens.accessToken;
+      let newTokens: { accessToken: string; refreshToken?: string; expiresAt: Date } | null = null;
 
+      switch (account.platform) {
+        case SocialPlatform.YOUTUBE: {
+          const yt = await this.youtubeApi.refreshAccessToken(refreshToken);
+          newTokens = { accessToken: yt.accessToken, refreshToken: yt.refreshToken, expiresAt: yt.expiresAt };
+          break;
+        }
+        case SocialPlatform.TWITTER: {
+          const tw = await this.twitterApi.refreshAccessToken(refreshToken);
+          newTokens = { accessToken: tw.accessToken, refreshToken: tw.refreshToken, expiresAt: tw.expiresAt };
+          break;
+        }
+        case SocialPlatform.TIKTOK: {
+          const tt = await this.tiktokApi.refreshAccessToken(refreshToken);
+          newTokens = { accessToken: tt.accessToken, refreshToken: tt.refreshToken, expiresAt: tt.expiresAt };
+          break;
+        }
+        default:
+          // Meta (FB/IG/Threads) tokens last 60 days — no refresh, skip
+          this.logger.warn(`Token expired for ${account.platform} account ${account.id}, re-auth required`);
+          return;
+      }
+
+      if (newTokens) {
+        accessToken = newTokens.accessToken;
         await this.prisma.socialAccount.update({
           where: { id: account.id },
           data: {
             accessToken: this.encryption.encrypt(newTokens.accessToken),
             tokenExpiresAt: newTokens.expiresAt,
-            ...(newTokens.refreshToken !== refreshToken
-              ? { refreshToken: this.encryption.encrypt(newTokens.refreshToken!) }
+            ...(newTokens.refreshToken && newTokens.refreshToken !== refreshToken
+              ? { refreshToken: this.encryption.encrypt(newTokens.refreshToken) }
               : {}),
           },
         });
-
         this.logger.log(`Auto-refreshed token for account ${account.id}`);
-      } else {
-        this.logger.warn(`Token expired for account ${account.id}, refresh not implemented for ${account.platform}`);
-        return;
       }
     }
 
     // Fetch metrics from platform API
-    const metrics = await this.fetchPlatformMetrics(account.platform, accessToken);
+    const metrics = await this.fetchPlatformMetrics(account.platform, accessToken, account.platformUserId);
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -240,21 +264,126 @@ export class SocialSyncService {
   private async fetchPlatformMetrics(
     platform: SocialPlatform,
     accessToken: string,
+    platformUserId?: string,
   ): Promise<PlatformMetrics> {
     if (platform === SocialPlatform.YOUTUBE) {
+      // Fetch channel-level stats
       const stats = await this.youtubeApi.getChannelStats(accessToken);
+
+      // Fetch recent video performance for engagement metrics
+      let likes = 0;
+      let comments = 0;
+      let engagementRate = 0;
+      let topContent: Array<{ id: string; title: string; views: number }> = [];
+
+      try {
+        const videoStats = await this.youtubeApi.getRecentVideoStats(accessToken, 10);
+        likes = videoStats.totalLikes;
+        comments = videoStats.totalComments;
+        engagementRate = videoStats.engagementRate;
+        topContent = videoStats.videos
+          .sort((a, b) => b.views - a.views)
+          .slice(0, 5)
+          .map((v) => ({ id: v.id, title: v.title, views: v.views }));
+      } catch (e) {
+        this.logger.warn(`Failed to fetch YouTube video stats: ${(e as Error).message}`);
+      }
+
       return {
         followers: stats.subscriberCount,
         views: stats.viewCount,
-        likes: 0,
-        comments: 0,
+        likes,
+        comments,
         shares: 0,
-        engagementRate: 0,
-        topContent: [],
+        engagementRate,
+        topContent,
       };
     }
 
-    // Other platforms not yet implemented — return zeros
+    if (platform === SocialPlatform.TWITTER) {
+      try {
+        const userInfo = await this.twitterApi.getUserInfo(accessToken);
+        const tweetMetrics = await this.twitterApi.getRecentTweetMetrics(
+          accessToken, userInfo.id, 10,
+        );
+        return {
+          followers: userInfo.followersCount,
+          views: 0, // Twitter doesn't expose total views at account level
+          likes: tweetMetrics.totalLikes,
+          comments: 0,
+          shares: tweetMetrics.totalRetweets,
+          engagementRate: tweetMetrics.engagementRate,
+          topContent: tweetMetrics.tweets.slice(0, 5).map(t => ({
+            id: t.id, title: t.text.slice(0, 80), views: t.impressions,
+          })),
+        };
+      } catch (e) {
+        this.logger.warn(`Twitter metrics failed: ${(e as Error).message}`);
+        return { followers: 0, views: 0, likes: 0, comments: 0, shares: 0, engagementRate: 0, topContent: [] };
+      }
+    }
+
+    if (platform === SocialPlatform.FACEBOOK) {
+      try {
+        // accessToken here is the Page access token (stored during connect)
+        const insights = await this.metaApi.getPageInsights(accessToken, platformUserId ?? '');
+        return {
+          followers: insights.followers,
+          views: insights.totalReach,
+          likes: 0,
+          comments: 0,
+          shares: 0,
+          engagementRate: insights.engagementRate,
+          topContent: [],
+        };
+      } catch (e) {
+        this.logger.warn(`Facebook metrics failed: ${(e as Error).message}`);
+        return { followers: 0, views: 0, likes: 0, comments: 0, shares: 0, engagementRate: 0, topContent: [] };
+      }
+    }
+
+    if (platform === SocialPlatform.INSTAGRAM) {
+      try {
+        const igMetrics = await this.metaApi.getInstagramMetrics(accessToken, platformUserId ?? '');
+        return {
+          followers: igMetrics.followers,
+          views: 0,
+          likes: igMetrics.recentMedia.reduce((s, m) => s + m.likeCount, 0),
+          comments: igMetrics.recentMedia.reduce((s, m) => s + m.commentsCount, 0),
+          shares: 0,
+          engagementRate: igMetrics.engagementRate,
+          topContent: igMetrics.recentMedia.slice(0, 5).map(m => ({
+            id: m.id, title: m.caption.slice(0, 80), views: m.likeCount,
+          })),
+        };
+      } catch (e) {
+        this.logger.warn(`Instagram metrics failed: ${(e as Error).message}`);
+        return { followers: 0, views: 0, likes: 0, comments: 0, shares: 0, engagementRate: 0, topContent: [] };
+      }
+    }
+
+    if (platform === SocialPlatform.TIKTOK) {
+      try {
+        const ttUser = await this.tiktokApi.getUserInfo(accessToken);
+        const ttVideos = await this.tiktokApi.getVideoList(accessToken, 10);
+        return {
+          followers: ttUser.followerCount,
+          views: ttVideos.totalViews,
+          likes: ttVideos.videos.reduce((s, v) => s + v.likes, 0),
+          comments: ttVideos.videos.reduce((s, v) => s + v.comments, 0),
+          shares: ttVideos.videos.reduce((s, v) => s + v.shares, 0),
+          engagementRate: ttVideos.engagementRate,
+          topContent: ttVideos.videos.slice(0, 5).map(v => ({
+            id: v.id, title: v.title.slice(0, 80), views: v.views,
+          })),
+        };
+      } catch (e) {
+        this.logger.warn(`TikTok metrics failed: ${(e as Error).message}`);
+        return { followers: 0, views: 0, likes: 0, comments: 0, shares: 0, engagementRate: 0, topContent: [] };
+      }
+    }
+
+    // Threads and other unsupported platforms
     this.logger.warn(`Metrics not implemented for ${platform}, returning zeros`);
     return {
       followers: 0,

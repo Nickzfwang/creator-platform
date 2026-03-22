@@ -246,25 +246,53 @@ export class PostSchedulerService {
       if (!clip) {
         throw new NotFoundException('Clip not found');
       }
-      clipContext = `Video: ${clip.video.title}\nSummary: ${clip.video.aiSummary ?? ''}\nClip: ${clip.title}`;
+      // Build rich context: title + summary + transcript (truncated)
+      const parts = [`影片標題: ${clip.video.title}`, `片段標題: ${clip.title}`];
+      if (clip.video.aiSummary) parts.push(`AI 摘要: ${clip.video.aiSummary}`);
+      if (clip.video.transcript) {
+        const transcriptStr = String(clip.video.transcript);
+        const truncatedTranscript = transcriptStr.length > 2000
+          ? transcriptStr.slice(0, 2000) + '...(truncated)'
+          : transcriptStr;
+        parts.push(`影片逐字稿:\n${truncatedTranscript}`);
+      }
+      clipContext = parts.join('\n');
     }
 
     // Use real GPT to generate platform-specific content
     const tone = dto.tone ?? 'professional';
-    const systemPrompt = `你是一位專業的社群媒體內容策略師，專門為創作者生成不同平台的貼文。
-請根據指定的平台和語調生成貼文。
+    const systemPrompt = `你是一位在台灣市場有豐富經驗的社群媒體內容策略師，深諳各平台的演算法偏好和用戶行為。
 
-要求：
-- 使用繁體中文
-- 針對每個平台的特性調整內容長度和風格
-- YouTube: 影片描述，較長，包含 CTA
-- Instagram: 視覺導向，使用 emoji，簡潔有力
-- TikTok: 短小精悍，hook 開頭，年輕化語氣
-- Facebook: 社群互動導向，問問題引發討論
-- Twitter/X: 精簡，280字以內
-- Threads: 對話式，個人化
+請根據指定的平台和語調生成高互動率的貼文。每個平台的內容必須完全不同，不能只是改長短。
 
-語調：${tone === 'professional' ? '專業知性' : tone === 'casual' ? '輕鬆日常' : tone === 'humorous' ? '幽默有趣' : tone}
+各平台策略（嚴格遵守）：
+- **YouTube**（影片描述）：
+  - 前 2 行最重要（摺疊前可見），必須含核心賣點
+  - 200-500 字，包含時間軸目錄（00:00 格式）
+  - 結尾加 CTA：訂閱、開啟小鈴鐺、留言互動
+  - hashtags 放描述最底部
+- **Instagram**（貼文文案）：
+  - 第一句話就要抓住注意力（Hook）
+  - 100-150 字，分段落，大量使用 emoji
+  - 結尾用問句引導留言互動（提高互動率）
+  - hashtags 5-10 個，混合熱門和精準標籤
+- **TikTok**（影片標題/描述）：
+  - 50 字以內，第一句就是 Hook
+  - 年輕化、口語化語氣，帶點爭議性或懸念
+  - hashtags 3-5 個，優先使用熱門挑戰標籤
+- **Facebook**（社群貼文）：
+  - 150-300 字，故事敘事或提問開頭
+  - 設計讓人想分享的內容（共鳴感/實用性）
+  - 結尾用二選一問題引發討論
+- **Twitter/X**（推文）：
+  - 100 字以內（含 hashtags），精簡有力
+  - 觀點鮮明，引發 RT 和引用
+- **Threads**（串文）：
+  - 對話式語氣，像跟朋友聊天
+  - 分享個人觀點或幕後故事
+  - 100 字以內，不需要太多 hashtags
+
+語調：${tone === 'professional' ? '專業知性，有深度的見解' : tone === 'casual' ? '輕鬆日常，像跟朋友聊天' : tone === 'humorous' ? '幽默有趣，帶點自嘲和梗' : tone}
 
 回覆格式為 JSON：
 {

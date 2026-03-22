@@ -10,6 +10,9 @@ import { SocialPlatform } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EncryptionService } from './encryption.service';
 import { YouTubeApiService } from './youtube-api.service';
+import { TwitterApiService } from './twitter-api.service';
+import { MetaApiService } from './meta-api.service';
+import { TikTokApiService } from './tiktok-api.service';
 
 interface OAuthConfig {
   clientId: string;
@@ -27,7 +30,7 @@ const PLATFORM_CONFIGS: Record<string, Partial<OAuthConfig> & { scopes: string[]
     tokenUrl: 'https://oauth2.googleapis.com/token',
   },
   INSTAGRAM: {
-    scopes: ['instagram_basic', 'instagram_content_publish', 'pages_show_list'],
+    scopes: ['public_profile', 'email'],
     authUrl: 'https://www.facebook.com/v18.0/dialog/oauth',
     tokenUrl: 'https://graph.facebook.com/v18.0/oauth/access_token',
   },
@@ -37,7 +40,7 @@ const PLATFORM_CONFIGS: Record<string, Partial<OAuthConfig> & { scopes: string[]
     tokenUrl: 'https://open.tiktokapis.com/v2/oauth/token/',
   },
   FACEBOOK: {
-    scopes: ['pages_manage_posts', 'pages_read_engagement', 'pages_show_list', 'public_profile'],
+    scopes: ['public_profile', 'email'],
     authUrl: 'https://www.facebook.com/v18.0/dialog/oauth',
     tokenUrl: 'https://graph.facebook.com/v18.0/oauth/access_token',
   },
@@ -75,6 +78,9 @@ export class SocialService {
     private readonly config: ConfigService,
     private readonly encryption: EncryptionService,
     private readonly youtubeApi: YouTubeApiService,
+    private readonly twitterApi: TwitterApiService,
+    private readonly metaApi: MetaApiService,
+    private readonly tiktokApi: TikTokApiService,
   ) {}
 
   getConnectUrl(platform: SocialPlatform, userId: string, tenantId: string): string {
@@ -86,12 +92,46 @@ export class SocialService {
     const oauthConfig = this.getOAuthConfig(platform);
 
     // State contains user context for the callback
-    const state = Buffer.from(
-      JSON.stringify({ userId, tenantId, platform, ts: Date.now() }),
-    ).toString('base64url');
+    const statePayload: Record<string, unknown> = { userId, tenantId, platform, ts: Date.now() };
 
-    // TODO: Store state in Redis with 10-minute TTL for CSRF protection
-    // await this.redis.set(`oauth:state:${state}`, '1', 'EX', 600);
+    // Twitter uses PKCE — generate code_verifier and store in state
+    if (platform === SocialPlatform.TWITTER) {
+      const { randomBytes, createHash } = require('crypto');
+      const codeVerifier = randomBytes(32).toString('base64url');
+      const codeChallenge = createHash('sha256').update(codeVerifier).digest('base64url');
+      statePayload.codeVerifier = codeVerifier;
+
+      const state = Buffer.from(JSON.stringify(statePayload)).toString('base64url');
+
+      const params = new URLSearchParams({
+        response_type: 'code',
+        client_id: oauthConfig.clientId,
+        redirect_uri: oauthConfig.redirectUri,
+        scope: platformConfig.scopes.join(' '),
+        state,
+        code_challenge: codeChallenge,
+        code_challenge_method: 'S256',
+      });
+
+      return `${platformConfig.authUrl}?${params.toString()}`;
+    }
+
+    // TikTok uses client_key instead of client_id
+    if (platform === SocialPlatform.TIKTOK) {
+      const state = Buffer.from(JSON.stringify(statePayload)).toString('base64url');
+
+      const params = new URLSearchParams({
+        client_key: oauthConfig.clientId,
+        redirect_uri: oauthConfig.redirectUri,
+        response_type: 'code',
+        scope: platformConfig.scopes.join(','),
+        state,
+      });
+
+      return `${platformConfig.authUrl}?${params.toString()}`;
+    }
+
+    const state = Buffer.from(JSON.stringify(statePayload)).toString('base64url');
 
     const params = new URLSearchParams({
       client_id: oauthConfig.clientId,
@@ -112,7 +152,7 @@ export class SocialService {
     state: string,
   ) {
     // Decode state to get user context
-    let stateData: { userId: string; tenantId: string; platform: string };
+    let stateData: { userId: string; tenantId: string; platform: string; codeVerifier?: string };
     try {
       stateData = JSON.parse(Buffer.from(state, 'base64url').toString());
     } catch {
@@ -130,25 +170,131 @@ export class SocialService {
     // Exchange authorization code for tokens and fetch profile
     let tokens: { accessToken: string; refreshToken?: string; expiresIn: number };
     let profile: { platformUserId: string; platformUsername: string; followerCount: number };
+    const oauthConfig = this.getOAuthConfig(platform);
 
-    if (platform === SocialPlatform.YOUTUBE) {
-      const oauthConfig = this.getOAuthConfig(platform);
-      const ytTokens = await this.youtubeApi.exchangeCodeForTokens(code, oauthConfig.redirectUri);
-      const channelInfo = await this.youtubeApi.getChannelInfo(ytTokens.accessToken);
+    switch (platform) {
+      case SocialPlatform.YOUTUBE: {
+        const ytTokens = await this.youtubeApi.exchangeCodeForTokens(code, oauthConfig.redirectUri);
+        const channelInfo = await this.youtubeApi.getChannelInfo(ytTokens.accessToken);
+        tokens = {
+          accessToken: ytTokens.accessToken,
+          refreshToken: ytTokens.refreshToken,
+          expiresIn: Math.floor((ytTokens.expiresAt.getTime() - Date.now()) / 1000),
+        };
+        profile = {
+          platformUserId: channelInfo.channelId,
+          platformUsername: channelInfo.title,
+          followerCount: channelInfo.subscriberCount ?? 0,
+        };
+        break;
+      }
 
-      tokens = {
-        accessToken: ytTokens.accessToken,
-        refreshToken: ytTokens.refreshToken,
-        expiresIn: Math.floor((ytTokens.expiresAt.getTime() - Date.now()) / 1000),
-      };
-      profile = {
-        platformUserId: channelInfo.channelId,
-        platformUsername: channelInfo.title,
-        followerCount: channelInfo.subscriberCount ?? 0,
-      };
-    } else {
-      // Other platforms not yet implemented
-      throw new BadRequestException(`Platform ${platform} OAuth is not yet implemented`);
+      case SocialPlatform.TWITTER: {
+        const codeVerifier = stateData.codeVerifier as string;
+        if (!codeVerifier) throw new BadRequestException('Missing PKCE code_verifier');
+        const twTokens = await this.twitterApi.exchangeCodeForTokens(code, oauthConfig.redirectUri, codeVerifier);
+        const twUser = await this.twitterApi.getUserInfo(twTokens.accessToken);
+        tokens = {
+          accessToken: twTokens.accessToken,
+          refreshToken: twTokens.refreshToken,
+          expiresIn: Math.floor((twTokens.expiresAt.getTime() - Date.now()) / 1000),
+        };
+        profile = {
+          platformUserId: twUser.id,
+          platformUsername: twUser.username,
+          followerCount: twUser.followersCount,
+        };
+        break;
+      }
+
+      case SocialPlatform.FACEBOOK: {
+        const fbTokens = await this.metaApi.exchangeCodeForTokens(code, oauthConfig.redirectUri, 'FACEBOOK');
+        const fbProfile = await this.metaApi.getUserProfile(fbTokens.accessToken);
+        // Use the first Page as the primary identity (if available), fallback to user profile
+        const primaryPage = fbProfile.pages?.[0];
+        tokens = {
+          accessToken: primaryPage?.pageAccessToken ?? fbTokens.accessToken,
+          expiresIn: Math.floor((fbTokens.expiresAt.getTime() - Date.now()) / 1000),
+        };
+        profile = {
+          platformUserId: primaryPage?.pageId ?? fbProfile.userId,
+          platformUsername: primaryPage?.pageName ?? fbProfile.name,
+          followerCount: primaryPage?.followersCount ?? 0,
+        };
+        this.logger.log(`Facebook connected: ${profile.platformUsername} (pages: ${fbProfile.pages?.length ?? 0})`);
+        break;
+      }
+
+      case SocialPlatform.INSTAGRAM: {
+        const igTokens = await this.metaApi.exchangeCodeForTokens(code, oauthConfig.redirectUri, 'INSTAGRAM');
+        const igProfile = await this.metaApi.getUserProfile(igTokens.accessToken);
+        // Find Instagram Business Account via connected Page (if page permissions available)
+        const pageWithIg = igProfile.pages?.find(p => p.instagramBusinessAccountId);
+        if (pageWithIg?.instagramBusinessAccountId) {
+          const igAccount = await this.metaApi.getInstagramAccountInfo(
+            pageWithIg.pageAccessToken,
+            pageWithIg.instagramBusinessAccountId,
+          );
+          tokens = {
+            accessToken: pageWithIg.pageAccessToken,
+            expiresIn: Math.floor((igTokens.expiresAt.getTime() - Date.now()) / 1000),
+          };
+          profile = {
+            platformUserId: igAccount.id,
+            platformUsername: igAccount.username,
+            followerCount: igAccount.followersCount,
+          };
+        } else {
+          // Fallback: connect with basic profile (no page permissions yet)
+          this.logger.warn('No Instagram Business Account found via Pages. Using basic profile as fallback.');
+          tokens = {
+            accessToken: igTokens.accessToken,
+            expiresIn: Math.floor((igTokens.expiresAt.getTime() - Date.now()) / 1000),
+          };
+          profile = {
+            platformUserId: igProfile.userId,
+            platformUsername: igProfile.name,
+            followerCount: 0,
+          };
+        }
+        this.logger.log(`Instagram connected: ${profile.platformUsername}`);
+        break;
+      }
+
+      case SocialPlatform.TIKTOK: {
+        const ttTokens = await this.tiktokApi.exchangeCodeForTokens(code, oauthConfig.redirectUri);
+        const ttUser = await this.tiktokApi.getUserInfo(ttTokens.accessToken);
+        tokens = {
+          accessToken: ttTokens.accessToken,
+          refreshToken: ttTokens.refreshToken,
+          expiresIn: Math.floor((ttTokens.expiresAt.getTime() - Date.now()) / 1000),
+        };
+        profile = {
+          platformUserId: ttUser.openId,
+          platformUsername: ttUser.displayName,
+          followerCount: ttUser.followerCount,
+        };
+        break;
+      }
+
+      case SocialPlatform.THREADS: {
+        // Threads uses the same Meta/Instagram OAuth flow
+        const thTokens = await this.metaApi.exchangeCodeForTokens(code, oauthConfig.redirectUri, 'INSTAGRAM');
+        const thProfile = await this.metaApi.getUserProfile(thTokens.accessToken);
+        tokens = {
+          accessToken: thTokens.accessToken,
+          expiresIn: Math.floor((thTokens.expiresAt.getTime() - Date.now()) / 1000),
+        };
+        profile = {
+          platformUserId: thProfile.userId,
+          platformUsername: thProfile.name,
+          followerCount: 0,
+        };
+        break;
+      }
+
+      default:
+        throw new BadRequestException(`Platform ${platform} OAuth is not yet implemented`);
     }
 
     // Encrypt tokens before storage
@@ -230,8 +376,21 @@ export class SocialService {
     // Best-effort revoke platform token
     try {
       const token = this.encryption.decrypt(account.accessToken);
-      if (account.platform === SocialPlatform.YOUTUBE) {
-        await this.youtubeApi.revokeToken(token);
+      switch (account.platform) {
+        case SocialPlatform.YOUTUBE:
+          await this.youtubeApi.revokeToken(token);
+          break;
+        case SocialPlatform.TWITTER:
+          await this.twitterApi.revokeToken(token);
+          break;
+        case SocialPlatform.FACEBOOK:
+        case SocialPlatform.INSTAGRAM:
+        case SocialPlatform.THREADS:
+          await this.metaApi.revokeToken(token);
+          break;
+        case SocialPlatform.TIKTOK:
+          await this.tiktokApi.revokeToken(token);
+          break;
       }
     } catch (e) {
       this.logger.warn(`Failed to revoke ${account.platform} token: ${e}`);
@@ -267,13 +426,38 @@ export class SocialService {
     let newRefreshToken: string | undefined;
     let newExpiresAt: Date;
 
-    if (account.platform === SocialPlatform.YOUTUBE) {
-      const ytTokens = await this.youtubeApi.refreshAccessToken(decryptedRefreshToken);
-      newAccessToken = ytTokens.accessToken;
-      newRefreshToken = ytTokens.refreshToken;
-      newExpiresAt = ytTokens.expiresAt;
-    } else {
-      throw new BadRequestException(`Token refresh not implemented for ${account.platform}`);
+    switch (account.platform) {
+      case SocialPlatform.YOUTUBE: {
+        const ytTokens = await this.youtubeApi.refreshAccessToken(decryptedRefreshToken);
+        newAccessToken = ytTokens.accessToken;
+        newRefreshToken = ytTokens.refreshToken;
+        newExpiresAt = ytTokens.expiresAt;
+        break;
+      }
+      case SocialPlatform.TWITTER: {
+        const twTokens = await this.twitterApi.refreshAccessToken(decryptedRefreshToken);
+        newAccessToken = twTokens.accessToken;
+        newRefreshToken = twTokens.refreshToken;
+        newExpiresAt = twTokens.expiresAt;
+        break;
+      }
+      case SocialPlatform.TIKTOK: {
+        const ttTokens = await this.tiktokApi.refreshAccessToken(decryptedRefreshToken);
+        newAccessToken = ttTokens.accessToken;
+        newRefreshToken = ttTokens.refreshToken;
+        newExpiresAt = ttTokens.expiresAt;
+        break;
+      }
+      case SocialPlatform.FACEBOOK:
+      case SocialPlatform.INSTAGRAM:
+      case SocialPlatform.THREADS: {
+        // Meta long-lived tokens last 60 days; no refresh mechanism — re-auth required
+        throw new BadRequestException(
+          `${account.platform} tokens last 60 days. Please reconnect the account when expired.`,
+        );
+      }
+      default:
+        throw new BadRequestException(`Token refresh not implemented for ${account.platform}`);
     }
 
     const updateData: Record<string, unknown> = {

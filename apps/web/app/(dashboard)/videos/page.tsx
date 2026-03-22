@@ -1,5 +1,8 @@
 "use client";
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:4000';
+const assetUrl = (path: string) => path?.startsWith('http') ? path : `${BACKEND_URL}${path}`;
+
 import { useState, useRef } from "react";
 import { Plus, Upload, Trash2, Film, Scissors, Clock, Sparkles, Play, Share2, Loader2, Copy, Check, FileText, Smartphone, Download, Captions } from "lucide-react";
 import { toast } from "sonner";
@@ -480,7 +483,7 @@ export default function VideosPage() {
               >
                 <div className="relative flex h-36 items-center justify-center overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900">
                   {video.thumbnailUrl ? (
-                    <img src={video.thumbnailUrl} alt={video.title} className="h-full w-full object-cover" />
+                    <img src={assetUrl(video.thumbnailUrl)} alt={video.title} className="h-full w-full object-cover" />
                   ) : (
                     <Film className="h-10 w-10 text-slate-400" />
                   )}
@@ -543,7 +546,7 @@ export default function VideosPage() {
                     key={selectedVideo.id}
                     src={resolveVideoUrl(selectedVideo.originalUrl) ?? undefined}
                     controls
-                    poster={selectedVideo.thumbnailUrl ?? undefined}
+                    poster={selectedVideo.thumbnailUrl ? assetUrl(selectedVideo.thumbnailUrl) : undefined}
                     className="w-full"
                     style={{ maxHeight: 360 }}
                     playsInline

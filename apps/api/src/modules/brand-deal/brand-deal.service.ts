@@ -217,7 +217,7 @@ export class BrandDealService {
 
 用 emoji 增加生動感，但保持專業。`,
       contextInfo,
-      { model: 'gpt-4o-mini', maxTokens: 2048 },
+      { model: 'gpt-4o', maxTokens: 2048 },
     );
 
     // Save proposal to deal

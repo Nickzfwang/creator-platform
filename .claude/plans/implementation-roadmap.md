@@ -9,81 +9,83 @@
 
 ---
 
-## Phase B: AI 核心強化（預估 2-3 天）
+## Phase B: AI 核心強化 ✅ 已完成
 
 ### 目標
 讓 AI 功能從「能跑」變成「有說服力」，完成影片剪輯的最後一哩路。
 
-### B-1: FFmpeg 實際切割影片
-- 問題：AI 目前只產生 clip 時間標記（startTime/endTime），clipUrl 為 null
-- 實作：`generateClips()` 完成後，用 FFmpeg 根據時間區間切出獨立 .mp4 檔
-- 輸出：每個 clip 有真實的 clipUrl，可直接播放和發佈
-- 依賴：fluent-ffmpeg 已安裝，只需串接
+### B-1: FFmpeg 實際切割影片 ✅
+- `generateAiClips()` 完成後，用 FFmpeg 根據時間區間切出獨立 .mp4 檔
+- 每個 clip 有真實的 clipUrl，可直接播放和發佈
+- 短影片（≤60s）也會生成 clip 檔案
 
-### B-2: Shorts 直式影片真實生成
-- 問題：`generateShort()` / `generateAllShorts()` 的輸出需驗證
-- 實作：FFmpeg 裁切 9:16 + 加入字幕燒錄
-- 輸出：可直接上傳到 YouTube Shorts 的直式影片
+### B-2: 上傳後自動化 Pipeline ✅
+- `handleDirectUpload()` 自動執行完整 pipeline：
+  1. FFmpeg 提取音訊 → Whisper 轉錄逐字稿
+  2. GPT 根據逐字稿生成高品質 AI 摘要
+  3. GPT 根據逐字稿推薦精準剪輯點 → FFmpeg 切割 clips
+- 新增 `transcribeVideo()` 和 `generateAiSummaryFromTranscript()` 方法
 
-### B-3: AI 工作流自動化
-- 上傳影片後，自動觸發完整 pipeline：
-  1. FFmpeg 提取音訊 → Whisper 轉錄 → GPT 校正字幕
-  2. GPT 分析內容 → 產生 AI 摘要
-  3. GPT 推薦剪輯點 → FFmpeg 切割 clips
-  4. 全部完成後通知前端
-- 用 BullMQ 串接，每一步是一個 job
+### B-3: Shorts 直式影片生成 ✅
+- `ShortVideoService` 使用 FFmpeg 裁切 9:16 / 1:1 + 字幕燒錄
+- 修復：改用注入的 `AiService.transcribe()` 取代直接建立 OpenAI 實例
+- 修復：TypeScript 類型錯誤
 
-### B-4: AI 生成品質提升
-- 腳本生成：加入 few-shot examples，提升結構品質
-- 貼文生成：針對每個平台加入更細緻的 prompt engineering
-- 字幕校正：加入斷句優化、專有名詞處理
+### B-4: AI 生成品質提升 ✅
+- 全部 AI 模型從 gpt-4o-mini 升級為 gpt-4o
+- 腳本生成：加入 few-shot examples（Hook 範例）、縮圖建議、剪輯建議
+- 貼文生成：每個平台加入詳細的字數限制、策略說明和差異化要求
+- 字幕校正：加入專有名詞處理規則、斷句優化規則、標點符號規則
+- AI 助手「小創」：強化為數據驅動的顧問角色，要求具體可執行建議
 
-### 前置條件
-- 無外部依賴，純程式碼實作
-- OpenAI API key 已有（$10 預算足夠測試）
+### B-5: Dashboard 真實 YouTube 數據 ✅
+- `YouTubeApiService.getRecentVideoStats()`: 取得最近影片的 likes、comments、views
+- `SocialSyncService.fetchPlatformMetrics()`: 整合影片級數據到 PlatformAnalytics
+- 計算真實 engagement rate: (likes + comments) / views
+- 同步 top content（前 5 名影片依觀看排序）
 
 ---
 
-## Phase C: 多平台社群整合（預估 3-5 天）
+## Phase C: 多平台社群整合 ✅ 已完成
 
 ### 目標
 至少再接通 2 個平台，讓「跨平台」不只是 UI 上的標籤。
 
-### C-1: Instagram / Facebook（Meta Graph API）
+### C-1: Twitter/X（API v2）✅
+- `TwitterApiService`: OAuth 2.0 + PKCE 完整流程
+- 功能：OAuth 連結、發推（文字）、同步粉絲數/推文互動、token 自動刷新
+- 發佈：`PostPublishProcessor.publishToTwitter()` — 自動截斷 280 字
+- 數據同步：粉絲數、likes、retweets、impressions、engagement rate
+- 前置：需要 Twitter Developer Account（Free tier 足夠 demo）
+
+### C-2: Instagram / Facebook（Meta Graph API）✅
+- `MetaApiService`: 統一處理 Facebook + Instagram
+- Facebook:
+  - OAuth 連結、Page 發文（文字/圖片）、粉絲數同步
+  - 使用 Page Access Token（long-lived, 60 天）
+- Instagram:
+  - 透過 Facebook Page 連結 Instagram Business Account
+  - Content Publishing API 發佈圖片/Reels
+  - 粉絲數、like_count、comments_count 同步
+  - Engagement rate 計算
 - 前置：需要 Facebook Developer App + App Review
-- 功能：
-  - OAuth 連結 Instagram Business / Facebook Page
-  - 發佈圖文貼文（Instagram Feed / Facebook Page Post）
-  - 同步粉絲數、互動數據
-- 注意：Instagram 不支援 API 直接上傳影片到 Reels（需用 Content Publishing API）
-- 替代方案：如果 App Review 耗時，先實作 Facebook Page 發文（審核較快）
 
-### C-2: TikTok（Content Posting API）
-- 前置：需要 TikTok Developer App
-- 功能：
-  - OAuth 連結
-  - 上傳影片到 TikTok
-  - 同步粉絲數、影片觀看數
-- 注意：TikTok API 有上傳限制，需要 Sandbox → Production 審核
+### C-3: TikTok（Content Posting API v2）✅
+- `TikTokApiService`: OAuth 2.0 完整流程
+- 功能：OAuth 連結、影片上傳（URL pull 方式）、同步粉絲數/觀看數
+- 數據同步：followers、views、likes、comments、shares、engagement rate
+- 前置：需要 TikTok Developer App + Sandbox → Production 審核
 
-### C-3: Twitter / X（API v2）
-- 前置：需要 Twitter Developer Account（Free tier 只能發推，$100/mo Basic 才有全功能）
-- 功能：
-  - OAuth 2.0 PKCE 連結
-  - 發推（文字 + 圖片）
-  - 同步粉絲數
-- 成本考量：Free tier 足夠 demo，只是限制每月 1500 則推文
+### C-4: Threads ✅（部分）
+- OAuth 連結已實作（透過 Meta Graph API）
+- 發佈功能待 Threads API v2 正式開放
+- 數據同步暫返回零值
 
-### C-4: Threads（Threads API）
-- 前置：依附 Instagram Business 帳號
-- 功能：發文 + 同步數據
-- 注意：需先完成 C-1 的 Meta 整合
-
-### 建議優先級
-1. **Twitter/X**（最快，Free tier 不需審核，OAuth 最簡單）
-2. **Instagram/Facebook**（最有商業價值，但需 Meta 審核）
-3. **TikTok**（短影音重要，但 API 審核嚴格）
-4. **Threads**（依賴 Instagram，最後做）
+### 整合架構
+- `social.service.ts`: 統一 OAuth connect/callback/disconnect/refresh，switch-case 分發
+- `social-sync.service.ts`: 6 小時 cron 同步所有平台數據，各平台獨立 metrics 處理
+- `post-publish.processor.ts`: BullMQ worker 支援 5 個平台發佈
+- `social.module.ts`: 匯出 4 個 API service（YouTube, Twitter, Meta, TikTok）
 
 ---
 

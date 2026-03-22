@@ -6,14 +6,25 @@ import {
   Logger,
 } from '@nestjs/common';
 import { VideoStatus, Prisma } from '@prisma/client';
-import { join } from 'path';
-import { unlinkSync, existsSync } from 'fs';
+import { join, basename } from 'path';
+import { unlinkSync, existsSync, mkdirSync } from 'fs';
 import { execSync } from 'child_process';
+import * as ffmpeg from 'fluent-ffmpeg';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { RequestUploadUrlDto } from './dto/request-upload-url.dto';
 import { ListVideosQueryDto } from './dto/list-videos-query.dto';
 import { UpdateClipDto } from './dto/update-clip.dto';
+
+const CLIPS_DIR = join(process.cwd(), 'uploads', 'clips');
+if (!existsSync(CLIPS_DIR)) {
+  mkdirSync(CLIPS_DIR, { recursive: true });
+}
+
+const THUMBNAILS_DIR = join(process.cwd(), 'uploads', 'thumbnails');
+if (!existsSync(THUMBNAILS_DIR)) {
+  mkdirSync(THUMBNAILS_DIR, { recursive: true });
+}
 
 @Injectable()
 export class VideoService {
@@ -69,28 +80,85 @@ export class VideoService {
       estimatedDuration = Math.max(30, Math.round(file.size / 500_000));
     }
 
-    // Generate AI summary based on video title
-    const aiSummary = await this.generateAiSummary(title, estimatedDuration);
+    const originalUrl = `/uploads/videos/${file.filename}`;
 
+    // Create video record first (PROCESSING state)
     const video = await this.prisma.video.create({
       data: {
         userId,
         tenantId,
         title,
-        originalUrl: `/uploads/videos/${file.filename}`,
+        originalUrl,
         durationSeconds: estimatedDuration,
         fileSizeBytes: file.size,
         mimeType: file.mimetype,
-        status: VideoStatus.PROCESSED,
-        aiSummary,
+        status: VideoStatus.PROCESSING,
       },
     });
 
-    // Generate AI clips with intelligent titles
-    await this.generateAiClips(video.id, tenantId, title, estimatedDuration);
+    // ─── Automated AI Pipeline ───
+    // Step 0: Generate thumbnail from video
+    try {
+      const thumbnailUrl = await this.generateThumbnail(file.path, video.id, estimatedDuration);
+      await this.prisma.video.update({
+        where: { id: video.id },
+        data: { thumbnailUrl },
+      });
+      this.logger.log(`Thumbnail generated for video ${video.id}`);
+    } catch (e) {
+      this.logger.warn(`Thumbnail generation failed for ${video.id}: ${e}`);
+    }
 
-    this.logger.log(`Video ${video.id} uploaded and auto-processed: ${file.filename}`);
-    return { id: video.id, status: video.status, message: 'Video uploaded and processed' };
+    // Step 1: Whisper transcription (if audio exists and duration reasonable)
+    let transcript: string | null = null;
+    if (estimatedDuration >= 3 && estimatedDuration <= 3600) {
+      try {
+        transcript = await this.transcribeVideo(file.path);
+        this.logger.log(`Transcript generated for ${video.id} (${transcript.length} chars)`);
+      } catch (e) {
+        this.logger.warn(`Transcription failed for ${video.id}: ${e}`);
+      }
+    }
+
+    // Step 2: AI summary (use transcript if available for much better quality)
+    const aiSummary = transcript
+      ? await this.generateAiSummaryFromTranscript(title, estimatedDuration, transcript)
+      : await this.generateAiSummary(title, estimatedDuration);
+
+    // Step 2.5: If title looks like a filename (e.g. IMG_5518), generate a meaningful title from transcript
+    let finalTitle = title;
+    if (transcript && /^(IMG|VID|MOV|DSC|WP|Screen|Untitled|video)[_\-\s]?\d*/i.test(title)) {
+      try {
+        const aiTitle = await this.aiService.chat(
+          '你是影片標題生成器。根據逐字稿內容，生成一個簡潔、吸引人的繁體中文標題（10-25字）。只回覆標題文字，不要加引號或其他說明。',
+          `逐字稿（前 500 字）：${transcript.slice(0, 500)}`,
+          { maxTokens: 60 },
+        );
+        if (aiTitle && aiTitle.length >= 3 && aiTitle.length <= 50) {
+          finalTitle = aiTitle.replace(/[「」""'']/g, '').trim();
+          this.logger.log(`Auto-generated title: "${finalTitle}" (was: "${title}")`);
+        }
+      } catch (e) {
+        this.logger.warn(`Auto-title generation failed: ${e}`);
+      }
+    }
+
+    // Step 3: Update video with transcript, summary, and potentially better title
+    await this.prisma.video.update({
+      where: { id: video.id },
+      data: {
+        title: finalTitle,
+        aiSummary,
+        ...(transcript ? { transcript } : {}),
+        status: VideoStatus.PROCESSED,
+      },
+    });
+
+    // Step 4: Generate AI clips (uses transcript for smarter cuts) + FFmpeg cut
+    await this.generateAiClips(video.id, tenantId, title, estimatedDuration, transcript);
+
+    this.logger.log(`Video ${video.id} fully processed: ${file.filename}`);
+    return { id: video.id, status: 'PROCESSED', message: 'Video uploaded and processed' };
   }
 
   async generateClips(videoId: string, userId: string) {
@@ -126,6 +194,118 @@ export class VideoService {
     return clips;
   }
 
+  /**
+   * Generate thumbnail from video at a specific timestamp
+   */
+  private async generateThumbnail(filePath: string, videoId: string, duration: number): Promise<string> {
+    // Capture frame at 10% of duration (or 1s for very short videos)
+    const seekTime = Math.max(1, Math.floor(duration * 0.1));
+    const thumbnailFilename = `thumb-${videoId}.jpg`;
+    const thumbnailPath = join(THUMBNAILS_DIR, thumbnailFilename);
+
+    await new Promise<void>((resolve, reject) => {
+      ffmpeg(filePath)
+        .seekInput(seekTime)
+        .frames(1)
+        .outputOptions(['-vf', 'scale=640:-1', '-q:v', '4'])
+        .output(thumbnailPath)
+        .on('end', () => resolve())
+        .on('error', (err: Error) => reject(err))
+        .run();
+    });
+
+    this.logger.log(`Thumbnail generated for ${videoId}: ${thumbnailFilename}`);
+    return `/uploads/thumbnails/${thumbnailFilename}`;
+  }
+
+  /**
+   * Generate thumbnail for a clip at its start time
+   */
+  private async generateClipThumbnail(sourceFilePath: string, clipId: string, startTime: number): Promise<string> {
+    const seekTime = Math.max(0, startTime + 1); // 1 second into the clip
+    const thumbnailFilename = `thumb-clip-${clipId}.jpg`;
+    const thumbnailPath = join(THUMBNAILS_DIR, thumbnailFilename);
+
+    await new Promise<void>((resolve, reject) => {
+      ffmpeg(sourceFilePath)
+        .seekInput(seekTime)
+        .frames(1)
+        .outputOptions(['-vf', 'scale=640:-1', '-q:v', '4'])
+        .output(thumbnailPath)
+        .on('end', () => resolve())
+        .on('error', (err: Error) => reject(err))
+        .run();
+    });
+
+    return `/uploads/thumbnails/${thumbnailFilename}`;
+  }
+
+  /**
+   * Extract audio from video and transcribe with Whisper
+   */
+  private async transcribeVideo(filePath: string): Promise<string> {
+    const subtitlesDir = join(process.cwd(), 'uploads', 'subtitles');
+    if (!existsSync(subtitlesDir)) mkdirSync(subtitlesDir, { recursive: true });
+
+    // Extract audio to mp3 (Whisper works best with mono 16kHz)
+    const audioFile = join(subtitlesDir, `${Date.now()}-audio.mp3`);
+    await new Promise<void>((resolve, reject) => {
+      ffmpeg(filePath)
+        .outputOptions(['-vn', '-acodec', 'libmp3lame', '-ar', '16000', '-ac', '1', '-y'])
+        .output(audioFile)
+        .on('end', () => resolve())
+        .on('error', (err: Error) => reject(err))
+        .run();
+    });
+
+    this.logger.log(`Audio extracted for transcription: ${audioFile}`);
+
+    try {
+      // Whisper transcription → plain text
+      const transcript = await this.aiService.transcribe(audioFile, {
+        language: 'zh',
+        responseFormat: 'text',
+      });
+      return transcript;
+    } finally {
+      // Clean up audio file
+      try { unlinkSync(audioFile); } catch { /* ignore */ }
+    }
+  }
+
+  /**
+   * Generate AI summary using actual transcript content (much higher quality)
+   */
+  private async generateAiSummaryFromTranscript(
+    title: string,
+    duration: number,
+    transcript: string,
+  ): Promise<string> {
+    // Truncate transcript if too long (GPT context limit)
+    const truncated = transcript.length > 3000
+      ? transcript.slice(0, 3000) + '...(truncated)'
+      : transcript;
+
+    const summary = await this.aiService.chat(
+      `你是一位專業的影片內容分析師。根據影片的逐字稿內容，生成一段 80-150 字的深度摘要。使用繁體中文。
+
+要求：
+- 準確反映影片的實際內容和核心觀點
+- 點出影片的關鍵知識點或亮點
+- 評估影片對目標觀眾的價值
+- 語氣專業但親切`,
+      `影片標題：「${title}」
+時長：${Math.round(duration / 60)} 分鐘
+
+逐字稿內容：
+${truncated}
+
+請生成深度 AI 分析摘要：`,
+      { maxTokens: 400 },
+    );
+    return summary || `AI 分析完成：影片「${title}」已自動處理並識別出多個精華片段。`;
+  }
+
   private async generateAiSummary(title: string, duration: number): Promise<string> {
     const summary = await this.aiService.chat(
       '你是一個影片分析 AI。根據影片標題和時長，生成一段 50-80 字的影片摘要。使用繁體中文。要像是真正分析過影片內容一樣，描述可能的主題、亮點和價值。',
@@ -135,10 +315,17 @@ export class VideoService {
     return summary || `AI 分析完成：影片「${title}」已自動處理，識別出多個精華片段。`;
   }
 
-  private async generateAiClips(videoId: string, tenantId: string, title: string, duration: number) {
+  private async generateAiClips(videoId: string, tenantId: string, title: string, duration: number, transcript?: string | null) {
     // For very short videos (< 60s), create a single clip of the full video
     if (duration <= 60) {
       this.logger.log(`Video ${videoId} is ${duration}s (short), creating single full-length clip`);
+
+      const video = await this.prisma.video.findUnique({
+        where: { id: videoId },
+        select: { originalUrl: true },
+      });
+      const sourceFile = video ? this.findSourceFile(video.originalUrl) : null;
+
       const clip = await this.prisma.videoClip.create({
         data: {
           videoId,
@@ -149,10 +336,34 @@ export class VideoService {
           durationSeconds: duration,
           aiScore: 0.95,
           hashtags: ['#Shorts', '#精華', '#推薦'],
-          status: 'READY',
+          status: 'GENERATING',
         },
-        select: { id: true, title: true, startTime: true, endTime: true, durationSeconds: true, aiScore: true, hashtags: true, status: true, createdAt: true },
+        select: { id: true, title: true, startTime: true, endTime: true, durationSeconds: true, aiScore: true, hashtags: true, status: true, clipUrl: true, createdAt: true },
       });
+
+      // For short videos, just copy the original as the clip
+      if (sourceFile) {
+        try {
+          const clipUrl = await this.cutClipFile(sourceFile, clip.id, 0, duration);
+          let clipThumbnailUrl: string | undefined;
+          try {
+            clipThumbnailUrl = await this.generateClipThumbnail(sourceFile, clip.id, 0);
+          } catch { /* ignore */ }
+          await this.prisma.videoClip.update({
+            where: { id: clip.id },
+            data: { clipUrl, status: 'READY', ...(clipThumbnailUrl ? { thumbnailUrl: clipThumbnailUrl } : {}) },
+          });
+          (clip as any).clipUrl = clipUrl;
+          (clip as any).status = 'READY';
+        } catch (e) {
+          this.logger.warn(`FFmpeg clip cut failed for short video ${clip.id}: ${e}`);
+          await this.prisma.videoClip.update({
+            where: { id: clip.id },
+            data: { status: 'READY' },
+          });
+        }
+      }
+
       return [clip];
     }
 
@@ -160,19 +371,26 @@ export class VideoService {
     const minClipDuration = Math.min(30, Math.floor(duration * 0.1));
     const maxClipDuration = Math.min(120, Math.floor(duration * 0.3));
 
+    // Build transcript context for smarter clip detection
+    const transcriptContext = transcript
+      ? `\n\n以下是影片的逐字稿，請根據內容找出最精華、最有價值的段落來建議剪輯點：\n${transcript.length > 4000 ? transcript.slice(0, 4000) + '...(truncated)' : transcript}`
+      : '';
+
     const result = await this.aiService.generateJson<{
       clips: Array<{ title: string; startPct: number; endPct: number; score: number; hashtags: string[] }>;
     }>(
-      `你是一個影片 AI 剪輯助手。根據影片標題和時長，建議 3-4 個最佳精華片段。
+      `你是一個專業的影片 AI 剪輯助手。根據影片標題、時長${transcript ? '和逐字稿內容' : ''}，建議 3-4 個最佳精華片段。
+${transcript ? '請基於逐字稿的實際內容，找出最有觀看價值的段落（如：核心觀點、精彩論述、實用技巧、引人入勝的故事等）。' : ''}
 每個片段包含：
-- title: 吸引人的片段標題（繁體中文）
+- title: 吸引人的片段標題（繁體中文，反映該段落的實際內容）
 - startPct: 開始位置（0-1 之間的比例）
 - endPct: 結束位置（大於 startPct，每個片段 ${minClipDuration}-${maxClipDuration} 秒）
-- score: AI 推薦分數（0.7-0.98 之間）
+- score: AI 推薦分數（0.7-0.98 之間，根據內容精彩程度評分）
 - hashtags: 3-4 個相關 hashtag
 
 回覆 JSON 格式：{ "clips": [...] }`,
-      `影片標題：「${title}」\n時長：${duration} 秒（${Math.round(duration / 60)} 分鐘）`,
+      `影片標題：「${title}」\n時長：${duration} 秒（${Math.round(duration / 60)} 分鐘）${transcriptContext}`,
+      { maxTokens: 2048 },
     );
 
     const clipDefs = result?.clips ?? [
@@ -180,6 +398,13 @@ export class VideoService {
       { title: `重點回顧 — ${title}`, startPct: 0.45, endPct: 0.55, score: 0.87, hashtags: ['#重點', '#回顧'] },
       { title: `結尾亮點 — ${title}`, startPct: 0.80, endPct: 0.92, score: 0.81, hashtags: ['#亮點', '#必看'] },
     ];
+
+    // Find source file for FFmpeg cutting
+    const video = await this.prisma.video.findUnique({
+      where: { id: videoId },
+      select: { originalUrl: true },
+    });
+    const sourceFile = video ? this.findSourceFile(video.originalUrl) : null;
 
     const clips = [];
     for (const def of clipDefs) {
@@ -195,13 +420,75 @@ export class VideoService {
           durationSeconds: endTime - startTime,
           aiScore: Math.min(def.score, 0.99),
           hashtags: def.hashtags ?? ['#creator', '#精華'],
-          status: 'READY',
+          status: 'GENERATING',
         },
         select: { id: true, title: true, startTime: true, endTime: true, durationSeconds: true, aiScore: true, hashtags: true, status: true, createdAt: true },
       });
+
+      // FFmpeg cut clip file + generate clip thumbnail
+      if (sourceFile) {
+        try {
+          const clipUrl = await this.cutClipFile(sourceFile, clip.id, startTime, endTime);
+          // Generate thumbnail for this clip
+          let clipThumbnailUrl: string | undefined;
+          try {
+            clipThumbnailUrl = await this.generateClipThumbnail(sourceFile, clip.id, startTime);
+          } catch (thumbErr) {
+            this.logger.warn(`Clip thumbnail failed for ${clip.id}: ${thumbErr}`);
+          }
+          await this.prisma.videoClip.update({
+            where: { id: clip.id },
+            data: { clipUrl, status: 'READY', ...(clipThumbnailUrl ? { thumbnailUrl: clipThumbnailUrl } : {}) },
+          });
+          (clip as any).clipUrl = clipUrl;
+          (clip as any).status = 'READY';
+        } catch (e) {
+          this.logger.warn(`FFmpeg clip cut failed for ${clip.id}: ${e}`);
+          await this.prisma.videoClip.update({
+            where: { id: clip.id },
+            data: { status: 'READY' },
+          });
+        }
+      }
+
       clips.push(clip);
     }
     return clips;
+  }
+
+  /**
+   * Cut a clip from the source video using FFmpeg
+   */
+  private cutClipFile(
+    sourceFile: string,
+    clipId: string,
+    startTime: number,
+    endTime: number,
+  ): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const outputFile = join(CLIPS_DIR, `${clipId}.mp4`);
+      const duration = endTime - startTime;
+
+      ffmpeg(sourceFile)
+        .setStartTime(startTime)
+        .setDuration(duration)
+        .outputOptions([
+          '-c:v', 'libx264',
+          '-preset', 'fast',
+          '-crf', '23',
+          '-c:a', 'aac',
+          '-b:a', '128k',
+          '-movflags', '+faststart',
+          '-y',
+        ])
+        .output(outputFile)
+        .on('end', () => {
+          this.logger.log(`Clip cut: ${clipId} (${startTime}s-${endTime}s)`);
+          resolve(`/uploads/clips/${clipId}.mp4`);
+        })
+        .on('error', (err) => reject(err))
+        .run();
+    });
   }
 
   async markUploaded(videoId: string, userId: string) {
@@ -312,6 +599,20 @@ export class VideoService {
     }
     if (video.userId !== userId) {
       throw new ForbiddenException('Not the video owner');
+    }
+
+    // Clean up clip files
+    const clips = await this.prisma.videoClip.findMany({
+      where: { videoId },
+      select: { clipUrl: true },
+    });
+    for (const clip of clips) {
+      if (clip.clipUrl?.startsWith('/uploads/')) {
+        const clipPath = join(process.cwd(), clip.clipUrl);
+        if (existsSync(clipPath)) {
+          try { unlinkSync(clipPath); } catch { /* ignore */ }
+        }
+      }
     }
 
     // Delete clips first (FK constraint), then video

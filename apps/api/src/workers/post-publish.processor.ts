@@ -5,6 +5,9 @@ import { PostStatus, SocialPlatform } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../modules/social/encryption.service';
 import { YouTubeApiService } from '../modules/social/youtube-api.service';
+import { TwitterApiService } from '../modules/social/twitter-api.service';
+import { MetaApiService } from '../modules/social/meta-api.service';
+import { TikTokApiService } from '../modules/social/tiktok-api.service';
 import * as fs from 'fs';
 import { Readable } from 'stream';
 
@@ -26,6 +29,9 @@ export class PostPublishProcessor extends WorkerHost {
     private readonly prisma: PrismaService,
     private readonly encryption: EncryptionService,
     private readonly youtubeApi: YouTubeApiService,
+    private readonly twitterApi: TwitterApiService,
+    private readonly metaApi: MetaApiService,
+    private readonly tiktokApi: TikTokApiService,
   ) {
     super();
   }
@@ -129,11 +135,28 @@ export class PostPublishProcessor extends WorkerHost {
     // Auto-refresh if expired
     if (account.tokenExpiresAt && account.tokenExpiresAt < new Date() && account.refreshToken) {
       const refreshToken = this.encryption.decrypt(account.refreshToken);
+      let newTokens: { accessToken: string; expiresAt: Date } | null = null;
 
-      if (platform === SocialPlatform.YOUTUBE) {
-        const newTokens = await this.youtubeApi.refreshAccessToken(refreshToken);
+      switch (platform) {
+        case SocialPlatform.YOUTUBE: {
+          const yt = await this.youtubeApi.refreshAccessToken(refreshToken);
+          newTokens = { accessToken: yt.accessToken, expiresAt: yt.expiresAt };
+          break;
+        }
+        case SocialPlatform.TWITTER: {
+          const tw = await this.twitterApi.refreshAccessToken(refreshToken);
+          newTokens = { accessToken: tw.accessToken, expiresAt: tw.expiresAt };
+          break;
+        }
+        case SocialPlatform.TIKTOK: {
+          const tt = await this.tiktokApi.refreshAccessToken(refreshToken);
+          newTokens = { accessToken: tt.accessToken, expiresAt: tt.expiresAt };
+          break;
+        }
+      }
+
+      if (newTokens) {
         accessToken = newTokens.accessToken;
-
         await this.prisma.socialAccount.update({
           where: { id: account.id },
           data: {
@@ -144,10 +167,28 @@ export class PostPublishProcessor extends WorkerHost {
       }
     }
 
-    if (platform === SocialPlatform.YOUTUBE) {
-      await this.publishToYouTube(post, accessToken, config);
-    } else {
-      throw new Error(`Publishing to ${platform} is not yet implemented`);
+    // Dispatch to platform-specific handler
+    switch (platform) {
+      case SocialPlatform.YOUTUBE:
+        await this.publishToYouTube(post, accessToken, config);
+        break;
+      case SocialPlatform.TWITTER:
+        await this.publishToTwitter(post, accessToken);
+        break;
+      case SocialPlatform.FACEBOOK:
+        await this.publishToFacebook(post, accessToken, account.platformUserId);
+        break;
+      case SocialPlatform.INSTAGRAM:
+        await this.publishToInstagram(post, accessToken, account.platformUserId);
+        break;
+      case SocialPlatform.TIKTOK:
+        await this.publishToTikTok(post, accessToken);
+        break;
+      case SocialPlatform.THREADS:
+        // Threads API posting not yet available in v1
+        throw new Error('Threads publishing is not yet supported');
+      default:
+        throw new Error(`Publishing to ${platform} is not yet implemented`);
     }
   }
 
@@ -201,5 +242,119 @@ export class PostPublishProcessor extends WorkerHost {
     );
 
     this.logger.log(`YouTube upload complete: ${result.url}`);
+  }
+
+  /**
+   * Publish text tweet to Twitter/X
+   */
+  private async publishToTwitter(
+    post: {
+      contentText: string | null;
+      hashtags: string[];
+    },
+    accessToken: string,
+  ): Promise<void> {
+    const text = [
+      post.contentText ?? '',
+      post.hashtags.length > 0 ? post.hashtags.join(' ') : '',
+    ].filter(Boolean).join('\n');
+
+    // Twitter has 280 char limit
+    const truncatedText = text.length > 280 ? text.slice(0, 277) + '...' : text;
+
+    const result = await this.twitterApi.postTweet(accessToken, truncatedText);
+    this.logger.log(`Twitter post complete: ${result.url}`);
+  }
+
+  /**
+   * Publish to Facebook Page
+   */
+  private async publishToFacebook(
+    post: {
+      contentText: string | null;
+      hashtags: string[];
+      mediaUrls: string[];
+    },
+    pageAccessToken: string,
+    pageId: string,
+  ): Promise<void> {
+    const message = [
+      post.contentText ?? '',
+      post.hashtags.length > 0 ? `\n${post.hashtags.join(' ')}` : '',
+    ].filter(Boolean).join('');
+
+    const result = await this.metaApi.postToFacebookPage(
+      pageAccessToken,
+      pageId,
+      message,
+    );
+    this.logger.log(`Facebook post complete: ${result.url}`);
+  }
+
+  /**
+   * Publish to Instagram (image post via Content Publishing API)
+   */
+  private async publishToInstagram(
+    post: {
+      contentText: string | null;
+      hashtags: string[];
+      mediaUrls: string[];
+      clip: { clipUrl: string | null; video: { originalUrl: string } } | null;
+    },
+    accessToken: string,
+    igAccountId: string,
+  ): Promise<void> {
+    const caption = [
+      post.contentText ?? '',
+      post.hashtags.length > 0 ? `\n\n${post.hashtags.join(' ')}` : '',
+    ].filter(Boolean).join('');
+
+    // Instagram requires a publicly accessible URL for media
+    const mediaUrl = post.mediaUrls[0];
+    if (!mediaUrl || !mediaUrl.startsWith('http')) {
+      throw new Error('Instagram requires a publicly accessible media URL. Local files are not supported.');
+    }
+
+    // Determine if it's a video (Reel) or image
+    const isVideo = /\.(mp4|mov|avi|webm)$/i.test(mediaUrl);
+
+    if (isVideo) {
+      const result = await this.metaApi.postReelToInstagram(accessToken, igAccountId, mediaUrl, caption);
+      this.logger.log(`Instagram Reel published: ${result.postId}`);
+    } else {
+      const result = await this.metaApi.postToInstagram(accessToken, igAccountId, mediaUrl, caption);
+      this.logger.log(`Instagram post published: ${result.postId}`);
+    }
+  }
+
+  /**
+   * Publish video to TikTok (via URL pull)
+   */
+  private async publishToTikTok(
+    post: {
+      contentText: string | null;
+      hashtags: string[];
+      mediaUrls: string[];
+      clip: { clipUrl: string | null; video: { originalUrl: string } } | null;
+    },
+    accessToken: string,
+  ): Promise<void> {
+    // TikTok needs a publicly accessible video URL
+    const videoUrl = post.clip?.clipUrl ?? post.mediaUrls[0];
+    if (!videoUrl || !videoUrl.startsWith('http')) {
+      throw new Error('TikTok requires a publicly accessible video URL. Local files are not supported.');
+    }
+
+    const title = [
+      post.contentText?.slice(0, 150) ?? '',
+      post.hashtags.join(' '),
+    ].filter(Boolean).join(' ');
+
+    const result = await this.tiktokApi.uploadVideoByUrl(accessToken, videoUrl, {
+      title,
+      privacyLevel: 'SELF_ONLY', // Default to private for safety
+    });
+
+    this.logger.log(`TikTok video publish initiated: ${result.publishId}`);
   }
 }

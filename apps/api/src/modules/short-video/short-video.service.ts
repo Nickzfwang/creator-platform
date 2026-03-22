@@ -103,7 +103,7 @@ export class ShortVideoService {
           renameSync(withSubsFile, outputFile);
         }
       } catch (e) {
-        this.logger.warn(`Subtitle generation failed: ${e.message}`);
+        this.logger.warn(`Subtitle generation failed: ${(e as Error).message}`);
       }
     }
 
@@ -174,7 +174,7 @@ export class ShortVideoService {
         const result = await this.generateShort(videoId, clip.id, userId, options);
         results.push(result);
       } catch (e) {
-        this.logger.warn(`Failed to generate short for clip ${clip.id}: ${e.message}`);
+        this.logger.warn(`Failed to generate short for clip ${clip.id}: ${(e as Error).message}`);
       }
     }
 
@@ -261,28 +261,25 @@ export class ShortVideoService {
       const audioFile = join(this.outputDir, `${shortId}-audio.mp3`);
       await new Promise<void>((resolve, reject) => {
         ffmpeg(videoFile)
-          .outputOptions(['-vn', '-acodec', 'libmp3lame', '-y'])
+          .outputOptions(['-vn', '-acodec', 'libmp3lame', '-ar', '16000', '-ac', '1', '-y'])
           .output(audioFile)
           .on('end', () => resolve())
-          .on('error', (err) => reject(err))
+          .on('error', (err: Error) => reject(err))
           .run();
       });
 
-      // Send to Whisper API
-      const { createReadStream } = require('fs');
-      const OpenAI = require('openai');
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-      const transcript = await openai.audio.transcriptions.create({
-        file: createReadStream(audioFile),
-        model: 'whisper-1',
-        response_format: 'srt',
+      // Use injected AiService for Whisper transcription
+      const srtContent = await this.aiService.transcribe(audioFile, {
         language: 'zh',
+        responseFormat: 'srt',
       });
+
+      // Polish subtitles with GPT
+      const polished = await this.aiService.polishSubtitles(srtContent);
 
       // Write SRT file
       const { writeFileSync } = require('fs');
-      writeFileSync(srtFile, transcript);
+      writeFileSync(srtFile, polished, 'utf-8');
 
       // Clean up audio file
       if (existsSync(audioFile)) unlinkSync(audioFile);
@@ -290,7 +287,7 @@ export class ShortVideoService {
       this.logger.log(`Subtitles generated: ${srtFile}`);
       return srtFile;
     } catch (e) {
-      this.logger.warn(`Whisper transcription failed: ${e.message}`);
+      this.logger.warn(`Whisper transcription failed: ${(e as Error).message}`);
       return null;
     }
   }
