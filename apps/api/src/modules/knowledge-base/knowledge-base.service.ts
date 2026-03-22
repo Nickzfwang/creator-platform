@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { KnowledgeStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AiService } from '../ai/ai.service';
 import { CreateKnowledgeBaseDto } from './dto/create-knowledge-base.dto';
 import { IngestContentDto } from './dto/ingest-content.dto';
 import { ListKnowledgeBasesQueryDto } from './dto/list-knowledge-bases-query.dto';
@@ -17,7 +18,10 @@ const CHUNK_OVERLAP = 100;
 export class KnowledgeBaseService {
   private readonly logger = new Logger(KnowledgeBaseService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly aiService: AiService,
+  ) {}
 
   // ─── Knowledge Base CRUD ───
 
@@ -142,11 +146,38 @@ export class KnowledgeBaseService {
       },
     });
 
-    // TODO: Generate embeddings via OpenAI Embedding API
-    // for (const chunk of chunkRecords) {
-    //   const embedding = await openai.embeddings.create({ model: 'text-embedding-3-small', input: chunk.content });
-    //   await prisma.$executeRaw`UPDATE knowledge_chunks SET embedding = ${embedding}::vector WHERE id = ${chunk.id}`;
-    // }
+    // Generate embeddings via OpenAI Embedding API and store in pgvector
+    if (this.aiService.isAvailable) {
+      try {
+        const chunkContents = chunkRecords.map(c => c.content);
+        const embeddings = await this.aiService.generateEmbeddings(chunkContents);
+
+        // Get the newly created chunk IDs
+        const newChunks = await this.prisma.knowledgeChunk.findMany({
+          where: { knowledgeBaseId: kbId },
+          orderBy: { chunkIndex: 'asc' },
+          skip: startIndex,
+          take: chunks.length,
+          select: { id: true },
+        });
+
+        // Store embeddings using raw SQL (pgvector)
+        for (let i = 0; i < newChunks.length; i++) {
+          const embedding = embeddings[i];
+          if (embedding) {
+            const vectorStr = `[${embedding.join(',')}]`;
+            await this.prisma.$executeRawUnsafe(
+              `UPDATE knowledge_chunks SET embedding = $1::vector WHERE id = $2`,
+              vectorStr,
+              newChunks[i].id,
+            );
+          }
+        }
+        this.logger.log(`Generated embeddings for ${newChunks.length} chunks in KB ${kbId}`);
+      } catch (e) {
+        this.logger.warn(`Embedding generation failed for KB ${kbId}: ${e}. Falling back to text search.`);
+      }
+    }
 
     this.logger.log(`Ingested ${chunks.length} chunks into KB ${kbId}`);
 
@@ -160,16 +191,45 @@ export class KnowledgeBaseService {
   // ─── Search (for RAG) ───
 
   async searchSimilar(kbId: string, query: string, topK: number = 5) {
-    // TODO: When embeddings are available, use pgvector similarity search:
-    // const results = await prisma.$queryRaw`
-    //   SELECT id, content, source_ref, 1 - (embedding <=> ${queryEmbedding}::vector) as similarity
-    //   FROM knowledge_chunks
-    //   WHERE knowledge_base_id = ${kbId}
-    //   ORDER BY embedding <=> ${queryEmbedding}::vector
-    //   LIMIT ${topK}
-    // `;
+    // Try vector similarity search first
+    if (this.aiService.isAvailable) {
+      try {
+        const queryEmbedding = await this.aiService.generateEmbedding(query);
+        if (queryEmbedding) {
+          const vectorStr = `[${queryEmbedding.join(',')}]`;
+          const results = await this.prisma.$queryRawUnsafe<
+            Array<{ id: string; content: string; source_ref: string | null; chunk_index: number; similarity: number }>
+          >(
+            `SELECT id, content, source_ref, chunk_index,
+                    1 - (embedding <=> $1::vector) as similarity
+             FROM knowledge_chunks
+             WHERE knowledge_base_id = $2
+               AND embedding IS NOT NULL
+             ORDER BY embedding <=> $1::vector
+             LIMIT $3`,
+            vectorStr,
+            kbId,
+            topK,
+          );
 
-    // Fallback: simple text search
+          if (results.length > 0) {
+            this.logger.debug(`Vector search found ${results.length} results (best similarity: ${results[0]?.similarity?.toFixed(3)})`);
+            return results
+              .filter(r => r.similarity > 0.3) // Filter out low similarity
+              .map(r => ({
+                id: r.id,
+                content: r.content,
+                sourceRef: r.source_ref,
+                chunkIndex: r.chunk_index,
+              }));
+          }
+        }
+      } catch (e) {
+        this.logger.warn(`Vector search failed, falling back to text search: ${e}`);
+      }
+    }
+
+    // Fallback: simple text search (when no embeddings or vector search fails)
     const chunks = await this.prisma.knowledgeChunk.findMany({
       where: {
         knowledgeBaseId: kbId,

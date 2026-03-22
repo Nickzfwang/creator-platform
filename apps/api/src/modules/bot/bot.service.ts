@@ -203,11 +203,29 @@ export class BotService {
       }
     }
 
+    // Build personality traits
+    const personality = bot.personality as { tone?: string; style?: string; expertise?: string[] } | null;
+    const personalitySection = personality
+      ? `\n你的人格特質：
+- 語氣：${personality.tone ?? '友善專業'}
+- 風格：${personality.style ?? '有條理、善於舉例'}
+${personality.expertise?.length ? `- 專長領域：${personality.expertise.join('、')}` : ''}`
+      : '';
+
     // Build system prompt with bot config + knowledge base context
     const systemPrompt = [
-      bot.systemPrompt ?? '你是一個友善的 AI 助理，幫助創作者與粉絲互動。請用繁體中文回答。',
+      bot.systemPrompt ?? `你是創作者的 AI 助理，代表創作者與粉絲互動。
+你的核心任務是：
+1. 用繁體中文回答粉絲的問題
+2. 根據知識庫內容提供準確資訊，不要編造不存在的內容
+3. 如果知識庫中沒有相關資訊，誠實告知並建議粉絲透過其他方式聯繫創作者
+4. 保持友善、親切、有溫度的對話風格
+5. 回答要具體、有幫助，避免空泛的客套話`,
+      personalitySection,
       bot.welcomeMessage ? `歡迎訊息風格參考：${bot.welcomeMessage}` : '',
-      context ? `\n以下是相關知識庫內容，請根據這些資訊回答：\n${context}` : '',
+      context
+        ? `\n===== 知識庫相關內容（務必以此為依據回答） =====\n${context}\n===== 知識庫內容結束 =====\n\n請優先根據知識庫的內容來回答。如果知識庫中沒有相關資訊，可以根據一般常識回答，但要標注「此資訊非來自創作者的知識庫」。`
+        : '\n目前沒有匹配的知識庫內容。請根據一般常識友善回答，並建議粉絲訪問創作者的頻道或網站獲取更多資訊。',
     ].filter(Boolean).join('\n\n');
 
     // Build conversation history
@@ -292,41 +310,6 @@ export class BotService {
       nextCursor,
       hasMore,
     };
-  }
-
-  // ─── Mock AI Reply ───
-
-  private generateMockReply(message: string, context: string): string {
-    const msg = message.toLowerCase();
-
-    // Keyword-matched responses for demo
-    if (msg.includes('價格') || msg.includes('多少錢') || msg.includes('費用') || msg.includes('會員')) {
-      return '我們有三個會員等級可以選擇：\n\n🆓 **免費會員**：觀看公開影片、參與社群討論\n⭐ **Pro 會員（NT$199/月）**：獨家幕後花絮、搶先觀看、專屬 Discord\n👑 **VIP 會員（NT$499/月）**：每月線上 Q&A、個人化建議、完整資源庫\n\n年繳方案可享 85 折優惠！你有興趣了解哪個方案呢？';
-    }
-
-    if (msg.includes('合作') || msg.includes('業配') || msg.includes('邀約') || msg.includes('sponsor')) {
-      return '感謝你對合作的興趣！Nick 目前接受以下合作方式：\n\n📹 **產品評測** — 深度開箱 + YouTube 長片\n📱 **贊助內容** — 品牌植入式影片\n🤝 **品牌大使** — 長期合作方案\n🎪 **活動合作** — 線下活動或限定企劃\n\n合作預算起步為 NT$30,000，視合作範圍而定。請透過 nick@nickcreates.com 聯繫詳細洽談！';
-    }
-
-    if (msg.includes('頻道') || msg.includes('channel') || msg.includes('介紹') || msg.includes('關於')) {
-      return 'Nick Creates 是一個專注於科技、生活和創作的頻道 🎬\n\n📊 **頻道數據**\n- YouTube：12.5 萬訂閱\n- Instagram：8.5 萬粉絲\n- TikTok：21 萬粉絲\n\n🎯 **內容方向**\n科技開箱評測、生活 Vlog、料理教學、程式教學\n\n📅 每週二、週五固定更新！';
-    }
-
-    if (msg.includes('設備') || msg.includes('相機') || msg.includes('器材') || msg.includes('拍攝')) {
-      return 'Nick 的拍攝設備清單：\n\n📷 **相機**：Sony A7IV\n🎥 **鏡頭**：24-70mm f/2.8 GM\n🎤 **麥克風**：Rode VideoMic Pro+\n💡 **燈光**：Aputure 300d II\n🖥️ **剪輯**：MacBook Pro M3 Max + DaVinci Resolve\n\n這些設備的推廣連結都在影片描述欄！';
-    }
-
-    if (msg.includes('你好') || msg.includes('嗨') || msg.includes('hi') || msg.includes('hello')) {
-      return '嗨！很高興認識你 👋 我是 Nick 的 AI 助理，可以幫你解答關於頻道、會員方案或合作的任何問題。有什麼想了解的嗎？';
-    }
-
-    // If we have KB context, use it
-    if (context) {
-      return `根據我的知識庫，以下是相關資訊：\n\n${context.substring(0, 300)}\n\n如果需要更多細節，歡迎繼續提問！😊`;
-    }
-
-    // Default response
-    return `感謝你的提問！這是一個很好的問題 😊\n\n目前我可以幫你解答以下主題：\n- 💰 會員方案與價格\n- 🤝 品牌合作方式\n- 📹 頻道介紹與數據\n- 📷 拍攝設備推薦\n\n請告訴我你想了解哪個方面？`;
   }
 
   // ─── Helpers ───

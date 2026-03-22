@@ -107,20 +107,70 @@ export class ShortVideoService {
       }
     }
 
-    // Step 4: Use AI to generate caption and hashtags
+    // Step 4: Use AI to generate platform-specific caption and hashtags
+    // Get transcript for context
+    const transcriptRaw = video.transcript;
+    let transcriptStr = '';
+    if (transcriptRaw) {
+      try {
+        transcriptStr = typeof transcriptRaw === 'string' ? transcriptRaw : JSON.parse(JSON.stringify(transcriptRaw));
+        if (typeof transcriptStr !== 'string') transcriptStr = String(transcriptStr);
+      } catch { transcriptStr = String(transcriptRaw); }
+    }
+
+    const platformStrategy = {
+      youtube_shorts: {
+        name: 'YouTube Shorts',
+        titleRule: '15字以內，用問句或數字開頭製造好奇心（如「3個你不知道的...」）',
+        captionRule: '50-100字，開頭要有 Hook，加上 #Shorts 標籤',
+        hashtagRule: '5-8個，必含 #Shorts，混合熱門標籤和精準標籤',
+        tone: '專業但親切，適合教學和知識分享',
+      },
+      instagram_reels: {
+        name: 'Instagram Reels',
+        titleRule: '12字以內，口語化、帶 emoji，像跟朋友對話',
+        captionRule: '80-120字，大量 emoji，分段落，結尾用問句引導留言',
+        hashtagRule: '8-12個，混合大標籤（百萬+）和小標籤（萬級），加上中文標籤',
+        tone: '活潑可愛，帶點生活感和親近感',
+      },
+      tiktok: {
+        name: 'TikTok',
+        titleRule: '10字以內，直擊痛點或製造爭議（如「別再這樣做了！」）',
+        captionRule: '30-50字，極短、口語化，第一句就是 Hook',
+        hashtagRule: '3-5個，優先使用平台熱門挑戰標籤，不要太多',
+        tone: '年輕化、口語化、帶梗，像在跟同齡人聊天',
+      },
+    }[platform] ?? {
+      name: platform,
+      titleRule: '15字以內，吸引人的標題',
+      captionRule: '50-100字的描述文案',
+      hashtagRule: '5-8個相關 hashtag',
+      tone: '專業友善',
+    };
+
+    const transcriptContext = transcriptStr
+      ? `\n\n影片逐字稿（前 500 字）：\n${transcriptStr.slice(0, 500)}`
+      : '';
+
     const aiContent = await this.aiService.generateJson<{
       title: string;
       caption: string;
       hashtags: string[];
     }>(
-      `你是短影片內容專家。根據以下資訊，為${this.platformName(platform)}生成：
-- title: 吸引人的短影片標題（15字以內）
-- caption: 短影片描述文案（50-100字，含 emoji）
-- hashtags: 5-8 個相關 hashtag（不含 # 符號）
+      `你是 ${platformStrategy.name} 短影片內容策略專家，深諳該平台的演算法和用戶偏好。
+
+請根據影片素材生成最適合 ${platformStrategy.name} 的內容：
+- **title**: ${platformStrategy.titleRule}
+- **caption**: ${platformStrategy.captionRule}
+- **hashtags**: ${platformStrategy.hashtagRule}（不含 # 符號）
+
+語氣風格：${platformStrategy.tone}
+
+⚠️ 重要：所有內容必須基於影片的實際內容（標題、片段名稱、逐字稿），不能編造與影片無關的主題。
 
 回覆 JSON: { "title": "...", "caption": "...", "hashtags": [...] }`,
-      `原始影片標題：${video.title}\n片段標題：${clip.title}\n片段長度：${clip.endTime - clip.startTime}秒\n平台：${platform}`,
-      { maxTokens: 300 },
+      `原始影片標題：${video.title}\n片段標題：${clip.title}\n片段長度：${clip.endTime - clip.startTime}秒\n平台：${platformStrategy.name}${transcriptContext}`,
+      { maxTokens: 500 },
     );
 
     const duration = clip.endTime - clip.startTime;

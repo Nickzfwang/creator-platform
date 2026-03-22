@@ -185,6 +185,44 @@ export class AiService {
     }
   }
 
+  /**
+   * Generate embedding vector for text using OpenAI text-embedding-3-small
+   * Returns 1536-dimensional vector for pgvector similarity search
+   */
+  async generateEmbedding(text: string): Promise<number[] | null> {
+    if (!this.openai) return null;
+
+    try {
+      const response = await this.openai.embeddings.create({
+        model: 'text-embedding-3-small',
+        input: text.slice(0, 8000), // Max ~8K tokens for embedding model
+      });
+      return response.data[0].embedding;
+    } catch (error) {
+      this.logger.error(`Embedding generation failed: ${error}`);
+      return null;
+    }
+  }
+
+  /**
+   * Batch generate embeddings (up to 2048 inputs per request)
+   */
+  async generateEmbeddings(texts: string[]): Promise<(number[] | null)[]> {
+    if (!this.openai || texts.length === 0) return texts.map(() => null);
+
+    try {
+      const truncated = texts.map(t => t.slice(0, 8000));
+      const response = await this.openai.embeddings.create({
+        model: 'text-embedding-3-small',
+        input: truncated,
+      });
+      return response.data.map(d => d.embedding);
+    } catch (error) {
+      this.logger.error(`Batch embedding generation failed: ${error}`);
+      return texts.map(() => null);
+    }
+  }
+
   private fallbackReply(message: string): string {
     return `感謝您的訊息！目前 AI 功能尚未啟用（OPENAI_API_KEY 未設定），請聯繫管理員。您的訊息：「${message.slice(0, 50)}...」`;
   }

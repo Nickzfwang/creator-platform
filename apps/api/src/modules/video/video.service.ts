@@ -379,14 +379,26 @@ ${truncated}
     const result = await this.aiService.generateJson<{
       clips: Array<{ title: string; startPct: number; endPct: number; score: number; hashtags: string[] }>;
     }>(
-      `你是一個專業的影片 AI 剪輯助手。根據影片標題、時長${transcript ? '和逐字稿內容' : ''}，建議 3-4 個最佳精華片段。
-${transcript ? '請基於逐字稿的實際內容，找出最有觀看價值的段落（如：核心觀點、精彩論述、實用技巧、引人入勝的故事等）。' : ''}
+      `你是一個專業的影片 AI 剪輯助手，擅長從長影片中找出最適合做成 Short/Reels 的精華片段。
+
+根據影片標題、時長${transcript ? '和逐字稿內容' : ''}，建議 3-4 個最佳精華片段。
+${transcript ? '請基於逐字稿的實際內容，找出最有觀看價值的段落。\n優先選擇：核心觀點表達、精彩示範或操作、有情緒張力的段落、觀眾會想分享的金句。' : ''}
+
 每個片段包含：
-- title: 吸引人的片段標題（繁體中文，反映該段落的實際內容）
-- startPct: 開始位置（0-1 之間的比例）
+- title: 吸引人的片段標題（繁體中文，反映該段落的實際內容，像 YouTube 標題那樣吸引點擊）
+- startPct: 開始位置（0-1 之間的比例，對應影片時間軸）
 - endPct: 結束位置（大於 startPct，每個片段 ${minClipDuration}-${maxClipDuration} 秒）
-- score: AI 推薦分數（0.7-0.98 之間，根據內容精彩程度評分）
-- hashtags: 3-4 個相關 hashtag
+- score: AI 推薦分數（0.7-0.98 之間，根據以下標準：原創觀點=高分、實用技巧=高分、通用內容=低分）
+- hashtags: 3-4 個相關 hashtag（繁體中文或英文皆可）
+
+範例輸出（假設是 10 分鐘料理教學影片）：
+{
+  "clips": [
+    { "title": "原來蛋炒飯的關鍵是這一步！", "startPct": 0.25, "endPct": 0.35, "score": 0.95, "hashtags": ["#料理技巧", "#蛋炒飯", "#廚房必學"] },
+    { "title": "大火翻炒的正確手法示範", "startPct": 0.50, "endPct": 0.60, "score": 0.88, "hashtags": ["#料理教學", "#中式料理"] },
+    { "title": "成品試吃＋觀眾挑戰", "startPct": 0.82, "endPct": 0.95, "score": 0.82, "hashtags": ["#美食", "#挑戰"] }
+  ]
+}
 
 回覆 JSON 格式：{ "clips": [...] }`,
       `影片標題：「${title}」\n時長：${duration} 秒（${Math.round(duration / 60)} 分鐘）${transcriptContext}`,

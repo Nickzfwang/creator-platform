@@ -234,8 +234,26 @@ export class PostSchedulerService {
     };
   }
 
+  /**
+   * Parse Prisma JsonValue transcript to plain string
+   */
+  private parseTranscript(transcript: unknown): string {
+    if (!transcript) return '';
+    if (typeof transcript === 'string') return transcript;
+    // Prisma JsonValue: could be a JSON-encoded string (with quotes)
+    try {
+      const parsed = typeof transcript === 'string' ? JSON.parse(transcript) : transcript;
+      if (typeof parsed === 'string') return parsed;
+      return String(parsed);
+    } catch {
+      return String(transcript);
+    }
+  }
+
   async aiGenerate(userId: string, dto: AiGeneratePostDto) {
     let clipContext = '';
+    let hasVideoContext = false;
+
     if (dto.clipId) {
       const clip = await this.prisma.videoClip.findUnique({
         where: { id: dto.clipId },
@@ -249,19 +267,34 @@ export class PostSchedulerService {
       // Build rich context: title + summary + transcript (truncated)
       const parts = [`影片標題: ${clip.video.title}`, `片段標題: ${clip.title}`];
       if (clip.video.aiSummary) parts.push(`AI 摘要: ${clip.video.aiSummary}`);
-      if (clip.video.transcript) {
-        const transcriptStr = String(clip.video.transcript);
-        const truncatedTranscript = transcriptStr.length > 2000
+
+      const transcriptStr = this.parseTranscript(clip.video.transcript);
+      if (transcriptStr) {
+        const truncated = transcriptStr.length > 2000
           ? transcriptStr.slice(0, 2000) + '...(truncated)'
           : transcriptStr;
-        parts.push(`影片逐字稿:\n${truncatedTranscript}`);
+        parts.push(`影片逐字稿:\n${truncated}`);
       }
       clipContext = parts.join('\n');
+      hasVideoContext = true;
+      this.logger.log(`AI generate with clip context: video="${clip.video.title}", clip="${clip.title}", transcript=${transcriptStr.length} chars`);
     }
 
     // Use real GPT to generate platform-specific content
     const tone = dto.tone ?? 'professional';
+
+    // Build constraint based on whether we have video context
+    const contentConstraint = hasVideoContext
+      ? `⚠️ 最重要的規則：你必須 100% 根據下方提供的「影片素材」來撰寫貼文。
+貼文的每一句話都必須與影片的實際內容直接相關。
+嚴禁編造影片中不存在的內容、場景或主題。
+如果逐字稿提到演唱會，就寫演唱會相關；如果是教學，就寫教學相關。
+絕對不能生成與影片無關的通用內容。`
+      : '請根據使用者提供的額外資訊或主題來生成貼文。如果沒有提供任何素材，請生成通用的創作者互動內容。';
+
     const systemPrompt = `你是一位在台灣市場有豐富經驗的社群媒體內容策略師，深諳各平台的演算法偏好和用戶行為。
+
+${contentConstraint}
 
 請根據指定的平台和語調生成高互動率的貼文。每個平台的內容必須完全不同，不能只是改長短。
 
@@ -299,10 +332,23 @@ export class PostSchedulerService {
   "suggestions": [
     { "platform": "YOUTUBE", "contentText": "...", "hashtags": ["#tag1", "#tag2"] }
   ]
-}`;
+}
+
+===== 範例（假設影片是關於「在家沖咖啡教學」）=====
+
+YouTube 範例：
+"手沖咖啡新手必看！5 個步驟讓你在家也能沖出咖啡廳等級的風味 ☕\n\n你是不是也覺得手沖咖啡很難？其實只要掌握水溫、研磨度和注水手法，在家就能沖出超好喝的咖啡！\n\n⏱ 時間軸\n00:00 開場\n00:30 器材準備\n01:45 研磨度設定\n03:20 注水手法示範\n05:00 品嚐成果\n\n如果你也是咖啡新手，記得按讚訂閱開啟小鈴鐺 🔔\n留言告訴我你最想學哪種沖煮方式！"
+
+Instagram 範例：
+"在家也能沖出咖啡廳等級的手沖 ☕✨\n\n每天早上的小確幸，就是這杯自己沖的咖啡 🥹\n\n分享 5 個手沖關鍵步驟 👇\n1️⃣ 水溫 90-93°C\n2️⃣ 中細研磨\n3️⃣ 悶蒸 30 秒\n4️⃣ 緩慢注水\n5️⃣ 享受 ☕\n\n你是黑咖啡派還是拿鐵派？留言告訴我！💬"
+
+TikTok 範例：
+"別再買超商咖啡了！在家沖更好喝 ☕ 新手照著做就行 #手沖咖啡 #咖啡教學 #居家咖啡"
+
+===== 範例結束 =====`;
 
     const userMsg = `請為以下平台生成貼文：${dto.platforms.join(', ')}
-${clipContext ? `\n相關影片素材：${clipContext}` : ''}
+${clipContext ? `\n===== 影片素材（貼文必須基於此內容） =====\n${clipContext}\n===== 影片素材結束 =====` : ''}
 ${dto.additionalContext ? `\n額外資訊：${dto.additionalContext}` : ''}`;
 
     const result = await this.aiService.generateJson<{
@@ -364,22 +410,72 @@ ${dto.additionalContext ? `\n額外資訊：${dto.additionalContext}` : ''}`;
       }
     }
 
-    // Default recommendations if not enough data
+    // Default recommendations for new creators (< 10 posts)
     const defaultSlots = [
-      { day: 'Monday', time: '09:00', reason: 'Morning engagement peak' },
-      { day: 'Wednesday', time: '12:00', reason: 'Midweek lunch break' },
-      { day: 'Friday', time: '17:00', reason: 'Weekend preview engagement' },
-      { day: 'Saturday', time: '10:00', reason: 'Weekend leisure browsing' },
+      { day: '週一', time: '09:00', reason: '上班族通勤時段，社群使用高峰' },
+      { day: '週三', time: '12:00', reason: '週中午休時段，適合知識型內容' },
+      { day: '週五', time: '17:00', reason: '週末前夕，放鬆瀏覽時段' },
+      { day: '週六', time: '10:00', reason: '週末休閒時段，長影片觀看高峰' },
     ];
+
+    if (publishedPosts.length < 5) {
+      return {
+        totalPostsAnalyzed: publishedPosts.length,
+        recommendations: defaultSlots,
+        hourDistribution: hourCounts,
+        dayDistribution: dayCounts,
+        aiInsight: '目前發佈數據不足（少於 5 篇），建議先參考以上通用最佳時段。累積更多發佈數據後，AI 將根據你的粉絲互動模式提供個人化建議。',
+      };
+    }
+
+    // Enough data — use AI to analyze patterns
+    // Gather social account analytics for context
+    const socialAccounts = await this.prisma.socialAccount.findMany({
+      where: { userId, isActive: true },
+      select: { platform: true, platformUsername: true, followerCount: true },
+    });
+
+    const analyticsData = await this.prisma.platformAnalytics.findMany({
+      where: { userId },
+      orderBy: { date: 'desc' },
+      take: 30,
+      select: { date: true, followers: true, engagementRate: true, views: true, socialAccount: { select: { platform: true } } },
+    });
+
+    const aiAnalysis = await this.aiService.generateJson<{
+      recommendations: Array<{ day: string; time: string; reason: string }>;
+      insight: string;
+    }>(
+      `你是社群媒體數據分析專家，擅長分析發佈時間與互動率的關聯。
+
+根據以下創作者的發佈歷史和平台數據，分析最佳發佈時間並提供建議。
+
+注意事項：
+- 時間以台灣時區 (UTC+8) 為準
+- day 用繁體中文（週一、週二...）
+- 提供 4 個建議時段
+- 每個建議要說明具體原因（根據數據，不是猜測）
+- insight 提供一段 50-100 字的整體分析摘要
+
+回覆 JSON: { "recommendations": [{ "day": "週一", "time": "09:00", "reason": "..." }], "insight": "..." }`,
+      `=== 發佈歷史（${publishedPosts.length} 篇） ===
+小時分佈：${JSON.stringify(hourCounts)}
+星期分佈：${JSON.stringify(dayCounts)}（0=日 1=一 2=二 ... 6=六）
+
+=== 社群帳號 ===
+${socialAccounts.map(a => `${a.platform}: @${a.platformUsername} (${a.followerCount} 粉絲)`).join('\n') || '尚無連結帳號'}
+
+=== 近 30 天 Analytics ===
+${analyticsData.slice(0, 10).map(a => `${a.socialAccount.platform} ${a.date.toISOString().split('T')[0]}: ${a.followers ?? 0} followers, ${a.engagementRate ?? 0}% engagement, ${a.views ?? 0} views`).join('\n') || '尚無分析數據'}`,
+      { maxTokens: 500 },
+    );
 
     return {
       totalPostsAnalyzed: publishedPosts.length,
-      recommendations:
-        publishedPosts.length < 10
-          ? defaultSlots
-          : defaultSlots, // TODO: replace with data-driven recommendations
+      recommendations: aiAnalysis?.recommendations ?? defaultSlots,
       hourDistribution: hourCounts,
       dayDistribution: dayCounts,
+      aiInsight: aiAnalysis?.insight ?? '數據分析完成，建議參考上方推薦時段。',
     };
   }
 }
