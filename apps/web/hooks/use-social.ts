@@ -20,7 +20,7 @@ export function useConnectPlatform() {
     mutationFn: (platform: string) => {
       // The backend GET /connect/:platform requires JWT and does a server-side redirect to OAuth
       // Pass the token as a query param since browser redirect can't set Authorization header
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "/api";
       const token = getAccessToken();
       const url = `${baseUrl}/v1/social/connect/${platform.toLowerCase()}${token ? `?token=${token}` : ""}`;
       window.location.href = url;

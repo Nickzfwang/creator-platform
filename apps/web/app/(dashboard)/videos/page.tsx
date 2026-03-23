@@ -1,6 +1,6 @@
 "use client";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:4000';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || '';
 const assetUrl = (path: string) => path?.startsWith('http') ? path : `${BACKEND_URL}${path}`;
 
 import { useState, useRef } from "react";
@@ -35,7 +35,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { Video } from "@/lib/types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 // Strip /api suffix to get the server root for static files
 const API_HOST = API_BASE.replace(/\/api\/?$/, "");
 
@@ -205,7 +205,7 @@ function VideoClipsPanel({ videoId, onRepurpose }: { videoId: string; onRepurpos
             )}
             <div className="flex gap-2 mt-2">
               <a
-                href={`http://localhost:4000${shortResult.outputUrl}`}
+                href={`${shortResult.outputUrl}`}
                 download={`${shortResult.title || "short"}.mp4`}
                 className="inline-flex items-center gap-1 rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700"
               >
@@ -619,14 +619,14 @@ export default function VideosPage() {
                     <pre className="max-h-32 overflow-y-auto rounded-md bg-muted p-3 text-xs whitespace-pre-wrap">{subtitleResult.preview}</pre>
                     <div className="flex gap-2">
                       <a
-                        href={`http://localhost:4000${subtitleResult.srtUrl}`}
+                        href={`${subtitleResult.srtUrl}`}
                         download
                         className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
                       >
                         <Download className="h-3 w-3" /> 下載 SRT
                       </a>
                       <a
-                        href={`http://localhost:4000${subtitleResult.vttUrl}`}
+                        href={`${subtitleResult.vttUrl}`}
                         download
                         className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted"
                       >

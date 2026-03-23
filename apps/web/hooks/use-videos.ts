@@ -212,7 +212,7 @@ export function useDirectUpload() {
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append("file", file);
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "/api";
       const token = getAccessToken();
       const res = await fetch(`${baseUrl}/v1/videos/upload`, {
         method: "POST",
