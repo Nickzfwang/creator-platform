@@ -154,10 +154,10 @@ export function useKnowledgeBases() {
 export function useCreateKnowledgeBase() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { name: string; description?: string }) =>
+    mutationFn: (data: { name: string; description?: string; sourceType?: string }) =>
       api<KnowledgeBase>("/v1/knowledge-bases", {
         method: "POST",
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, sourceType: data.sourceType || "MANUAL" }),
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["knowledge-bases"] });

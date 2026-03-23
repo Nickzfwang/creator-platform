@@ -539,7 +539,7 @@ model PlatformAnalytics {
 
   user            User          @relation(fields: [userId], references: [id])
   tenant          Tenant        @relation(fields: [tenantId], references: [id])
-  socialAccount   SocialAccount @relation(fields: [socialAccountId], references: [id])
+  socialAccount   SocialAccount @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
 
   @@unique([socialAccountId, date])
   @@index([tenantId, userId, date])

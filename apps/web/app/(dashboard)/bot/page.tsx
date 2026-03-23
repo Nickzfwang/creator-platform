@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Bot as BotIcon, MessageSquare, Database, Send, Globe, Lock } from "lucide-react";
+import { Plus, Trash2, Bot as BotIcon, MessageSquare, Database, Send, Globe, Lock, FileText, Link, Video, Edit3, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import {
   useBots,
@@ -127,6 +127,7 @@ function KnowledgeBaseTab() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
+  const [sourceType, setSourceType] = useState("MANUAL");
   const [ingestContent, setIngestContent] = useState("");
 
   if (isLoading) return <TableSkeleton />;
@@ -189,15 +190,40 @@ function KnowledgeBaseTab() {
               <Label>描述</Label>
               <Input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="選填" />
             </div>
+            <div className="space-y-2">
+              <Label>來源類型</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: "MANUAL", label: "手動輸入", icon: Edit3 },
+                  { value: "QA_PAIRS", label: "常見問答", icon: HelpCircle },
+                  { value: "DOCUMENT", label: "文件", icon: FileText },
+                  { value: "URL", label: "網址", icon: Link },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setSourceType(opt.value)}
+                    className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${
+                      sourceType === opt.value
+                        ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                        : "border-gray-200 hover:border-gray-300 dark:border-gray-700"
+                    }`}
+                  >
+                    <opt.icon className="h-4 w-4" />
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>取消</Button>
             <Button
               onClick={() => {
                 createKb.mutate(
-                  { name, description: desc || undefined },
+                  { name, description: desc || undefined, sourceType },
                   {
-                    onSuccess: () => { toast.success("知識庫已建立"); setCreateOpen(false); setName(""); setDesc(""); },
+                    onSuccess: () => { toast.success("知識庫已建立"); setCreateOpen(false); setName(""); setDesc(""); setSourceType("MANUAL"); },
                     onError: (e) => toast.error(e.message),
                   },
                 );

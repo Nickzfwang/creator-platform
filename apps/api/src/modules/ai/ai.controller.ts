@@ -7,11 +7,21 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { IsString, IsOptional, IsArray, IsNumber, Min, Max } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsIn, IsNumber, Min, Max, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AiService } from './ai.service';
 import { PrismaService } from '../../prisma/prisma.service';
+
+class ChatHistoryItemDto {
+  @IsString()
+  @IsIn(['user', 'assistant'])
+  role: 'user' | 'assistant';
+
+  @IsString()
+  content: string;
+}
 
 class AiChatDto {
   @IsString()
@@ -19,7 +29,9 @@ class AiChatDto {
 
   @IsArray()
   @IsOptional()
-  history?: Array<{ role: 'user' | 'assistant'; content: string }>;
+  @ValidateNested({ each: true })
+  @Type(() => ChatHistoryItemDto)
+  history?: ChatHistoryItemDto[];
 }
 
 class GenerateScriptDto {
@@ -106,8 +118,12 @@ ${creatorContext}
 - 如果創作者的想法有盲點，要直說，不要只是附和
 - 適當使用 emoji 增加可讀性，但不要過度`;
 
+    const historyMessages = (dto.history ?? []).map((h) => ({
+      role: h.role as 'user' | 'assistant',
+      content: h.content,
+    }));
     const messages = [
-      ...(dto.history ?? []),
+      ...historyMessages,
       { role: 'user' as const, content: dto.message },
     ];
 

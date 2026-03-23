@@ -396,7 +396,10 @@ export class SocialService {
       this.logger.warn(`Failed to revoke ${account.platform} token: ${e}`);
     }
 
-    await this.prisma.socialAccount.delete({ where: { id: accountId } });
+    await this.prisma.$transaction([
+      this.prisma.platformAnalytics.deleteMany({ where: { socialAccountId: accountId } }),
+      this.prisma.socialAccount.delete({ where: { id: accountId } }),
+    ]);
 
     this.logger.log(`Social account ${accountId} (${account.platform}) disconnected`);
   }
