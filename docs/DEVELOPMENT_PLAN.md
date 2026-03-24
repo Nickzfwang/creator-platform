@@ -10,7 +10,7 @@
 - [x] Monorepo 架構建立（Turborepo + pnpm）
 - [x] Next.js 14 前端骨架（apps/web）
 - [x] NestJS 後端骨架（apps/api）含 12 個業務模組 stub
-- [x] Prisma Schema 完整定義（16 models, 16 enums）
+- [x] Prisma Schema 完整定義（24 models, 18 enums）
 - [x] 共用套件（shared-types, utils）
 - [x] Docker Compose（PostgreSQL pgvector + Redis）
 - [x] Dockerfile（API + Worker）
@@ -448,5 +448,5 @@ pnpm dev                      # 啟動前後端
 - 所有 6 個社群平台 OAuth 已配置（YouTube, Instagram, TikTok, Facebook, Twitter/X, Threads）
 - 前端使用 shadcn/ui，需透過 `npx shadcn@latest add <component>` 新增 UI 元件
 - Prisma Schema 已定義完成，執行 `pnpm db:push` 即可建表
-- API port 4000，前端 port 3000
+- API port 4000，前端 port 3001
 - PostgreSQL 使用 port 5433（避免衝突）
