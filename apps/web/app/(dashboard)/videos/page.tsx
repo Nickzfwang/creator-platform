@@ -24,9 +24,11 @@ import {
   useGenerateChapters,
   useUpdateChapters,
   useGenerateScriptSummary,
+  useMultiPlatform,
   type FillerMark,
   type Chapter,
   type ScriptSummary,
+  type MultiPlatformResult,
 } from "@/hooks/use-post-production";
 import { api } from "@/lib/api";
 import {
@@ -276,8 +278,9 @@ function PostProductionTab({ videoId }: { videoId: string }) {
   const generateChapters = useGenerateChapters();
   const updateChapters = useUpdateChapters();
   const generateScriptSummary = useGenerateScriptSummary();
+  const multiPlatform = useMultiPlatform();
 
-  const [activeSection, setActiveSection] = useState<"fillers" | "chapters" | "script">("fillers");
+  const [activeSection, setActiveSection] = useState<"fillers" | "chapters" | "script" | "multiplatform">("fillers");
   const [fillerResult, setFillerResult] = useState<{ fillers: FillerMark[]; totalCount: number; estimatedSavings: number } | null>(null);
   const [selectedFillers, setSelectedFillers] = useState<Set<string>>(new Set());
   const [cutResult, setCutResult] = useState<{ outputUrl: string; originalDuration: number; newDuration: number; removedCount: number } | null>(null);
@@ -323,6 +326,7 @@ function PostProductionTab({ videoId }: { videoId: string }) {
           { key: "fillers" as const, label: "去語助詞", icon: Scissors },
           { key: "chapters" as const, label: "章節標記", icon: ListChecks },
           { key: "script" as const, label: "腳本摘要", icon: BookOpen },
+          { key: "multiplatform" as const, label: "多平台適配", icon: Smartphone },
         ].map(tab => (
           <button
             key={tab.key}
@@ -547,6 +551,11 @@ function PostProductionTab({ videoId }: { videoId: string }) {
       )}
 
       {/* Script Summary */}
+      {/* Multi-Platform Adaptation */}
+      {activeSection === "multiplatform" && (
+        <MultiPlatformPanel videoId={videoId} />
+      )}
+
       {activeSection === "script" && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -629,6 +638,133 @@ function PostProductionTab({ videoId }: { videoId: string }) {
                 </Button>
               </div>
             </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Multi-Platform Panel ───
+
+const MULTI_PLATFORMS = [
+  { key: "youtube_shorts", label: "YouTube Shorts", format: "9:16" },
+  { key: "instagram_reels", label: "Instagram Reels", format: "9:16" },
+  { key: "tiktok", label: "TikTok", format: "9:16" },
+  { key: "instagram_square", label: "IG 正方形", format: "1:1" },
+];
+
+function MultiPlatformPanel({ videoId }: { videoId: string }) {
+  const { data: clips } = useVideoClips(videoId);
+  const multiPlatform = useMultiPlatform();
+
+  const [selectedClipId, setSelectedClipId] = useState<string>("");
+  const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(
+    new Set(["youtube_shorts", "instagram_reels", "tiktok"]),
+  );
+  const [mpResult, setMpResult] = useState<MultiPlatformResult | null>(null);
+
+  const togglePlatform = (key: string) => {
+    setSelectedPlatforms(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-muted-foreground">選擇片段，一鍵產出多平台版本（含字幕 + AI 文案）</p>
+
+      {/* Clip selector */}
+      <div className="space-y-1">
+        <label className="text-xs font-medium">選擇片段</label>
+        <Select value={selectedClipId} onValueChange={setSelectedClipId}>
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue placeholder="選擇一個剪輯片段" />
+          </SelectTrigger>
+          <SelectContent>
+            {(clips ?? []).map((clip: any) => (
+              <SelectItem key={clip.id} value={clip.id}>
+                {clip.title} ({fmt(clip.startTime)} - {fmt(clip.endTime)})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Platform checkboxes */}
+      <div className="space-y-1">
+        <label className="text-xs font-medium">目標平台</label>
+        <div className="grid grid-cols-2 gap-2">
+          {MULTI_PLATFORMS.map(p => (
+            <label key={p.key} className="flex items-center gap-2 text-xs cursor-pointer">
+              <Checkbox
+                checked={selectedPlatforms.has(p.key)}
+                onCheckedChange={() => togglePlatform(p.key)}
+              />
+              {p.label}
+              <span className="text-[10px] text-muted-foreground">({p.format})</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Generate button */}
+      <Button
+        size="sm"
+        disabled={!selectedClipId || selectedPlatforms.size === 0 || multiPlatform.isPending}
+        onClick={() => {
+          multiPlatform.mutate(
+            {
+              videoId,
+              clipId: selectedClipId,
+              platforms: Array.from(selectedPlatforms),
+              addSubtitles: true,
+            },
+            {
+              onSuccess: (res) => {
+                setMpResult(res);
+                toast.success(`生成完成：${res.results.length} 成功，${res.failed.length} 失敗`);
+              },
+              onError: (e) => toast.error(e.message),
+            },
+          );
+        }}
+      >
+        {multiPlatform.isPending ? (
+          <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> 生成中（可能需要 1-2 分鐘）...</>
+        ) : (
+          <><Sparkles className="mr-1 h-3 w-3" /> 生成 {selectedPlatforms.size} 個平台版本</>
+        )}
+      </Button>
+
+      {/* Results */}
+      {mpResult && (
+        <div className="space-y-2">
+          {mpResult.results.map((r) => (
+            <div key={r.id} className="rounded border p-2 text-xs space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="font-medium">{r.title}</span>
+                <Badge variant="secondary" className="text-[10px]">{r.format}</Badge>
+              </div>
+              {r.suggestedCaption && (
+                <p className="text-muted-foreground line-clamp-2">{r.suggestedCaption}</p>
+              )}
+              {r.hashtags.length > 0 && (
+                <p className="text-[10px] text-blue-600 truncate">
+                  {r.hashtags.map(h => h.startsWith('#') ? h : `#${h}`).join(' ')}
+                </p>
+              )}
+            </div>
+          ))}
+          {mpResult.failed.length > 0 && (
+            <div className="rounded border border-red-200 bg-red-50 p-2 text-xs dark:border-red-900 dark:bg-red-950">
+              {mpResult.failed.map((f) => (
+                <p key={f.platform} className="text-red-600">{f.platform}: {f.reason}</p>
+              ))}
+            </div>
           )}
         </div>
       )}

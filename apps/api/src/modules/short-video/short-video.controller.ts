@@ -2,8 +2,8 @@ import {
   Controller, Post, Body, Param, UseGuards, HttpCode, HttpStatus,
   ParseUUIDPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { IsString, IsOptional, IsBoolean, IsIn } from 'class-validator';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsOptional, IsBoolean, IsIn, IsArray, ArrayMinSize, IsUUID } from 'class-validator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ShortVideoService } from './short-video.service';
@@ -17,6 +17,26 @@ class GenerateShortDto {
 
   @IsString() @IsOptional() @IsIn(['youtube_shorts', 'instagram_reels', 'tiktok'])
   platform?: string;
+}
+
+class MultiPlatformDto {
+  @ApiProperty()
+  @IsUUID()
+  videoId: string;
+
+  @ApiProperty()
+  @IsUUID()
+  clipId: string;
+
+  @ApiProperty({ type: [String] })
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsString({ each: true })
+  platforms: string[];
+
+  @ApiPropertyOptional({ default: true })
+  @IsBoolean() @IsOptional()
+  addSubtitles?: boolean;
 }
 
 @ApiTags('Short Videos')
@@ -40,6 +60,19 @@ export class ShortVideoController {
       addSubtitles: dto.addSubtitles,
       platform: dto.platform,
     });
+  }
+
+  @Post('multi-platform')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Generate short videos for multiple platforms from a single clip' })
+  async generateMultiPlatform(
+    @CurrentUser('id') userId: string,
+    @Body() dto: MultiPlatformDto,
+  ) {
+    return this.shortVideoService.generateMultiPlatform(
+      dto.videoId, dto.clipId, userId, dto.platforms,
+      { addSubtitles: dto.addSubtitles },
+    );
   }
 
   @Post(':videoId/generate-all-shorts')

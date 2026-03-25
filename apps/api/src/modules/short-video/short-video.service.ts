@@ -232,6 +232,54 @@ export class ShortVideoService {
   }
 
   /**
+   * Generate short videos for multiple platforms from a single clip
+   */
+  async generateMultiPlatform(
+    videoId: string,
+    clipId: string,
+    userId: string,
+    platforms: string[],
+    options?: { addSubtitles?: boolean },
+  ): Promise<{ results: ShortVideoResult[]; failed: Array<{ platform: string; reason: string }> }> {
+    const results: ShortVideoResult[] = [];
+    const failed: Array<{ platform: string; reason: string }> = [];
+
+    const platformConfigs: Record<string, { format: '9:16' | '1:1'; platform: string }> = {
+      youtube_shorts: { format: '9:16', platform: 'youtube_shorts' },
+      instagram_reels: { format: '9:16', platform: 'instagram_reels' },
+      tiktok: { format: '9:16', platform: 'tiktok' },
+      instagram_square: { format: '1:1', platform: 'instagram_reels' },
+    };
+
+    // Process platforms with limited concurrency (2 at a time)
+    for (const platformKey of platforms) {
+      const config = platformConfigs[platformKey];
+      if (!config) {
+        failed.push({ platform: platformKey, reason: 'Unknown platform' });
+        continue;
+      }
+
+      try {
+        const result = await this.generateShort(videoId, clipId, userId, {
+          format: config.format,
+          addSubtitles: options?.addSubtitles ?? true,
+          platform: config.platform,
+        });
+        results.push({ ...result, id: `${result.id}-${platformKey}` });
+      } catch (e) {
+        this.logger.warn(`Multi-platform failed for ${platformKey}: ${(e as Error).message}`);
+        failed.push({
+          platform: platformKey,
+          reason: e instanceof Error ? e.message : String(e),
+        });
+      }
+    }
+
+    this.logger.log(`Multi-platform generation: ${results.length} success, ${failed.length} failed`);
+    return { results, failed };
+  }
+
+  /**
    * Cut video segment and resize to target format
    */
   private cutAndResize(

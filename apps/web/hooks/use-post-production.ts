@@ -43,6 +43,20 @@ export interface ScriptSummary {
   oneLinerSummary: string;
 }
 
+export interface MultiPlatformResult {
+  results: Array<{
+    id: string;
+    title: string;
+    outputUrl: string;
+    format: string;
+    durationSeconds: number;
+    thumbnailUrl?: string;
+    hashtags: string[];
+    suggestedCaption: string;
+  }>;
+  failed: Array<{ platform: string; reason: string }>;
+}
+
 // ─── Hooks ───
 
 export function useTranscribeWords() {
@@ -148,6 +162,25 @@ export function useGenerateScriptSummary() {
         summary: ScriptSummary;
         markdown: string;
       }>(`/v1/videos/${videoId}/generate-script-summary`, { method: "POST" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["videos"] });
+    },
+  });
+}
+
+export function useMultiPlatform() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      videoId: string;
+      clipId: string;
+      platforms: string[];
+      addSubtitles?: boolean;
+    }) =>
+      api<MultiPlatformResult>("/v1/videos/multi-platform", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["videos"] });
     },
