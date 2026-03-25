@@ -136,6 +136,38 @@ export class AiService {
   }
 
   /**
+   * Transcribe with word-level timestamps using Whisper verbose_json
+   */
+  async transcribeVerbose(
+    filePath: string,
+    options?: { language?: string },
+  ): Promise<{ text: string; words: Array<{ word: string; start: number; end: number }> }> {
+    if (!this.openai) throw new Error('OpenAI not configured');
+
+    const { createReadStream } = require('fs');
+
+    const result = await this.openai.audio.transcriptions.create({
+      file: createReadStream(filePath),
+      model: 'whisper-1',
+      response_format: 'verbose_json',
+      timestamp_granularities: ['word'],
+      language: options?.language ?? 'zh',
+    });
+
+    const words = (result as any).words ?? [];
+    const text = (result as any).text ?? '';
+
+    return {
+      text,
+      words: words.map((w: any) => ({
+        word: String(w.word ?? ''),
+        start: Number(w.start ?? 0),
+        end: Number(w.end ?? 0),
+      })),
+    };
+  }
+
+  /**
    * Polish/correct subtitle text using GPT
    */
   async polishSubtitles(srtContent: string): Promise<string> {

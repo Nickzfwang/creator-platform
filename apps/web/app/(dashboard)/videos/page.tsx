@@ -4,7 +4,7 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || '';
 const assetUrl = (path: string) => path?.startsWith('http') ? path : `${BACKEND_URL}${path}`;
 
 import { useState, useRef } from "react";
-import { Plus, Upload, Trash2, Film, Scissors, Clock, Sparkles, Play, Share2, Loader2, Copy, Check, FileText, Smartphone, Download, Captions, Megaphone, RefreshCw, Mail, Video as VideoIcon } from "lucide-react";
+import { Plus, Upload, Trash2, Film, Scissors, Clock, Sparkles, Play, Share2, Loader2, Copy, Check, FileText, Smartphone, Download, Captions, Megaphone, RefreshCw, Mail, Video as VideoIcon, Wrench, ListChecks, BookOpen, Clipboard } from "lucide-react";
 import { toast } from "sonner";
 import { useVideos, useCreateVideo, useDeleteVideo, useDirectUpload, useVideoClips, useGenerateClips, useGenerateShort, useGenerateAllShorts, useGenerateSubtitles } from "@/hooks/use-videos";
 import { useAiGeneratePost } from "@/hooks/use-posts";
@@ -18,6 +18,16 @@ import {
   useCreateCampaignFromItem,
   type RepurposeItem,
 } from "@/hooks/use-repurpose";
+import {
+  useDetectFillers,
+  useCutFillers,
+  useGenerateChapters,
+  useUpdateChapters,
+  useGenerateScriptSummary,
+  type FillerMark,
+  type Chapter,
+  type ScriptSummary,
+} from "@/hooks/use-post-production";
 import { api } from "@/lib/api";
 import {
   Select,
@@ -257,6 +267,374 @@ const platformLabels: Record<string, string> = {
   FACEBOOK: "Facebook",
   TWITTER: "X / Twitter",
 };
+
+// ─── Post-Production Tools Panel ───
+
+function PostProductionTab({ videoId }: { videoId: string }) {
+  const detectFillers = useDetectFillers();
+  const cutFillers = useCutFillers();
+  const generateChapters = useGenerateChapters();
+  const updateChapters = useUpdateChapters();
+  const generateScriptSummary = useGenerateScriptSummary();
+
+  const [activeSection, setActiveSection] = useState<"fillers" | "chapters" | "script">("fillers");
+  const [fillerResult, setFillerResult] = useState<{ fillers: FillerMark[]; totalCount: number; estimatedSavings: number } | null>(null);
+  const [selectedFillers, setSelectedFillers] = useState<Set<string>>(new Set());
+  const [cutResult, setCutResult] = useState<{ outputUrl: string; originalDuration: number; newDuration: number; removedCount: number } | null>(null);
+  const [chapterResult, setChapterResult] = useState<{ chapters: Chapter[]; youtubeFormat: string } | null>(null);
+  const [editingChapters, setEditingChapters] = useState<Chapter[] | null>(null);
+  const [scriptResult, setScriptResult] = useState<{ summary: ScriptSummary; markdown: string } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const toggleFiller = (id: string) => {
+    setSelectedFillers(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAllFillers = () => {
+    if (!fillerResult) return;
+    if (selectedFillers.size === fillerResult.fillers.length) {
+      setSelectedFillers(new Set());
+    } else {
+      setSelectedFillers(new Set(fillerResult.fillers.map(f => f.id)));
+    }
+  };
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    toast.success("已複製到剪貼簿");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="rounded-lg border p-4 space-y-3">
+      <h4 className="flex items-center gap-2 text-sm font-medium">
+        <Wrench className="h-4 w-4" /> 後製工具
+      </h4>
+
+      {/* Section tabs */}
+      <div className="flex gap-1 border-b">
+        {[
+          { key: "fillers" as const, label: "去語助詞", icon: Scissors },
+          { key: "chapters" as const, label: "章節標記", icon: ListChecks },
+          { key: "script" as const, label: "腳本摘要", icon: BookOpen },
+        ].map(tab => (
+          <button
+            key={tab.key}
+            className={`flex items-center gap-1 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
+              activeSection === tab.key
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setActiveSection(tab.key)}
+          >
+            <tab.icon className="h-3 w-3" />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Filler Removal */}
+      {activeSection === "fillers" && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">偵測影片中的「嗯、啊、那個」等語助詞，勾選後一鍵裁切</p>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={detectFillers.isPending}
+              onClick={() => {
+                detectFillers.mutate(videoId, {
+                  onSuccess: (res) => {
+                    setFillerResult(res);
+                    setSelectedFillers(new Set(res.fillers.map(f => f.id)));
+                    toast.success(`偵測到 ${res.totalCount} 個語助詞`);
+                  },
+                  onError: (e) => toast.error(e.message),
+                });
+              }}
+            >
+              {detectFillers.isPending ? (
+                <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> 偵測中...</>
+              ) : (
+                <><Sparkles className="mr-1 h-3 w-3" /> 偵測語助詞</>
+              )}
+            </Button>
+          </div>
+
+          {fillerResult && (
+            <>
+              <div className="flex items-center justify-between rounded-md bg-muted/50 p-2 text-xs">
+                <span>偵測 {fillerResult.totalCount} 個 / 已選 {selectedFillers.size} 個 / 預估省 {fillerResult.estimatedSavings}s</span>
+                <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={selectAllFillers}>
+                  {selectedFillers.size === fillerResult.fillers.length ? "取消全選" : "全選"}
+                </Button>
+              </div>
+
+              <div className="space-y-1 max-h-48 overflow-y-auto">
+                {fillerResult.fillers.map(f => (
+                  <label key={f.id} className="flex items-start gap-2 rounded p-1.5 hover:bg-muted/50 cursor-pointer text-xs">
+                    <Checkbox
+                      checked={selectedFillers.has(f.id)}
+                      onCheckedChange={() => toggleFiller(f.id)}
+                      className="mt-0.5"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-muted-foreground">{f.contextBefore}</span>
+                      <span className="font-bold text-red-600 mx-0.5">{f.word}</span>
+                      <span className="text-muted-foreground">{f.contextAfter}</span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                      {f.startTime.toFixed(1)}s
+                    </span>
+                  </label>
+                ))}
+              </div>
+
+              {selectedFillers.size > 0 && (
+                <Button
+                  size="sm"
+                  disabled={cutFillers.isPending}
+                  onClick={() => {
+                    cutFillers.mutate(
+                      { videoId, fillerIds: Array.from(selectedFillers) },
+                      {
+                        onSuccess: (res) => {
+                          setCutResult(res);
+                          toast.success(`裁切完成！${res.originalDuration}s → ${res.newDuration}s`);
+                        },
+                        onError: (e) => toast.error(e.message),
+                      },
+                    );
+                  }}
+                >
+                  {cutFillers.isPending ? (
+                    <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> 裁切中...</>
+                  ) : (
+                    <><Scissors className="mr-1 h-3 w-3" /> 產出裁切版（移除 {selectedFillers.size} 個）</>
+                  )}
+                </Button>
+              )}
+
+              {cutResult && (
+                <div className="rounded-md border border-green-200 bg-green-50 p-3 text-xs dark:border-green-900 dark:bg-green-950">
+                  <p className="font-medium text-green-700 dark:text-green-400">裁切完成</p>
+                  <p className="mt-1">原始：{cutResult.originalDuration}s → 裁切後：{cutResult.newDuration}s（省 {Math.round(cutResult.originalDuration - cutResult.newDuration)}s）</p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Chapter Markers */}
+      {activeSection === "chapters" && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">AI 分析影片結構，自動產出 YouTube 章節時間戳</p>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={generateChapters.isPending}
+              onClick={() => {
+                generateChapters.mutate(videoId, {
+                  onSuccess: (res) => {
+                    setChapterResult(res);
+                    setEditingChapters(null);
+                    toast.success(`生成 ${res.chapters.length} 個章節`);
+                  },
+                  onError: (e) => toast.error(e.message),
+                });
+              }}
+            >
+              {generateChapters.isPending ? (
+                <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> 生成中...</>
+              ) : (
+                <><Sparkles className="mr-1 h-3 w-3" /> 生成章節</>
+              )}
+            </Button>
+          </div>
+
+          {chapterResult && (
+            <>
+              <div className="space-y-1">
+                {(editingChapters ?? chapterResult.chapters).map((ch, i) => (
+                  <div key={ch.id} className="flex items-center gap-2 text-xs">
+                    <span className="w-12 text-muted-foreground font-mono">
+                      {String(Math.floor(ch.startTime / 60)).padStart(2, "0")}:{String(ch.startTime % 60).padStart(2, "0")}
+                    </span>
+                    {editingChapters ? (
+                      <Input
+                        className="h-7 text-xs flex-1"
+                        value={editingChapters[i].title}
+                        onChange={(e) => {
+                          const next = [...editingChapters];
+                          next[i] = { ...next[i], title: e.target.value };
+                          setEditingChapters(next);
+                        }}
+                      />
+                    ) : (
+                      <span className="flex-1">{ch.title}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-2">
+                {editingChapters ? (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setEditingChapters(null)}
+                    >
+                      取消
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={updateChapters.isPending}
+                      onClick={() => {
+                        updateChapters.mutate(
+                          { videoId, chapters: editingChapters },
+                          {
+                            onSuccess: (res) => {
+                              setChapterResult(res);
+                              setEditingChapters(null);
+                              toast.success("章節已更新");
+                            },
+                            onError: (e) => toast.error(e.message),
+                          },
+                        );
+                      }}
+                    >
+                      儲存
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setEditingChapters([...chapterResult.chapters])}
+                    >
+                      編輯
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleCopy(chapterResult.youtubeFormat)}
+                    >
+                      {copied ? <Check className="mr-1 h-3 w-3" /> : <Clipboard className="mr-1 h-3 w-3" />}
+                      複製 YouTube 格式
+                    </Button>
+                  </>
+                )}
+              </div>
+
+              {!editingChapters && (
+                <pre className="max-h-24 overflow-y-auto rounded bg-muted/50 p-2 text-[11px] whitespace-pre-wrap font-mono">
+                  {chapterResult.youtubeFormat}
+                </pre>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Script Summary */}
+      {activeSection === "script" && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">AI 分析轉錄稿，產出結構化腳本大綱</p>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={generateScriptSummary.isPending}
+              onClick={() => {
+                generateScriptSummary.mutate(videoId, {
+                  onSuccess: (res) => {
+                    setScriptResult(res);
+                    toast.success(`生成 ${res.summary.sections.length} 個段落`);
+                  },
+                  onError: (e) => toast.error(e.message),
+                });
+              }}
+            >
+              {generateScriptSummary.isPending ? (
+                <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> 生成中...</>
+              ) : (
+                <><Sparkles className="mr-1 h-3 w-3" /> 生成腳本摘要</>
+              )}
+            </Button>
+          </div>
+
+          {scriptResult && (
+            <>
+              <div className="rounded-md border p-3 space-y-2">
+                <p className="text-sm font-medium">{scriptResult.summary.title}</p>
+                <p className="text-xs text-muted-foreground">{scriptResult.summary.oneLinerSummary}</p>
+                <div className="flex flex-wrap gap-1">
+                  {scriptResult.summary.tags.map(tag => (
+                    <Badge key={tag} variant="secondary" className="text-[10px]">{tag}</Badge>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {scriptResult.summary.sections.map((s, i) => (
+                  <div key={i} className="rounded border p-2 text-xs space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">{s.title}</span>
+                      <span className="text-[10px] text-muted-foreground">{s.timeRange}</span>
+                    </div>
+                    <ul className="list-disc pl-4 text-muted-foreground">
+                      {s.keyPoints.map((p, j) => (
+                        <li key={j}>{p}</li>
+                      ))}
+                    </ul>
+                    <div className="flex gap-1">
+                      {s.keywords.map(k => (
+                        <Badge key={k} variant="outline" className="text-[9px]">{k}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => handleCopy(scriptResult.markdown)}>
+                  {copied ? <Check className="mr-1 h-3 w-3" /> : <Clipboard className="mr-1 h-3 w-3" />}
+                  複製 Markdown
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const blob = new Blob([scriptResult.markdown], { type: "text/markdown" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `script-summary.md`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    toast.success("已下載 Markdown 檔案");
+                  }}
+                >
+                  <Download className="mr-1 h-3 w-3" /> 匯出 .md
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ─── Content Repurpose Panel ───
 
@@ -1145,6 +1523,11 @@ export default function VideosPage() {
               {/* Content Repurpose Panel */}
               {selectedVideo.status === "PROCESSED" && (
                 <RepurposePanel videoId={selectedVideo.id} />
+              )}
+
+              {/* Post-Production Tools */}
+              {selectedVideo.status === "PROCESSED" && (
+                <PostProductionTab videoId={selectedVideo.id} />
               )}
             </div>
           )}

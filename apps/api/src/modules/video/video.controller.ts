@@ -24,6 +24,8 @@ import { VideoService } from './video.service';
 import { RequestUploadUrlDto } from './dto/request-upload-url.dto';
 import { ListVideosQueryDto } from './dto/list-videos-query.dto';
 import { UpdateClipDto } from './dto/update-clip.dto';
+import { CutFillersDto } from './dto/cut-fillers.dto';
+import { UpdateChaptersDto } from './dto/update-chapters.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
@@ -150,6 +152,69 @@ export class VideoController {
     @Body() dto: UpdateClipDto,
   ) {
     return this.videoService.updateClip(videoId, clipId, userId, dto);
+  }
+
+  // ─── Post-Production Tools ───
+
+  @Post(':id/transcribe-words')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get Whisper word-level timestamps' })
+  async transcribeWords(
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) videoId: string,
+  ) {
+    return this.videoService.transcribeWords(videoId, userId);
+  }
+
+  @Post(':id/detect-fillers')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Detect filler words from word-level timestamps' })
+  async detectFillers(
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) videoId: string,
+  ) {
+    return this.videoService.detectFillers(videoId, userId);
+  }
+
+  @Post(':id/cut-fillers')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Cut selected filler words and produce trimmed video' })
+  async cutFillers(
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) videoId: string,
+    @Body() dto: CutFillersDto,
+  ) {
+    return this.videoService.cutFillers(videoId, userId, dto.fillerIds);
+  }
+
+  @Post(':id/generate-chapters')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Generate YouTube chapter markers using AI' })
+  async generateChapters(
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) videoId: string,
+  ) {
+    return this.videoService.generateChapters(videoId, userId);
+  }
+
+  @Patch(':id/chapters')
+  @ApiOperation({ summary: 'Update chapter markers' })
+  async updateChapters(
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) videoId: string,
+    @Body() dto: UpdateChaptersDto,
+  ) {
+    return this.videoService.updateChapters(videoId, userId, dto.chapters);
+  }
+
+  @Post(':id/generate-script-summary')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Generate structured script summary using AI' })
+  async generateScriptSummary(
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) videoId: string,
+  ) {
+    return this.videoService.generateScriptSummary(videoId, userId);
   }
 
   @Post(':id/subtitles')

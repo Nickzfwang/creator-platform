@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   ForbiddenException,
+  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { VideoStatus, Prisma } from '@prisma/client';
@@ -846,5 +847,459 @@ ${transcript ? '請基於逐字稿的實際內容，找出最有觀看價值的�
       .replace(/(\d{2}):(\d{2}):(\d{2}),(\d{3})/g, '$1:$2:$3.$4')
       .replace(/^\d+\n/gm, '');
     return 'WEBVTT\n\n' + vtt;
+  }
+
+  // ─── Post-Production Tools ───
+
+  /**
+   * Get Whisper word-level timestamps and store in metadata
+   */
+  async transcribeWords(videoId: string, userId: string) {
+    const video = await this.prisma.video.findUnique({
+      where: { id: videoId },
+      select: { id: true, userId: true, status: true, originalUrl: true, durationSeconds: true, metadata: true },
+    });
+
+    if (!video) throw new NotFoundException('Video not found');
+    if (video.userId !== userId) throw new ForbiddenException('Not the video owner');
+    if (video.status !== 'PROCESSED') throw new BadRequestException('Video must be in PROCESSED state');
+
+    const meta = (video.metadata as Record<string, unknown>) ?? {};
+    if (meta.whisperWords && (meta.whisperWords as unknown[]).length > 0) {
+      return {
+        videoId,
+        wordCount: (meta.whisperWords as unknown[]).length,
+        durationSeconds: video.durationSeconds,
+        message: 'Word-level timestamps already exist',
+      };
+    }
+
+    const sourceFile = this.findSourceFile(video.originalUrl);
+    if (!sourceFile) throw new NotFoundException('Video file not found');
+
+    // Extract audio
+    const subtitlesDir = join(process.cwd(), 'uploads', 'subtitles');
+    if (!existsSync(subtitlesDir)) mkdirSync(subtitlesDir, { recursive: true });
+    const audioFile = join(subtitlesDir, `${Date.now()}-words-audio.mp3`);
+
+    await new Promise<void>((resolve, reject) => {
+      ffmpeg(sourceFile)
+        .outputOptions(['-vn', '-acodec', 'libmp3lame', '-ar', '16000', '-ac', '1', '-y'])
+        .output(audioFile)
+        .on('end', () => resolve())
+        .on('error', (err: Error) => reject(err))
+        .run();
+    });
+
+    try {
+      const result = await this.aiService.transcribeVerbose(audioFile);
+
+      await this.prisma.video.update({
+        where: { id: videoId },
+        data: {
+          metadata: { ...meta, whisperWords: result.words },
+          ...(!(video as any).transcript ? { transcript: result.text } : {}),
+        },
+      });
+
+      this.logger.log(`Word-level transcription for ${videoId}: ${result.words.length} words`);
+      return {
+        videoId,
+        wordCount: result.words.length,
+        durationSeconds: video.durationSeconds,
+        message: 'Word-level timestamps generated',
+      };
+    } finally {
+      try { unlinkSync(audioFile); } catch { /* ignore */ }
+    }
+  }
+
+  /**
+   * Detect filler words from word-level timestamps
+   */
+  async detectFillers(videoId: string, userId: string) {
+    const video = await this.prisma.video.findUnique({
+      where: { id: videoId },
+      select: { id: true, userId: true, metadata: true },
+    });
+
+    if (!video) throw new NotFoundException('Video not found');
+    if (video.userId !== userId) throw new ForbiddenException('Not the video owner');
+
+    const meta = (video.metadata as Record<string, unknown>) ?? {};
+    let words = meta.whisperWords as Array<{ word: string; start: number; end: number }> | undefined;
+
+    // Auto-transcribe if no word-level data
+    if (!words || words.length === 0) {
+      const result = await this.transcribeWords(videoId, userId);
+      const refreshed = await this.prisma.video.findUnique({
+        where: { id: videoId },
+        select: { metadata: true },
+      });
+      const refreshedMeta = (refreshed?.metadata as Record<string, unknown>) ?? {};
+      words = refreshedMeta.whisperWords as Array<{ word: string; start: number; end: number }>;
+    }
+
+    if (!words || words.length === 0) {
+      return { videoId, fillers: [], totalCount: 0, estimatedSavings: 0 };
+    }
+
+    const FILLER_WORDS = new Set([
+      '嗯', '啊', '呃', '那個', '就是', '然後', '對', '對對對',
+      '基本上', '所以說', '怎麼說', '其實', '反正', '就是說',
+      '你知道', '欸', '齁', '喔',
+    ]);
+
+    const fillers: Array<{
+      id: string;
+      word: string;
+      startTime: number;
+      endTime: number;
+      contextBefore: string;
+      contextAfter: string;
+    }> = [];
+
+    for (let i = 0; i < words.length; i++) {
+      const w = words[i];
+      const trimmed = w.word.trim().replace(/[，。、！？,.!?]/g, '');
+      if (FILLER_WORDS.has(trimmed)) {
+        fillers.push({
+          id: `filler-${i}`,
+          word: trimmed,
+          startTime: w.start,
+          endTime: w.end,
+          contextBefore: words.slice(Math.max(0, i - 5), i).map(x => x.word).join(''),
+          contextAfter: words.slice(i + 1, i + 6).map(x => x.word).join(''),
+        });
+      }
+    }
+
+    const estimatedSavings = fillers.reduce((sum, f) => sum + (f.endTime - f.startTime), 0);
+
+    // Store filler marks in metadata
+    await this.prisma.video.update({
+      where: { id: videoId },
+      data: { metadata: { ...meta, fillerMarks: fillers } },
+    });
+
+    return {
+      videoId,
+      fillers,
+      totalCount: fillers.length,
+      estimatedSavings: Math.round(estimatedSavings * 10) / 10,
+    };
+  }
+
+  /**
+   * Cut selected filler words from video using FFmpeg
+   */
+  async cutFillers(videoId: string, userId: string, fillerIds: string[]) {
+    const video = await this.prisma.video.findUnique({
+      where: { id: videoId },
+      select: { id: true, userId: true, originalUrl: true, durationSeconds: true, metadata: true },
+    });
+
+    if (!video) throw new NotFoundException('Video not found');
+    if (video.userId !== userId) throw new ForbiddenException('Not the video owner');
+
+    const meta = (video.metadata as Record<string, unknown>) ?? {};
+    const allFillers = (meta.fillerMarks ?? []) as Array<{ id: string; startTime: number; endTime: number }>;
+    const selectedFillers = allFillers
+      .filter(f => fillerIds.includes(f.id))
+      .sort((a, b) => a.startTime - b.startTime);
+
+    if (selectedFillers.length === 0) {
+      throw new BadRequestException('No valid filler marks selected');
+    }
+
+    const sourceFile = this.findSourceFile(video.originalUrl);
+    if (!sourceFile) throw new NotFoundException('Video file not found');
+
+    const duration = video.durationSeconds ?? 300;
+
+    // Calculate keep intervals (inverse of remove intervals)
+    const keepIntervals: Array<{ start: number; end: number }> = [];
+    let cursor = 0;
+    for (const filler of selectedFillers) {
+      if (filler.startTime > cursor) {
+        keepIntervals.push({ start: cursor, end: filler.startTime });
+      }
+      cursor = filler.endTime;
+    }
+    if (cursor < duration) {
+      keepIntervals.push({ start: cursor, end: duration });
+    }
+
+    // FFmpeg concat: extract each keep interval and concatenate
+    const trimmedDir = join(process.cwd(), 'uploads', 'videos');
+    const outputFile = join(trimmedDir, `${videoId}-trimmed.mp4`);
+    const tempDir = join(process.cwd(), 'uploads', 'temp');
+    if (!existsSync(tempDir)) mkdirSync(tempDir, { recursive: true });
+
+    // Create segment files
+    const segmentFiles: string[] = [];
+    for (let i = 0; i < keepIntervals.length; i++) {
+      const seg = keepIntervals[i];
+      const segFile = join(tempDir, `${videoId}-seg-${i}.ts`);
+      segmentFiles.push(segFile);
+
+      await new Promise<void>((resolve, reject) => {
+        ffmpeg(sourceFile)
+          .setStartTime(seg.start)
+          .setDuration(seg.end - seg.start)
+          .outputOptions(['-c', 'copy', '-bsf:v', 'h264_mp4toannexb', '-f', 'mpegts', '-y'])
+          .output(segFile)
+          .on('end', () => resolve())
+          .on('error', (err: Error) => reject(err))
+          .run();
+      });
+    }
+
+    // Concatenate segments
+    const concatInput = segmentFiles.join('|');
+    try {
+      await new Promise<void>((resolve, reject) => {
+        ffmpeg(`concat:${concatInput}`)
+          .inputOptions(['-protocol_whitelist', 'file,pipe,concat'])
+          .outputOptions([
+            '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
+            '-c:a', 'aac', '-b:a', '128k',
+            '-movflags', '+faststart', '-y',
+          ])
+          .output(outputFile)
+          .on('end', () => resolve())
+          .on('error', (err: Error) => reject(err))
+          .run();
+      });
+    } finally {
+      // Cleanup temp segments regardless of success/failure
+      for (const f of segmentFiles) {
+        try { unlinkSync(f); } catch { /* ignore */ }
+      }
+    }
+
+    const newDuration = keepIntervals.reduce((sum, k) => sum + (k.end - k.start), 0);
+    const outputUrl = `/uploads/videos/${videoId}-trimmed.mp4`;
+
+    this.logger.log(`Filler cut for ${videoId}: ${duration}s → ${Math.round(newDuration)}s (removed ${selectedFillers.length} fillers)`);
+
+    return {
+      videoId,
+      outputUrl,
+      originalDuration: duration,
+      newDuration: Math.round(newDuration * 10) / 10,
+      removedCount: selectedFillers.length,
+    };
+  }
+
+  /**
+   * Generate YouTube chapter markers using AI
+   */
+  async generateChapters(videoId: string, userId: string) {
+    const video = await this.prisma.video.findUnique({
+      where: { id: videoId },
+      select: { id: true, userId: true, title: true, transcript: true, durationSeconds: true, metadata: true },
+    });
+
+    if (!video) throw new NotFoundException('Video not found');
+    if (video.userId !== userId) throw new ForbiddenException('Not the video owner');
+    if ((video.durationSeconds ?? 0) < 30) {
+      throw new BadRequestException('Video too short for chapter markers (< 30s)');
+    }
+
+    const transcript = typeof video.transcript === 'string'
+      ? video.transcript
+      : video.transcript ? JSON.stringify(video.transcript) : null;
+
+    if (!transcript) {
+      throw new BadRequestException('Video has no transcript. Please process the video first.');
+    }
+
+    const meta = (video.metadata as Record<string, unknown>) ?? {};
+    const duration = video.durationSeconds ?? 300;
+
+    // Use word-level timestamps if available for better accuracy
+    const words = meta.whisperWords as Array<{ word: string; start: number; end: number }> | undefined;
+    const timestampHint = words && words.length > 0
+      ? `\n\n以下是部分 word-level 時間戳供參考（每 50 個詞取一個標記點）：\n${
+          words.filter((_, i) => i % 50 === 0).map(w => `[${Math.floor(w.start)}s] ${w.word}`).join('\n')
+        }`
+      : '';
+
+    const result = await this.aiService.generateJson<{
+      chapters: Array<{ title: string; startTime: number }>;
+    }>(
+      `你是影片內容結構分析專家。根據影片轉錄稿，識別主題轉換點並產出 YouTube 章節標記。
+
+規則：
+- 第一個章節必須從 0 秒開始
+- 每個章節標題 5-15 字，精確描述該段內容
+- 章節間隔至少 60 秒
+- 一支 ${Math.round(duration / 60)} 分鐘的影片通常有 4-8 個章節
+- 使用繁體中文
+- startTime 為整數（秒）
+
+回傳 JSON：{ "chapters": [{ "title": "開場介紹", "startTime": 0 }, ...] }`,
+      `影片標題：「${video.title}」\n時長：${duration} 秒\n\n轉錄稿：\n${transcript.slice(0, 4000)}${timestampHint}`,
+      { model: 'gpt-4o-mini', maxTokens: 1024 },
+    );
+
+    const chapters = (result?.chapters ?? []).map((ch, i) => ({
+      id: `ch-${i}`,
+      title: ch.title,
+      startTime: Math.max(0, Math.round(ch.startTime)),
+    }));
+
+    // Ensure first chapter starts at 0
+    if (chapters.length > 0 && chapters[0].startTime !== 0) {
+      chapters[0].startTime = 0;
+    }
+
+    // Generate YouTube format string
+    const youtubeFormat = chapters
+      .map(ch => {
+        const m = Math.floor(ch.startTime / 60);
+        const s = ch.startTime % 60;
+        return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')} ${ch.title}`;
+      })
+      .join('\n');
+
+    // Store in metadata
+    await this.prisma.video.update({
+      where: { id: videoId },
+      data: { metadata: { ...meta, chapters } },
+    });
+
+    this.logger.log(`Chapters generated for ${videoId}: ${chapters.length} chapters`);
+
+    return { videoId, chapters, youtubeFormat };
+  }
+
+  /**
+   * Update chapter markers
+   */
+  async updateChapters(videoId: string, userId: string, chapters: Array<{ id: string; title: string; startTime: number }>) {
+    const video = await this.prisma.video.findUnique({
+      where: { id: videoId },
+      select: { id: true, userId: true, metadata: true },
+    });
+
+    if (!video) throw new NotFoundException('Video not found');
+    if (video.userId !== userId) throw new ForbiddenException('Not the video owner');
+
+    const meta = (video.metadata as Record<string, unknown>) ?? {};
+    const sorted = chapters.sort((a, b) => a.startTime - b.startTime);
+
+    const youtubeFormat = sorted
+      .map(ch => {
+        const m = Math.floor(ch.startTime / 60);
+        const s = ch.startTime % 60;
+        return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')} ${ch.title}`;
+      })
+      .join('\n');
+
+    await this.prisma.video.update({
+      where: { id: videoId },
+      data: { metadata: { ...meta, chapters: sorted } },
+    });
+
+    return { chapters: sorted, youtubeFormat };
+  }
+
+  /**
+   * Generate script summary using AI
+   */
+  async generateScriptSummary(videoId: string, userId: string) {
+    const video = await this.prisma.video.findUnique({
+      where: { id: videoId },
+      select: { id: true, userId: true, title: true, transcript: true, durationSeconds: true, metadata: true },
+    });
+
+    if (!video) throw new NotFoundException('Video not found');
+    if (video.userId !== userId) throw new ForbiddenException('Not the video owner');
+    if ((video.durationSeconds ?? 0) < 30) {
+      throw new BadRequestException('Video too short for script summary (< 30s)');
+    }
+
+    const transcript = typeof video.transcript === 'string'
+      ? video.transcript
+      : video.transcript ? JSON.stringify(video.transcript) : null;
+
+    if (!transcript) {
+      throw new BadRequestException('Video has no transcript.');
+    }
+
+    const duration = video.durationSeconds ?? 300;
+    const totalMin = Math.floor(duration / 60);
+    const totalSec = duration % 60;
+
+    const result = await this.aiService.generateJson<{
+      title: string;
+      totalDuration: string;
+      sections: Array<{
+        title: string;
+        timeRange: string;
+        startTime: number;
+        endTime: number;
+        keyPoints: string[];
+        keywords: string[];
+      }>;
+      tags: string[];
+      oneLinerSummary: string;
+    }>(
+      `你是內容分析專家。分析影片轉錄稿，產出結構化腳本大綱。
+
+要求：
+- 將影片拆解為 Intro + 3-7 個主要段落 + 結尾
+- 每段包含：標題（5-12字）、時間範圍（"MM:SS - MM:SS"）、startTime/endTime（秒）、2-3 個核心論點、2-4 個關鍵字
+- 產出一句話摘要（20-40字）
+- tags 為影片整體的 5-8 個標籤
+- 使用繁體中文
+
+回傳 JSON：
+{
+  "title": "影片主題",
+  "totalDuration": "${totalMin}:${String(totalSec).padStart(2, '0')}",
+  "sections": [{ "title": "...", "timeRange": "00:00 - 02:15", "startTime": 0, "endTime": 135, "keyPoints": ["..."], "keywords": ["..."] }],
+  "tags": ["tag1", "tag2"],
+  "oneLinerSummary": "一句話描述"
+}`,
+      `影片標題：「${video.title}」\n時長：${duration} 秒\n\n轉錄稿：\n${transcript.slice(0, 4000)}`,
+      { model: 'gpt-4o-mini', maxTokens: 2048 },
+    );
+
+    if (!result) {
+      throw new BadRequestException('AI failed to generate script summary');
+    }
+
+    const meta = (video.metadata as Record<string, unknown>) ?? {};
+    await this.prisma.video.update({
+      where: { id: videoId },
+      data: { metadata: { ...meta, scriptSummary: result } },
+    });
+
+    // Generate Markdown
+    const md = [
+      `# ${result.title}`,
+      '',
+      `> ${result.oneLinerSummary}`,
+      `> 時長：${result.totalDuration}`,
+      '',
+      ...result.sections.map(s => [
+        `## ${s.title}`,
+        `*${s.timeRange}*`,
+        '',
+        ...s.keyPoints.map(p => `- ${p}`),
+        '',
+        `**關鍵字：** ${s.keywords.join('、')}`,
+        '',
+      ]).flat(),
+      `---`,
+      `**標籤：** ${result.tags.join('、')}`,
+    ].join('\n');
+
+    this.logger.log(`Script summary for ${videoId}: ${result.sections.length} sections`);
+
+    return { videoId, summary: result, markdown: md };
   }
 }
