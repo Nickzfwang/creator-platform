@@ -8,6 +8,7 @@ import {
 import { randomBytes, createHash } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RedisService } from '../../redis/redis.service';
 import { CreateApiKeyDto } from './dto/create-api-key.dto';
 import { CreateWebhookDto } from './dto/create-webhook.dto';
 
@@ -75,7 +76,10 @@ const RATE_LIMITS: Record<string, { requestsPerMinute: number; requestsPerDay: n
 export class ApiGatewayService {
   private readonly logger = new Logger(ApiGatewayService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly redis: RedisService,
+  ) {}
 
   // ─── API Key Management ───
 
@@ -159,8 +163,11 @@ export class ApiGatewayService {
   async validateApiKey(rawKey: string): Promise<{ tenantId: string; scopes: string[] } | null> {
     const keyHash = createHash('sha256').update(rawKey).digest('hex');
 
-    // Note: For production scale, cache validated keys in Redis
-    // Current approach scans tenants — acceptable for < 1000 tenants
+    // Check Redis cache first
+    const cacheKey = `apikey:${keyHash}`;
+    const cached = await this.redis.get<{ tenantId: string; scopes: string[] }>(cacheKey);
+    if (cached) return cached;
+
     const tenants = await this.prisma.tenant.findMany({
       select: { id: true, settings: true },
     });
@@ -174,7 +181,11 @@ export class ApiGatewayService {
         matched.lastUsedAt = new Date().toISOString();
         settings.apiKeys = apiKeys;
         await this.updateTenantSettings(tenant.id, settings);
-        return { tenantId: tenant.id, scopes: matched.scopes };
+
+        const result = { tenantId: tenant.id, scopes: matched.scopes };
+        // Cache validated key for 5 minutes
+        await this.redis.set(cacheKey, result, 300);
+        return result;
       }
     }
 

@@ -19,6 +19,7 @@ import { SocialModule } from './modules/social/social.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { ApiGatewayModule } from './modules/api-gateway/api-gateway.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { RedisModule } from './redis/redis.module';
 import { AiModule } from './modules/ai/ai.module';
 import { TrendRadarModule } from './modules/trend-radar/trend-radar.module';
 import { ContentClipModule } from './modules/content-clip/content-clip.module';
@@ -35,6 +36,7 @@ import { InteractionsModule } from './modules/interactions/interactions.module';
 @Module({
   imports: [
     PrismaModule,
+    RedisModule,
     AiModule,
     ConfigModule.forRoot({
       isGlobal: true,

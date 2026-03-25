@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PostStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RedisService } from '../../redis/redis.service';
 import { PaymentService } from '../payment/payment.service';
 
 interface PlatformAnalyticsRow {
@@ -24,6 +25,7 @@ export class DashboardService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly redis: RedisService,
     private readonly paymentService: PaymentService,
   ) {}
 
@@ -34,6 +36,9 @@ export class DashboardService {
     tenantId: string,
     period: '7d' | '30d' | '90d' = '30d',
   ) {
+    const cacheKey = `dashboard:overview:${userId}:${period}`;
+    const cached = await this.redis.get<Record<string, unknown>>(cacheKey);
+    if (cached) return cached;
     const days = period === '7d' ? 7 : period === '90d' ? 90 : 30;
     const now = new Date();
     const startDate = new Date(now);
@@ -135,7 +140,7 @@ export class DashboardService {
       engagementRate: data.count > 0 ? Math.round((data.engagementRate / data.count) * 100) / 100 : 0,
     }));
 
-    return {
+    const result = {
       metrics: {
         totalFollowers: currentMetrics.followers,
         followersChange: currentMetrics.followers - previousMetrics.followers,
@@ -153,6 +158,10 @@ export class DashboardService {
       topContent: top5Content,
       platformBreakdown,
     };
+
+    // Cache for 5 minutes
+    await this.redis.set(cacheKey, result, 300);
+    return result;
   }
 
   // ─── Recent Posts ───

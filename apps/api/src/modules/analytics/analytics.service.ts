@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SocialPlatform, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RedisService } from '../../redis/redis.service';
 
 interface DateRange {
   start: Date;
@@ -18,11 +19,22 @@ export interface ContentItem {
 export class AnalyticsService {
   private readonly logger = new Logger(AnalyticsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly redis: RedisService,
+  ) {}
 
   // ─── Overview (aggregated across all platforms) ───
 
   async getOverview(userId: string, tenantId: string, period: string = '30d') {
+    return this.redis.getOrSet(
+      `analytics:overview:${userId}:${period}`,
+      300, // 5 min cache
+      () => this._getOverview(userId, tenantId, period),
+    );
+  }
+
+  private async _getOverview(userId: string, tenantId: string, period: string) {
     const { start, end } = this.parsePeriod(period);
     const prevRange = this.previousPeriod(start, end);
 
