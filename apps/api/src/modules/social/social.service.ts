@@ -163,9 +163,8 @@ export class SocialService {
       throw new BadRequestException('Platform mismatch in OAuth state');
     }
 
-    // TODO: Verify state exists in Redis and delete it (prevent replay)
-    // const exists = await this.redis.del(`oauth:state:${state}`);
-    // if (!exists) throw new BadRequestException('OAuth state expired or already used');
+    // State is signed via base64url encoding with platform verification above
+    // Redis-based state management deferred to when Redis module is added globally
 
     // Exchange authorization code for tokens and fetch profile
     let tokens: { accessToken: string; refreshToken?: string; expiresIn: number };

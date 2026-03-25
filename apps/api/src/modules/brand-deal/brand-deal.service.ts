@@ -231,7 +231,7 @@ export class BrandDealService {
     return {
       dealId: dto.dealId,
       proposal,
-      tokensUsed: 0, // TODO: Track actual token usage
+      tokensUsed: proposal ? Math.round(proposal.length / 4) : 0, // approximate token count
     };
   }
 

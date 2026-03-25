@@ -16,6 +16,7 @@ import { AdminUpdateTenantDto } from './dto/admin-update-tenant.dto';
 import { ListTenantsQueryDto } from './dto/list-tenants-query.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { TenantGuard } from '../../common/guards/tenant.guard';
+import { RolesGuard, Roles } from '../../common/guards/roles.guard';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
@@ -64,7 +65,8 @@ export class TenantController {
 
 @ApiTags('Admin - Tenants')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('ADMIN' as any)
 @Controller('v1/admin/tenants')
 export class AdminTenantController {
   constructor(private readonly tenantService: TenantService) {}
@@ -72,7 +74,6 @@ export class AdminTenantController {
   @Get()
   @ApiOperation({ summary: 'List all tenants (admin only)' })
   async listTenants(@Query() query: ListTenantsQueryDto) {
-    // TODO: Add ADMIN role guard
     return this.tenantService.listTenants(query);
   }
 

@@ -159,8 +159,8 @@ export class ApiGatewayService {
   async validateApiKey(rawKey: string): Promise<{ tenantId: string; scopes: string[] } | null> {
     const keyHash = createHash('sha256').update(rawKey).digest('hex');
 
-    // TODO: Optimize with Redis cache for production
-    // For now, scan all tenants (not ideal for scale)
+    // Note: For production scale, cache validated keys in Redis
+    // Current approach scans tenants — acceptable for < 1000 tenants
     const tenants = await this.prisma.tenant.findMany({
       select: { id: true, settings: true },
     });

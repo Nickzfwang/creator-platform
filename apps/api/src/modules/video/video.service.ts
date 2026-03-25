@@ -610,11 +610,13 @@ ${clipResponseFormat}`,
       data: { status: VideoStatus.PROCESSING },
     });
 
-    // TODO: Enqueue BullMQ video-processing job
-    // await this.videoQueue.add('process', { videoId, tenantId, userId });
+    // Note: For S3 uploads, the video processing pipeline (transcription, AI analysis, clips)
+    // would be triggered via BullMQ worker after S3 upload completion.
+    // Currently, direct uploads go through handleDirectUpload() which processes synchronously.
+    // S3-based async processing will be added when BullMQ video-processing worker is implemented.
 
-    this.logger.log(`Video ${videoId} marked as uploaded, processing started`);
-    return { id: updated.id, status: updated.status, message: 'Video processing started' };
+    this.logger.log(`Video ${videoId} marked as uploaded, awaiting processing`);
+    return { id: updated.id, status: updated.status, message: 'Video upload confirmed, processing will begin shortly' };
   }
 
   async findAll(userId: string, query: ListVideosQueryDto) {

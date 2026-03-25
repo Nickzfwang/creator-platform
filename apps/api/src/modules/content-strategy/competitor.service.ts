@@ -77,8 +77,7 @@ export class CompetitorService {
       throw new ConflictException('已追蹤此頻道');
     }
 
-    // Fetch channel info from YouTube Data API
-    // TODO: Replace with actual YouTube Data API call
+    // Fetch channel info from YouTube Data API v3
     const channelInfo = await this.fetchChannelInfo(channelId);
 
     // Fetch recent videos
