@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import Script from "next/script";
 import { useAuthStore } from "@/lib/auth-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,10 +28,38 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>;
 
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isLoading } = useAuthStore();
+  const { login, googleLogin, isLoading } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
+
+  const handleGoogleCallback = useCallback(async (response: { credential: string }) => {
+    setError(null);
+    try {
+      await googleLogin(response.credential);
+      toast.success("Google 登入成功");
+      router.push("/");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Google 登入失敗";
+      setError(message);
+      toast.error(message);
+    }
+  }, [googleLogin, router]);
+
+  useEffect(() => {
+    if (GOOGLE_CLIENT_ID && typeof window !== "undefined" && (window as any).google) {
+      (window as any).google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleCallback,
+      });
+      (window as any).google.accounts.id.renderButton(
+        document.getElementById("google-signin-btn"),
+        { theme: "outline", size: "large", width: "100%", text: "signin_with" },
+      );
+    }
+  }, [handleGoogleCallback]);
 
   const {
     register,
@@ -103,6 +132,36 @@ export default function LoginPage() {
             {isLoading ? "登入中..." : "登入"}
           </Button>
         </form>
+
+        {GOOGLE_CLIENT_ID && (
+          <>
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">或</span>
+              </div>
+            </div>
+            <div id="google-signin-btn" className="flex justify-center" />
+            <Script
+              src="https://accounts.google.com/gsi/client"
+              strategy="afterInteractive"
+              onLoad={() => {
+                if ((window as any).google) {
+                  (window as any).google.accounts.id.initialize({
+                    client_id: GOOGLE_CLIENT_ID,
+                    callback: handleGoogleCallback,
+                  });
+                  (window as any).google.accounts.id.renderButton(
+                    document.getElementById("google-signin-btn"),
+                    { theme: "outline", size: "large", width: 360, text: "signin_with" },
+                  );
+                }
+              }}
+            />
+          </>
+        )}
       </CardContent>
 
       <CardFooter className="justify-center">
