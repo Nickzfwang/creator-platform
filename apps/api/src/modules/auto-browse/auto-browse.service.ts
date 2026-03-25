@@ -106,34 +106,36 @@ export class AutoBrowseService {
 
     await Promise.all(fetchPromises);
 
-    // Browser-based sources
+    // Browser-based sources (run sequentially to avoid resource exhaustion)
+    const browserSources: Array<{ name: string; scraper: () => Promise<FetchedPost[]> }> = [];
+
     if (category === 'dcard' || category === 'all') {
-      try {
-        const posts = await new DcardScraper().scrape({ maxPosts: category === 'dcard' ? maxPosts : 8 });
-        allPosts.push(...posts);
-        this.logger.log(`Scraped ${posts.length} posts from Dcard`);
-      } catch (e) {
-        this.logger.warn(`Dcard scraping failed: ${e.message}`);
-      }
+      browserSources.push({
+        name: 'Dcard',
+        scraper: () => new DcardScraper().scrape({ maxPosts: category === 'dcard' ? maxPosts : 8 }),
+      });
     }
-
     if (category === 'threads' || category === 'all') {
-      try {
-        const posts = await new ThreadsScraper().scrape({ maxPosts: category === 'threads' ? maxPosts : 8 });
-        allPosts.push(...posts);
-        this.logger.log(`Scraped ${posts.length} posts from Threads`);
-      } catch (e) {
-        this.logger.warn(`Threads scraping failed: ${e.message}`);
-      }
+      browserSources.push({
+        name: 'Threads',
+        scraper: () => new ThreadsScraper().scrape({ maxPosts: category === 'threads' ? maxPosts : 8 }),
+      });
+    }
+    if (category === 'tiktok' || category === 'all') {
+      browserSources.push({
+        name: 'TikTok',
+        scraper: () => new TikTokScraper().scrape({ maxPosts: category === 'tiktok' ? maxPosts : 8 }),
+      });
     }
 
-    if (category === 'tiktok' || category === 'all') {
+    // Run scrapers one at a time to avoid launching multiple browsers simultaneously
+    for (const source of browserSources) {
       try {
-        const posts = await new TikTokScraper().scrape({ maxPosts: category === 'tiktok' ? maxPosts : 8 });
+        const posts = await source.scraper();
         allPosts.push(...posts);
-        this.logger.log(`Scraped ${posts.length} posts from TikTok`);
+        this.logger.log(`Scraped ${posts.length} posts from ${source.name}`);
       } catch (e) {
-        this.logger.warn(`TikTok scraping failed: ${e.message}`);
+        this.logger.warn(`${source.name} scraping failed: ${(e as Error).message}`);
       }
     }
 

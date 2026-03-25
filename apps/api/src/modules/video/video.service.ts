@@ -908,6 +908,24 @@ ${clipResponseFormat}`,
       throw new BadRequestException('Video file not found on disk. It may have been deleted.');
     }
 
+    // Check if video has audio stream before attempting extraction
+    let hasAudio = false;
+    try {
+      const probeOutput = execSync(
+        `ffprobe -v quiet -print_format json -show_streams "${sourceFile}"`,
+        { encoding: 'utf-8', timeout: 10000 },
+      );
+      const streams = JSON.parse(probeOutput).streams || [];
+      hasAudio = streams.some((s: { codec_type: string }) => s.codec_type === 'audio');
+    } catch {
+      this.logger.warn(`ffprobe failed for ${videoId}, assuming has audio`);
+      hasAudio = true;
+    }
+
+    if (!hasAudio) {
+      throw new BadRequestException('此影片沒有音訊軌道，無法進行語音分析。請上傳含有語音的影片。');
+    }
+
     // Extract audio
     const subtitlesDir = join(process.cwd(), 'uploads', 'subtitles');
     if (!existsSync(subtitlesDir)) mkdirSync(subtitlesDir, { recursive: true });
