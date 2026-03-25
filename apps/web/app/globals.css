@@ -55,5 +55,35 @@
   }
   body {
     @apply bg-background text-foreground;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* PWA standalone mode */
+  @media (display-mode: standalone) {
+    body {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  }
+
+  /* Smooth scrolling on touch devices */
+  @media (hover: none) {
+    * {
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+
+  /* Prevent text selection on interactive elements for mobile */
+  button, [role="button"] {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Better touch targets */
+  @media (max-width: 768px) {
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
   }
 }
