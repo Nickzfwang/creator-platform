@@ -904,24 +904,34 @@ ${clipResponseFormat}`,
     }
 
     const sourceFile = this.findSourceFile(video.originalUrl);
-    if (!sourceFile) throw new NotFoundException('Video file not found');
+    if (!sourceFile) {
+      throw new BadRequestException('Video file not found on disk. It may have been deleted.');
+    }
 
     // Extract audio
     const subtitlesDir = join(process.cwd(), 'uploads', 'subtitles');
     if (!existsSync(subtitlesDir)) mkdirSync(subtitlesDir, { recursive: true });
     const audioFile = join(subtitlesDir, `${Date.now()}-words-audio.mp3`);
 
-    await new Promise<void>((resolve, reject) => {
-      ffmpeg(sourceFile)
-        .outputOptions(['-vn', '-acodec', 'libmp3lame', '-ar', '16000', '-ac', '1', '-y'])
-        .output(audioFile)
-        .on('end', () => resolve())
-        .on('error', (err: Error) => reject(err))
-        .run();
-    });
+    try {
+      await new Promise<void>((resolve, reject) => {
+        ffmpeg(sourceFile)
+          .outputOptions(['-vn', '-acodec', 'libmp3lame', '-ar', '16000', '-ac', '1', '-y'])
+          .output(audioFile)
+          .on('end', () => resolve())
+          .on('error', (err: Error) => reject(err))
+          .run();
+      });
+    } catch (e) {
+      throw new BadRequestException(`Audio extraction failed: ${(e as Error).message}`);
+    }
 
     try {
       const result = await this.aiService.transcribeVerbose(audioFile);
+
+      if (!result.words.length) {
+        throw new BadRequestException('Whisper returned no word-level data. Check OPENAI_API_KEY and audio quality.');
+      }
 
       await this.prisma.video.update({
         where: { id: videoId },
@@ -938,6 +948,9 @@ ${clipResponseFormat}`,
         durationSeconds: video.durationSeconds,
         message: 'Word-level timestamps generated',
       };
+    } catch (e) {
+      if (e instanceof BadRequestException) throw e;
+      throw new BadRequestException(`Word-level transcription failed: ${(e as Error).message}`);
     } finally {
       try { unlinkSync(audioFile); } catch { /* ignore */ }
     }
@@ -960,13 +973,18 @@ ${clipResponseFormat}`,
 
     // Auto-transcribe if no word-level data
     if (!words || words.length === 0) {
-      const result = await this.transcribeWords(videoId, userId);
-      const refreshed = await this.prisma.video.findUnique({
-        where: { id: videoId },
-        select: { metadata: true },
-      });
-      const refreshedMeta = (refreshed?.metadata as Record<string, unknown>) ?? {};
-      words = refreshedMeta.whisperWords as Array<{ word: string; start: number; end: number }>;
+      try {
+        await this.transcribeWords(videoId, userId);
+        const refreshed = await this.prisma.video.findUnique({
+          where: { id: videoId },
+          select: { metadata: true },
+        });
+        const refreshedMeta = (refreshed?.metadata as Record<string, unknown>) ?? {};
+        words = refreshedMeta.whisperWords as Array<{ word: string; start: number; end: number }>;
+      } catch (e) {
+        this.logger.warn(`Auto-transcribe failed for detectFillers: ${(e as Error).message}`);
+        throw e;
+      }
     }
 
     if (!words || words.length === 0) {
@@ -1155,9 +1173,11 @@ ${clipResponseFormat}`,
         }`
       : '';
 
-    const result = await this.aiService.generateJson<{
-      chapters: Array<{ title: string; startTime: number }>;
-    }>(
+    let result: { chapters: Array<{ title: string; startTime: number }> } | null;
+    try {
+      result = await this.aiService.generateJson<{
+        chapters: Array<{ title: string; startTime: number }>;
+      }>(
       `你是影片內容結構分析專家。根據影片轉錄稿，識別主題轉換點並產出 YouTube 章節標記。
 
 規則：
@@ -1172,8 +1192,15 @@ ${clipResponseFormat}`,
       `影片標題：「${video.title}」\n時長：${duration} 秒\n\n轉錄稿：\n${transcript.slice(0, 4000)}${timestampHint}`,
       { model: 'gpt-4o-mini', maxTokens: 1024 },
     );
+    } catch (e) {
+      throw new BadRequestException(`Chapter generation failed: ${(e as Error).message}`);
+    }
 
-    const chapters = (result?.chapters ?? []).map((ch, i) => ({
+    if (!result?.chapters?.length) {
+      throw new BadRequestException('AI failed to generate chapters. Please try again.');
+    }
+
+    const chapters = (result.chapters).map((ch, i) => ({
       id: `ch-${i}`,
       title: ch.title,
       startTime: Math.max(0, Math.round(ch.startTime)),

@@ -8,7 +8,7 @@
 
 const PP_API_BASE = 'http://localhost:4000/api/v1';
 
-async function apiRequest(
+async function ppApiRequest(
   path: string,
   options: { method?: string; body?: object; token?: string } = {},
 ) {
@@ -26,9 +26,9 @@ async function apiRequest(
   return { status: res.status, data };
 }
 
-async function registerUser(): Promise<{ token: string; userId: string }> {
+async function ppRegisterUser(): Promise<{ token: string; userId: string }> {
   const email = `e2e-pp-${Date.now()}@test.com`;
-  const res = await apiRequest('/auth/register', {
+  const res = await ppApiRequest('/auth/register', {
     method: 'POST',
     body: { email, password: 'Test1234', displayName: 'PP Tester' },
   });
@@ -39,24 +39,24 @@ describe('Post-Production Tools API E2E', () => {
   let auth: { token: string; userId: string };
 
   beforeAll(async () => {
-    auth = await registerUser();
+    auth = await ppRegisterUser();
   }, 15000);
 
   // ─── Authentication ───
 
   describe('Authentication checks', () => {
     it('POST /transcribe-words should return 401 without token', async () => {
-      const res = await apiRequest('/videos/some-id/transcribe-words', { method: 'POST' });
+      const res = await ppApiRequest('/videos/some-id/transcribe-words', { method: 'POST' });
       expect(res.status).toBe(401);
     });
 
     it('POST /detect-fillers should return 401 without token', async () => {
-      const res = await apiRequest('/videos/some-id/detect-fillers', { method: 'POST' });
+      const res = await ppApiRequest('/videos/some-id/detect-fillers', { method: 'POST' });
       expect(res.status).toBe(401);
     });
 
     it('POST /cut-fillers should return 401 without token', async () => {
-      const res = await apiRequest('/videos/some-id/cut-fillers', {
+      const res = await ppApiRequest('/videos/some-id/cut-fillers', {
         method: 'POST',
         body: { fillerIds: [] },
       });
@@ -64,12 +64,12 @@ describe('Post-Production Tools API E2E', () => {
     });
 
     it('POST /generate-chapters should return 401 without token', async () => {
-      const res = await apiRequest('/videos/some-id/generate-chapters', { method: 'POST' });
+      const res = await ppApiRequest('/videos/some-id/generate-chapters', { method: 'POST' });
       expect(res.status).toBe(401);
     });
 
     it('PATCH /chapters should return 401 without token', async () => {
-      const res = await apiRequest('/videos/some-id/chapters', {
+      const res = await ppApiRequest('/videos/some-id/chapters', {
         method: 'PATCH',
         body: { chapters: [] },
       });
@@ -77,12 +77,12 @@ describe('Post-Production Tools API E2E', () => {
     });
 
     it('POST /generate-script-summary should return 401 without token', async () => {
-      const res = await apiRequest('/videos/some-id/generate-script-summary', { method: 'POST' });
+      const res = await ppApiRequest('/videos/some-id/generate-script-summary', { method: 'POST' });
       expect(res.status).toBe(401);
     });
 
     it('POST /multi-platform should return 401 without token', async () => {
-      const res = await apiRequest('/videos/multi-platform', {
+      const res = await ppApiRequest('/videos/multi-platform', {
         method: 'POST',
         body: { videoId: 'x', clipId: 'x', platforms: [] },
       });
@@ -94,7 +94,7 @@ describe('Post-Production Tools API E2E', () => {
 
   describe('Input validation', () => {
     it('POST /transcribe-words should return 400 for invalid UUID', async () => {
-      const res = await apiRequest('/videos/not-uuid/transcribe-words', {
+      const res = await ppApiRequest('/videos/not-uuid/transcribe-words', {
         method: 'POST',
         token: auth.token,
       });
@@ -103,7 +103,7 @@ describe('Post-Production Tools API E2E', () => {
 
     it('POST /detect-fillers should return 404 for non-existent video', async () => {
       const fakeId = '00000000-0000-0000-0000-000000000010';
-      const res = await apiRequest(`/videos/${fakeId}/detect-fillers`, {
+      const res = await ppApiRequest(`/videos/${fakeId}/detect-fillers`, {
         method: 'POST',
         token: auth.token,
       });
@@ -112,7 +112,7 @@ describe('Post-Production Tools API E2E', () => {
 
     it('POST /cut-fillers should return 404 for non-existent video', async () => {
       const fakeId = '00000000-0000-0000-0000-000000000011';
-      const res = await apiRequest(`/videos/${fakeId}/cut-fillers`, {
+      const res = await ppApiRequest(`/videos/${fakeId}/cut-fillers`, {
         method: 'POST',
         token: auth.token,
         body: { fillerIds: ['filler-0'] },
@@ -122,7 +122,7 @@ describe('Post-Production Tools API E2E', () => {
 
     it('POST /cut-fillers should return 400 for empty fillerIds', async () => {
       const fakeId = '00000000-0000-0000-0000-000000000012';
-      const res = await apiRequest(`/videos/${fakeId}/cut-fillers`, {
+      const res = await ppApiRequest(`/videos/${fakeId}/cut-fillers`, {
         method: 'POST',
         token: auth.token,
         body: { fillerIds: [] },
@@ -132,7 +132,7 @@ describe('Post-Production Tools API E2E', () => {
 
     it('POST /generate-chapters should return 404 for non-existent video', async () => {
       const fakeId = '00000000-0000-0000-0000-000000000013';
-      const res = await apiRequest(`/videos/${fakeId}/generate-chapters`, {
+      const res = await ppApiRequest(`/videos/${fakeId}/generate-chapters`, {
         method: 'POST',
         token: auth.token,
       });
@@ -141,7 +141,7 @@ describe('Post-Production Tools API E2E', () => {
 
     it('PATCH /chapters should return 404 for non-existent video', async () => {
       const fakeId = '00000000-0000-0000-0000-000000000014';
-      const res = await apiRequest(`/videos/${fakeId}/chapters`, {
+      const res = await ppApiRequest(`/videos/${fakeId}/chapters`, {
         method: 'PATCH',
         token: auth.token,
         body: { chapters: [{ id: 'ch-0', title: 'Test', startTime: 0 }] },
@@ -151,7 +151,7 @@ describe('Post-Production Tools API E2E', () => {
 
     it('POST /generate-script-summary should return 404 for non-existent video', async () => {
       const fakeId = '00000000-0000-0000-0000-000000000015';
-      const res = await apiRequest(`/videos/${fakeId}/generate-script-summary`, {
+      const res = await ppApiRequest(`/videos/${fakeId}/generate-script-summary`, {
         method: 'POST',
         token: auth.token,
       });
@@ -159,7 +159,7 @@ describe('Post-Production Tools API E2E', () => {
     });
 
     it('POST /multi-platform should return 400 for invalid UUIDs', async () => {
-      const res = await apiRequest('/videos/multi-platform', {
+      const res = await ppApiRequest('/videos/multi-platform', {
         method: 'POST',
         token: auth.token,
         body: { videoId: 'not-uuid', clipId: 'not-uuid', platforms: ['youtube_shorts'] },
@@ -169,7 +169,7 @@ describe('Post-Production Tools API E2E', () => {
 
     it('POST /multi-platform should return 400 for empty platforms', async () => {
       const fakeId = '00000000-0000-0000-0000-000000000016';
-      const res = await apiRequest('/videos/multi-platform', {
+      const res = await ppApiRequest('/videos/multi-platform', {
         method: 'POST',
         token: auth.token,
         body: { videoId: fakeId, clipId: fakeId, platforms: [] },
@@ -182,15 +182,15 @@ describe('Post-Production Tools API E2E', () => {
 
   describe('Multi-tenancy isolation', () => {
     it('should not allow accessing another user video endpoints', async () => {
-      const auth2 = await registerUser();
+      const auth2 = await ppRegisterUser();
       const fakeId = '00000000-0000-0000-0000-000000000017';
 
       // Both users try same fake video — both should get 404
-      const res1 = await apiRequest(`/videos/${fakeId}/detect-fillers`, {
+      const res1 = await ppApiRequest(`/videos/${fakeId}/detect-fillers`, {
         method: 'POST',
         token: auth.token,
       });
-      const res2 = await apiRequest(`/videos/${fakeId}/detect-fillers`, {
+      const res2 = await ppApiRequest(`/videos/${fakeId}/detect-fillers`, {
         method: 'POST',
         token: auth2.token,
       });
@@ -204,7 +204,7 @@ describe('Post-Production Tools API E2E', () => {
 
   describe('API response format', () => {
     it('should return proper error format for invalid UUID', async () => {
-      const res = await apiRequest('/videos/bad-uuid/generate-chapters', {
+      const res = await ppApiRequest('/videos/bad-uuid/generate-chapters', {
         method: 'POST',
         token: auth.token,
       });
@@ -215,7 +215,7 @@ describe('Post-Production Tools API E2E', () => {
 
     it('POST /transcribe-words should return proper error for non-PROCESSED video', async () => {
       const fakeId = '00000000-0000-0000-0000-000000000018';
-      const res = await apiRequest(`/videos/${fakeId}/transcribe-words`, {
+      const res = await ppApiRequest(`/videos/${fakeId}/transcribe-words`, {
         method: 'POST',
         token: auth.token,
       });

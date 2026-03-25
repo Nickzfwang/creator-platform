@@ -142,29 +142,37 @@ export class AiService {
     filePath: string,
     options?: { language?: string },
   ): Promise<{ text: string; words: Array<{ word: string; start: number; end: number }> }> {
-    if (!this.openai) throw new Error('OpenAI not configured');
+    if (!this.openai) {
+      this.logger.warn('OpenAI not configured, returning empty transcription');
+      return { text: '', words: [] };
+    }
 
-    const { createReadStream } = require('fs');
+    try {
+      const { createReadStream } = require('fs');
 
-    const result = await this.openai.audio.transcriptions.create({
-      file: createReadStream(filePath),
-      model: 'whisper-1',
-      response_format: 'verbose_json',
-      timestamp_granularities: ['word'],
-      language: options?.language ?? 'zh',
-    });
+      const result = await this.openai.audio.transcriptions.create({
+        file: createReadStream(filePath),
+        model: 'whisper-1',
+        response_format: 'verbose_json',
+        timestamp_granularities: ['word'],
+        language: options?.language ?? 'zh',
+      });
 
-    const words = (result as any).words ?? [];
-    const text = (result as any).text ?? '';
+      const words = (result as any).words ?? [];
+      const text = (result as any).text ?? '';
 
-    return {
-      text,
-      words: words.map((w: any) => ({
-        word: String(w.word ?? ''),
-        start: Number(w.start ?? 0),
-        end: Number(w.end ?? 0),
-      })),
-    };
+      return {
+        text,
+        words: words.map((w: any) => ({
+          word: String(w.word ?? ''),
+          start: Number(w.start ?? 0),
+          end: Number(w.end ?? 0),
+        })),
+      };
+    } catch (error) {
+      this.logger.error(`Whisper verbose transcription error: ${error}`);
+      throw new Error(`Transcription failed: ${(error as Error).message}`);
+    }
   }
 
   /**
