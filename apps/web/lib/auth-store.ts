@@ -128,6 +128,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
     if (!refreshToken) {
+      setAuthCookie(false);
       set({ isHydrated: true });
       return;
     }

@@ -379,6 +379,37 @@ pnpm dev                      # 啟動前後端
 
 ---
 
+## Phase 4：AI 內容再利用引擎 ✅
+
+**檔案位置：** `apps/api/src/modules/content-repurpose/`、`apps/web/hooks/use-repurpose.ts`
+
+後端 API：
+- [x] Prisma Schema 新增 RepurposeJob + RepurposeItem（3 enums, 2 models）
+- [x] DTOs（UpdateRepurposeItemDto, ScheduleItemsDto, CreateCampaignDto, GenerateShortDto）
+- [x] ContentRepurposeService — AI 內容生成引擎（GPT-4o-mini 社群貼文 + GPT-4o 精華片段 + Email）
+- [x] ContentRepurposeProcessor — BullMQ Worker（content-repurpose queue）
+- [x] ContentRepurposeController — 8 支 API endpoints
+- [x] ContentRepurposeModule — 模組註冊 + BullMQ queue
+- [x] VideoService 整合 — 影片 PROCESSED 後自動觸發內容生成
+- [x] GET /v1/content-repurpose/video/:videoId — 取得 job + items
+- [x] POST /v1/content-repurpose/video/:videoId/generate — 手動觸發/重新生成
+- [x] PATCH /v1/content-repurpose/items/:itemId — 編輯項目
+- [x] POST /v1/content-repurpose/items/:itemId/reset — 還原原始
+- [x] POST /v1/content-repurpose/items/:itemId/regenerate — 單項重新生成
+- [x] POST /v1/content-repurpose/items/schedule — 批次排程
+- [x] POST /v1/content-repurpose/items/:itemId/create-campaign — 建立 Email Campaign
+
+前端 UI：
+- [x] useRepurposeJob hook（含自動 polling）
+- [x] RepurposePanel 元件（整合在影片詳情 Dialog）
+- [x] 社群貼文子面板（篩選、勾選、編輯、排程）
+- [x] 短影片建議子面板（時間戳、推薦原因）
+- [x] Email 子面板（預覽、建立 Campaign）
+- [x] 批次排程功能
+- [x] 編輯 Dialog（含還原原始版本）
+
+---
+
 ## 技術債 / 基礎設施待辦
 
 - [ ] CI/CD Pipeline（GitHub Actions：lint → test → build → deploy）

@@ -12,6 +12,7 @@ import { execSync } from 'child_process';
 import * as ffmpeg from 'fluent-ffmpeg';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
+import { ContentRepurposeService } from '../content-repurpose/content-repurpose.service';
 import { RequestUploadUrlDto } from './dto/request-upload-url.dto';
 import { ListVideosQueryDto } from './dto/list-videos-query.dto';
 import { UpdateClipDto } from './dto/update-clip.dto';
@@ -33,6 +34,7 @@ export class VideoService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiService: AiService,
+    private readonly contentRepurposeService: ContentRepurposeService,
   ) {}
 
   async requestUploadUrl(userId: string, tenantId: string, dto: RequestUploadUrlDto) {
@@ -156,6 +158,14 @@ export class VideoService {
 
     // Step 4: Generate AI clips (uses transcript for smarter cuts) + FFmpeg cut
     await this.generateAiClips(video.id, tenantId, title, estimatedDuration, transcript);
+
+    // Step 5: Trigger content repurpose generation (async, non-blocking)
+    try {
+      await this.contentRepurposeService.triggerGeneration(video.id, userId, tenantId);
+      this.logger.log(`Content repurpose triggered for video ${video.id}`);
+    } catch (e) {
+      this.logger.warn(`Content repurpose trigger failed for ${video.id}: ${e}`);
+    }
 
     this.logger.log(`Video ${video.id} fully processed: ${file.filename}`);
     return { id: video.id, status: 'PROCESSED', message: 'Video uploaded and processed' };

@@ -66,5 +66,16 @@
     "prisma": "^5.18.0",
     "ts-jest": "^29.2.0",
     "typescript": "^5.5.0"
+  },
+  "jest": {
+    "moduleFileExtensions": ["js", "json", "ts"],
+    "rootDir": "src",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.ts$": "ts-jest"
+    },
+    "collectCoverageFrom": ["**/*.ts", "!**/*.spec.ts", "!**/*.d.ts"],
+    "coverageDirectory": "../coverage",
+    "testEnvironment": "node"
   }
 }

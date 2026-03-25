@@ -4,10 +4,20 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || '';
 const assetUrl = (path: string) => path?.startsWith('http') ? path : `${BACKEND_URL}${path}`;
 
 import { useState, useRef } from "react";
-import { Plus, Upload, Trash2, Film, Scissors, Clock, Sparkles, Play, Share2, Loader2, Copy, Check, FileText, Smartphone, Download, Captions } from "lucide-react";
+import { Plus, Upload, Trash2, Film, Scissors, Clock, Sparkles, Play, Share2, Loader2, Copy, Check, FileText, Smartphone, Download, Captions, Megaphone, RefreshCw, Mail, Video as VideoIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useVideos, useCreateVideo, useDeleteVideo, useDirectUpload, useVideoClips, useGenerateClips, useGenerateShort, useGenerateAllShorts, useGenerateSubtitles } from "@/hooks/use-videos";
 import { useAiGeneratePost } from "@/hooks/use-posts";
+import {
+  useRepurposeJob,
+  useTriggerRepurpose,
+  useUpdateRepurposeItem,
+  useResetRepurposeItem,
+  useRegenerateRepurposeItem,
+  useScheduleRepurposeItems,
+  useCreateCampaignFromItem,
+  type RepurposeItem,
+} from "@/hooks/use-repurpose";
 import { api } from "@/lib/api";
 import {
   Select,
@@ -33,6 +43,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { Video } from "@/lib/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
@@ -246,6 +257,492 @@ const platformLabels: Record<string, string> = {
   FACEBOOK: "Facebook",
   TWITTER: "X / Twitter",
 };
+
+// ─── Content Repurpose Panel ───
+
+const PLATFORM_LABELS: Record<string, string> = {
+  YOUTUBE: "YouTube",
+  INSTAGRAM: "Instagram",
+  FACEBOOK: "Facebook",
+  TWITTER: "X / Twitter",
+  THREADS: "Threads",
+};
+
+const STYLE_LABELS: Record<string, string> = {
+  knowledge: "知識型",
+  story: "故事型",
+  interactive: "互動型",
+};
+
+function RepurposePanel({ videoId }: { videoId: string }) {
+  const { data, isLoading } = useRepurposeJob(videoId);
+  const triggerRepurpose = useTriggerRepurpose();
+  const updateItem = useUpdateRepurposeItem();
+  const resetItem = useResetRepurposeItem();
+  const regenerateItem = useRegenerateRepurposeItem();
+  const scheduleItems = useScheduleRepurposeItems();
+  const createCampaign = useCreateCampaignFromItem();
+
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [editingItem, setEditingItem] = useState<RepurposeItem | null>(null);
+  const [editText, setEditText] = useState("");
+  const [activeTab, setActiveTab] = useState<"posts" | "shorts" | "email">("posts");
+  const [filterPlatform, setFilterPlatform] = useState<string>("all");
+  const [filterStyle, setFilterStyle] = useState<string>("all");
+
+  const job = data?.job;
+
+  // No job yet — show trigger button
+  if (!job && !isLoading) {
+    return (
+      <div className="rounded-lg border p-4">
+        <div className="flex items-center justify-between">
+          <h4 className="flex items-center gap-2 text-sm font-medium">
+            <Megaphone className="h-4 w-4" /> AI 推廣內容
+          </h4>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={triggerRepurpose.isPending}
+            onClick={() => {
+              triggerRepurpose.mutate(videoId, {
+                onSuccess: () => toast.success("內容生成已排入佇列"),
+                onError: (e) => toast.error(e.message),
+              });
+            }}
+          >
+            {triggerRepurpose.isPending ? (
+              <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> 排入中...</>
+            ) : (
+              <><Sparkles className="mr-1 h-3 w-3" /> 生成推廣內容</>
+            )}
+          </Button>
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">
+          AI 將根據影片內容自動生成 15 則社群貼文、短影片建議和 Email 通知
+        </p>
+      </div>
+    );
+  }
+
+  // Loading or processing state
+  if (isLoading || job?.status === "PENDING" || job?.status === "PROCESSING") {
+    return (
+      <div className="rounded-lg border p-4">
+        <div className="flex items-center gap-2 text-sm">
+          <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+          <span className="font-medium">AI 正在生成推廣內容...</span>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          正在分析影片內容並生成多平台社群貼文、短影片建議和 Email 通知，約需 30-60 秒
+        </p>
+      </div>
+    );
+  }
+
+  // Failed state
+  if (job?.status === "FAILED") {
+    return (
+      <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-red-700 dark:text-red-400">
+            推廣內容生成失敗：{job.errorMessage || "未知錯誤"}
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              triggerRepurpose.mutate(videoId, {
+                onSuccess: () => toast.success("重新生成已排入佇列"),
+                onError: (e) => toast.error(e.message),
+              });
+            }}
+          >
+            <RefreshCw className="mr-1 h-3 w-3" /> 重新生成
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Completed — show items
+  const items = job?.items ?? [];
+  const socialPosts = items.filter((i) => i.type === "SOCIAL_POST");
+  const shortSuggestions = items.filter((i) => i.type === "SHORT_VIDEO_SUGGESTION");
+  const emailItems = items.filter((i) => i.type === "EMAIL");
+
+  const filteredPosts = socialPosts.filter((p) => {
+    if (filterPlatform !== "all" && p.platform !== filterPlatform) return false;
+    if (filterStyle !== "all" && p.style !== filterStyle) return false;
+    return true;
+  });
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSchedule = () => {
+    if (selectedIds.size === 0) return;
+    scheduleItems.mutate(
+      { itemIds: Array.from(selectedIds) },
+      {
+        onSuccess: (result) => {
+          toast.success(`已排程 ${result.scheduled.length} 則貼文`);
+          if (result.failed.length > 0) {
+            toast.error(`${result.failed.length} 則排程失敗`);
+          }
+          setSelectedIds(new Set());
+        },
+        onError: (e) => toast.error(e.message),
+      },
+    );
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingItem) return;
+    const content = editingItem.content as any;
+    updateItem.mutate(
+      {
+        itemId: editingItem.id,
+        data: { editedContent: { ...content, contentText: editText } },
+      },
+      {
+        onSuccess: () => {
+          toast.success("已儲存");
+          setEditingItem(null);
+        },
+        onError: (e) => toast.error(e.message),
+      },
+    );
+  };
+
+  return (
+    <div className="rounded-lg border p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h4 className="flex items-center gap-2 text-sm font-medium">
+          <Megaphone className="h-4 w-4" /> AI 推廣內容
+          <Badge variant="secondary">{items.length} 則</Badge>
+        </h4>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            triggerRepurpose.mutate(videoId, {
+              onSuccess: () => toast.success("重新生成已排入佇列"),
+              onError: (e) => toast.error(e.message),
+            });
+          }}
+        >
+          <RefreshCw className="mr-1 h-3 w-3" /> 重新生成
+        </Button>
+      </div>
+
+      {/* Sub-tabs */}
+      <div className="flex gap-1 border-b">
+        {[
+          { key: "posts" as const, label: `社群貼文 (${socialPosts.length})`, icon: Share2 },
+          { key: "shorts" as const, label: `短影片建議 (${shortSuggestions.length})`, icon: VideoIcon },
+          { key: "email" as const, label: `Email (${emailItems.length})`, icon: Mail },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            className={`flex items-center gap-1 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
+              activeTab === tab.key
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setActiveTab(tab.key)}
+          >
+            <tab.icon className="h-3 w-3" />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Social Posts Tab */}
+      {activeTab === "posts" && (
+        <div className="space-y-3">
+          {/* Filters */}
+          <div className="flex gap-2">
+            <Select value={filterPlatform} onValueChange={setFilterPlatform}>
+              <SelectTrigger className="w-[140px] h-8 text-xs">
+                <SelectValue placeholder="平台" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">所有平台</SelectItem>
+                {Object.entries(PLATFORM_LABELS).map(([key, label]) => (
+                  <SelectItem key={key} value={key}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filterStyle} onValueChange={setFilterStyle}>
+              <SelectTrigger className="w-[120px] h-8 text-xs">
+                <SelectValue placeholder="風格" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">所有風格</SelectItem>
+                {Object.entries(STYLE_LABELS).map(([key, label]) => (
+                  <SelectItem key={key} value={key}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Post Cards */}
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {filteredPosts.map((item) => {
+              const content = item.content as any;
+              const isSelected = selectedIds.has(item.id);
+              const isScheduled = item.status === "SCHEDULED";
+              const isDiscarded = item.status === "DISCARDED";
+
+              return (
+                <div
+                  key={item.id}
+                  className={`rounded-md border p-3 text-sm space-y-1 ${
+                    isDiscarded ? "opacity-50" : ""
+                  } ${isSelected ? "border-primary bg-primary/5" : ""}`}
+                >
+                  <div className="flex items-start gap-2">
+                    {!isScheduled && !isDiscarded && (
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => toggleSelect(item.id)}
+                        className="mt-0.5"
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <Badge variant="outline" className="text-[10px]">
+                          {PLATFORM_LABELS[item.platform ?? ""] ?? item.platform}
+                        </Badge>
+                        <Badge variant="secondary" className="text-[10px]">
+                          {STYLE_LABELS[item.style ?? ""] ?? item.style}
+                        </Badge>
+                        {item.status === "EDITED" && (
+                          <Badge className="text-[10px] bg-yellow-100 text-yellow-800">已編輯</Badge>
+                        )}
+                        {isScheduled && (
+                          <Badge className="text-[10px] bg-green-100 text-green-800">已排程</Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-foreground line-clamp-3 whitespace-pre-wrap">
+                        {content?.contentText}
+                      </p>
+                      {content?.hashtags?.length > 0 && (
+                        <p className="text-[10px] text-blue-600 mt-1 truncate">
+                          {content.hashtags.slice(0, 8).join(" ")}
+                          {content.hashtags.length > 8 && ` +${content.hashtags.length - 8}`}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      {!isScheduled && !isDiscarded && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-[10px]"
+                            onClick={() => {
+                              setEditingItem(item);
+                              setEditText(content?.contentText ?? "");
+                            }}
+                          >
+                            編輯
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-[10px]"
+                            onClick={() => {
+                              regenerateItem.mutate(item.id, {
+                                onSuccess: () => toast.success("已重新生成"),
+                                onError: (e) => toast.error(e.message),
+                              });
+                            }}
+                          >
+                            重生
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Batch Schedule Bar */}
+          {selectedIds.size > 0 && (
+            <div className="flex items-center justify-between rounded-md bg-primary/10 p-2">
+              <span className="text-xs font-medium">已選 {selectedIds.size} 則</span>
+              <Button
+                size="sm"
+                disabled={scheduleItems.isPending}
+                onClick={handleSchedule}
+              >
+                {scheduleItems.isPending ? (
+                  <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> 排程中...</>
+                ) : (
+                  <><Clock className="mr-1 h-3 w-3" /> 建立排程</>
+                )}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Short Video Suggestions Tab */}
+      {activeTab === "shorts" && (
+        <div className="space-y-2 max-h-64 overflow-y-auto">
+          {shortSuggestions.length === 0 ? (
+            <p className="text-xs text-muted-foreground py-4 text-center">影片時長不足，無短影片建議</p>
+          ) : (
+            shortSuggestions.map((item) => {
+              const content = item.content as any;
+              return (
+                <div key={item.id} className="rounded-md border p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">{content?.title}</span>
+                    <Badge variant="secondary" className="text-[10px]">
+                      {fmt(content?.startTime)} - {fmt(content?.endTime)}
+                    </Badge>
+                  </div>
+                  {content?.transcriptExcerpt && (
+                    <p className="text-xs text-muted-foreground line-clamp-2">{content.transcriptExcerpt}</p>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] text-muted-foreground">推薦原因：</span>
+                      <span className="text-[10px]">{content?.reason}</span>
+                    </div>
+                    {content?.suggestedPlatforms && (
+                      <div className="flex gap-1">
+                        {content.suggestedPlatforms.map((p: string) => (
+                          <Badge key={p} variant="outline" className="text-[10px]">{p}</Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {/* Email Tab */}
+      {activeTab === "email" && (
+        <div className="space-y-3">
+          {emailItems.map((item) => {
+            const content = item.content as any;
+            const isScheduled = item.status === "SCHEDULED";
+            return (
+              <div key={item.id} className="rounded-md border p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">{content?.subject}</p>
+                    {isScheduled && (
+                      <Badge className="text-[10px] bg-green-100 text-green-800 mt-1">已建立 Campaign</Badge>
+                    )}
+                  </div>
+                  {!isScheduled && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={createCampaign.isPending}
+                      onClick={() => {
+                        createCampaign.mutate(
+                          { itemId: item.id, data: { targetTags: [] } },
+                          {
+                            onSuccess: () => toast.success("Email Campaign 已建立"),
+                            onError: (e) => toast.error(e.message),
+                          },
+                        );
+                      }}
+                    >
+                      {createCampaign.isPending ? (
+                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                      ) : (
+                        <Mail className="mr-1 h-3 w-3" />
+                      )}
+                      建立 Campaign
+                    </Button>
+                  )}
+                </div>
+                {content?.body && (
+                  <div
+                    className="max-h-32 overflow-y-auto rounded bg-muted/50 p-2 text-xs"
+                    dangerouslySetInnerHTML={{ __html: content.body }}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editingItem} onOpenChange={() => setEditingItem(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-sm">編輯貼文</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {editingItem && (
+              <div className="flex gap-1.5">
+                <Badge variant="outline" className="text-[10px]">
+                  {PLATFORM_LABELS[editingItem.platform ?? ""] ?? editingItem.platform}
+                </Badge>
+                <Badge variant="secondary" className="text-[10px]">
+                  {STYLE_LABELS[editingItem.style ?? ""] ?? editingItem.style}
+                </Badge>
+              </div>
+            )}
+            <Textarea
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              rows={8}
+              className="text-sm"
+            />
+            <div className="flex justify-between">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  if (!editingItem) return;
+                  resetItem.mutate(editingItem.id, {
+                    onSuccess: () => {
+                      toast.success("已還原為 AI 原始版本");
+                      setEditingItem(null);
+                    },
+                    onError: (e) => toast.error(e.message),
+                  });
+                }}
+              >
+                還原原始
+              </Button>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => setEditingItem(null)}>
+                  取消
+                </Button>
+                <Button size="sm" disabled={updateItem.isPending} onClick={handleSaveEdit}>
+                  {updateItem.isPending ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
+                  儲存
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
 
 function RepurposeDialog({
   state,
@@ -644,6 +1141,11 @@ export default function VideosPage() {
                 videoId={selectedVideo.id}
                 onRepurpose={(clipId, clipTitle) => setRepurpose({ clipId, clipTitle, suggestions: null })}
               />
+
+              {/* Content Repurpose Panel */}
+              {selectedVideo.status === "PROCESSED" && (
+                <RepurposePanel videoId={selectedVideo.id} />
+              )}
             </div>
           )}
         </DialogContent>
