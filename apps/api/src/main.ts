@@ -29,6 +29,12 @@ async function bootstrap() {
   // Global prefix
   app.setGlobalPrefix('api');
 
+  // Sentry global exception filter
+  const { SentryExceptionFilter } = await import('./sentry/sentry-exception.filter');
+  const { SentryService } = await import('./sentry/sentry.service');
+  const sentryService = app.get(SentryService);
+  app.useGlobalFilters(new SentryExceptionFilter(sentryService));
+
   // Validation
   app.useGlobalPipes(
     new ValidationPipe({

@@ -31,6 +31,8 @@
     "@nestjs/swagger": "^7.4.0",
     "@nestjs/websockets": "^10.4.0",
     "@prisma/client": "^5.18.0",
+    "@sentry/nestjs": "^10.46.0",
+    "@sentry/node": "^10.46.0",
     "@types/fluent-ffmpeg": "^2.1.28",
     "@types/xml2js": "^0.4.14",
     "bcrypt": "^5.1.1",
