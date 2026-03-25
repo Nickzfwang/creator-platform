@@ -889,9 +889,9 @@ ${clipResponseFormat}`,
       select: { id: true, userId: true, status: true, originalUrl: true, durationSeconds: true, metadata: true },
     });
 
-    if (!video) throw new NotFoundException('Video not found');
-    if (video.userId !== userId) throw new ForbiddenException('Not the video owner');
-    if (video.status !== 'PROCESSED') throw new BadRequestException('Video must be in PROCESSED state');
+    if (!video) throw new NotFoundException('找不到影片');
+    if (video.userId !== userId) throw new ForbiddenException('您不是此影片的擁有者');
+    if (video.status !== 'PROCESSED') throw new BadRequestException('影片尚未處理完成，請等待處理完成後再試');
 
     const meta = (video.metadata as Record<string, unknown>) ?? {};
     if (meta.whisperWords && (meta.whisperWords as unknown[]).length > 0) {
@@ -899,13 +899,13 @@ ${clipResponseFormat}`,
         videoId,
         wordCount: (meta.whisperWords as unknown[]).length,
         durationSeconds: video.durationSeconds,
-        message: 'Word-level timestamps already exist',
+        message: '已有 word-level 時間戳資料',
       };
     }
 
     const sourceFile = this.findSourceFile(video.originalUrl);
     if (!sourceFile) {
-      throw new BadRequestException('Video file not found on disk. It may have been deleted.');
+      throw new BadRequestException('影片檔案不存在，可能已被刪除。請重新上傳影片。');
     }
 
     // Check if video has audio stream before attempting extraction
@@ -941,14 +941,14 @@ ${clipResponseFormat}`,
           .run();
       });
     } catch (e) {
-      throw new BadRequestException(`Audio extraction failed: ${(e as Error).message}`);
+      throw new BadRequestException(`音訊提取失敗：${(e as Error).message}`);
     }
 
     try {
       const result = await this.aiService.transcribeVerbose(audioFile);
 
       if (!result.words.length) {
-        throw new BadRequestException('Whisper returned no word-level data. Check OPENAI_API_KEY and audio quality.');
+        throw new BadRequestException('Whisper 未回傳 word-level 資料，請確認 OPENAI_API_KEY 已設定且音訊品質正常。');
       }
 
       await this.prisma.video.update({
@@ -964,11 +964,11 @@ ${clipResponseFormat}`,
         videoId,
         wordCount: result.words.length,
         durationSeconds: video.durationSeconds,
-        message: 'Word-level timestamps generated',
+        message: 'Word-level 時間戳已生成',
       };
     } catch (e) {
       if (e instanceof BadRequestException) throw e;
-      throw new BadRequestException(`Word-level transcription failed: ${(e as Error).message}`);
+      throw new BadRequestException(`語音辨識失敗：${(e as Error).message}`);
     } finally {
       try { unlinkSync(audioFile); } catch { /* ignore */ }
     }
@@ -983,8 +983,8 @@ ${clipResponseFormat}`,
       select: { id: true, userId: true, metadata: true },
     });
 
-    if (!video) throw new NotFoundException('Video not found');
-    if (video.userId !== userId) throw new ForbiddenException('Not the video owner');
+    if (!video) throw new NotFoundException('找不到影片');
+    if (video.userId !== userId) throw new ForbiddenException('您不是此影片的擁有者');
 
     const meta = (video.metadata as Record<string, unknown>) ?? {};
     let words = meta.whisperWords as Array<{ word: string; start: number; end: number }> | undefined;
@@ -1064,8 +1064,8 @@ ${clipResponseFormat}`,
       select: { id: true, userId: true, originalUrl: true, durationSeconds: true, metadata: true },
     });
 
-    if (!video) throw new NotFoundException('Video not found');
-    if (video.userId !== userId) throw new ForbiddenException('Not the video owner');
+    if (!video) throw new NotFoundException('找不到影片');
+    if (video.userId !== userId) throw new ForbiddenException('您不是此影片的擁有者');
 
     const meta = (video.metadata as Record<string, unknown>) ?? {};
     const allFillers = (meta.fillerMarks ?? []) as Array<{ id: string; startTime: number; endTime: number }>;
@@ -1074,11 +1074,11 @@ ${clipResponseFormat}`,
       .sort((a, b) => a.startTime - b.startTime);
 
     if (selectedFillers.length === 0) {
-      throw new BadRequestException('No valid filler marks selected');
+      throw new BadRequestException('沒有選擇有效的語助詞標記');
     }
 
     const sourceFile = this.findSourceFile(video.originalUrl);
-    if (!sourceFile) throw new NotFoundException('Video file not found');
+    if (!sourceFile) throw new NotFoundException('影片檔案不存在');
 
     const duration = video.durationSeconds ?? 300;
 
@@ -1166,10 +1166,10 @@ ${clipResponseFormat}`,
       select: { id: true, userId: true, title: true, transcript: true, durationSeconds: true, metadata: true },
     });
 
-    if (!video) throw new NotFoundException('Video not found');
-    if (video.userId !== userId) throw new ForbiddenException('Not the video owner');
+    if (!video) throw new NotFoundException('找不到影片');
+    if (video.userId !== userId) throw new ForbiddenException('您不是此影片的擁有者');
     if ((video.durationSeconds ?? 0) < 30) {
-      throw new BadRequestException('Video too short for chapter markers (< 30s)');
+      throw new BadRequestException('影片太短（< 30 秒），無法產出章節標記');
     }
 
     const transcript = typeof video.transcript === 'string'
@@ -1177,7 +1177,7 @@ ${clipResponseFormat}`,
       : video.transcript ? JSON.stringify(video.transcript) : null;
 
     if (!transcript) {
-      throw new BadRequestException('Video has no transcript. Please process the video first.');
+      throw new BadRequestException('影片尚無轉錄稿，請先完成影片處理');
     }
 
     const meta = (video.metadata as Record<string, unknown>) ?? {};
@@ -1211,11 +1211,11 @@ ${clipResponseFormat}`,
       { model: 'gpt-4o-mini', maxTokens: 1024 },
     );
     } catch (e) {
-      throw new BadRequestException(`Chapter generation failed: ${(e as Error).message}`);
+      throw new BadRequestException(`章節生成失敗：${(e as Error).message}`);
     }
 
     if (!result?.chapters?.length) {
-      throw new BadRequestException('AI failed to generate chapters. Please try again.');
+      throw new BadRequestException('AI 未能生成章節標記，請重試');
     }
 
     const chapters = (result.chapters).map((ch, i) => ({
@@ -1258,8 +1258,8 @@ ${clipResponseFormat}`,
       select: { id: true, userId: true, metadata: true },
     });
 
-    if (!video) throw new NotFoundException('Video not found');
-    if (video.userId !== userId) throw new ForbiddenException('Not the video owner');
+    if (!video) throw new NotFoundException('找不到影片');
+    if (video.userId !== userId) throw new ForbiddenException('您不是此影片的擁有者');
 
     const meta = (video.metadata as Record<string, unknown>) ?? {};
     const sorted = chapters.sort((a, b) => a.startTime - b.startTime);
@@ -1289,10 +1289,10 @@ ${clipResponseFormat}`,
       select: { id: true, userId: true, title: true, transcript: true, durationSeconds: true, metadata: true },
     });
 
-    if (!video) throw new NotFoundException('Video not found');
-    if (video.userId !== userId) throw new ForbiddenException('Not the video owner');
+    if (!video) throw new NotFoundException('找不到影片');
+    if (video.userId !== userId) throw new ForbiddenException('您不是此影片的擁有者');
     if ((video.durationSeconds ?? 0) < 30) {
-      throw new BadRequestException('Video too short for script summary (< 30s)');
+      throw new BadRequestException('影片太短（< 30 秒），無法產出腳本摘要');
     }
 
     const transcript = typeof video.transcript === 'string'
@@ -1300,7 +1300,7 @@ ${clipResponseFormat}`,
       : video.transcript ? JSON.stringify(video.transcript) : null;
 
     if (!transcript) {
-      throw new BadRequestException('Video has no transcript.');
+      throw new BadRequestException('影片尚無轉錄稿，請先完成影片處理');
     }
 
     const duration = video.durationSeconds ?? 300;
@@ -1343,7 +1343,7 @@ ${clipResponseFormat}`,
     );
 
     if (!result) {
-      throw new BadRequestException('AI failed to generate script summary');
+      throw new BadRequestException('AI 未能生成腳本摘要，請重試');
     }
 
     const meta = (video.metadata as Record<string, unknown>) ?? {};

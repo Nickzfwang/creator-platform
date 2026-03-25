@@ -345,7 +345,7 @@ describe('VideoService — Post-Production Tools', () => {
       const result = await service.transcribeWords(videoId, userId);
 
       expect(result.wordCount).toBe(1);
-      expect(result.message).toContain('already exist');
+      expect(result.message).toContain('已有');
     });
 
     it('should throw if video not PROCESSED', async () => {

@@ -107,21 +107,24 @@ export class AutoBrowseService {
     await Promise.all(fetchPromises);
 
     // Browser-based sources (run sequentially to avoid resource exhaustion)
+    // Skip browser scraping when category is 'all' to prevent long timeouts and crashes
+    // Users can scrape specific platforms individually
+    const skipBrowserForAll = category === 'all';
     const browserSources: Array<{ name: string; scraper: () => Promise<FetchedPost[]> }> = [];
 
-    if (category === 'dcard' || category === 'all') {
+    if (category === 'dcard' || (!skipBrowserForAll && category === 'all')) {
       browserSources.push({
         name: 'Dcard',
         scraper: () => new DcardScraper().scrape({ maxPosts: category === 'dcard' ? maxPosts : 8 }),
       });
     }
-    if (category === 'threads' || category === 'all') {
+    if (category === 'threads' || (!skipBrowserForAll && category === 'all')) {
       browserSources.push({
         name: 'Threads',
         scraper: () => new ThreadsScraper().scrape({ maxPosts: category === 'threads' ? maxPosts : 8 }),
       });
     }
-    if (category === 'tiktok' || category === 'all') {
+    if (category === 'tiktok' || (!skipBrowserForAll && category === 'all')) {
       browserSources.push({
         name: 'TikTok',
         scraper: () => new TikTokScraper().scrape({ maxPosts: category === 'tiktok' ? maxPosts : 8 }),
