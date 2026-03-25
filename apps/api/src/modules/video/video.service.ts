@@ -6,11 +6,14 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { VideoStatus, Prisma } from '@prisma/client';
 import { join, basename } from 'path';
 import { unlinkSync, existsSync, mkdirSync } from 'fs';
 import { execSync } from 'child_process';
 import * as ffmpeg from 'fluent-ffmpeg';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { ContentRepurposeService } from '../content-repurpose/content-repurpose.service';
@@ -32,11 +35,30 @@ if (!existsSync(THUMBNAILS_DIR)) {
 export class VideoService {
   private readonly logger = new Logger(VideoService.name);
 
+  private readonly s3Client: S3Client | null;
+  private readonly s3Bucket: string;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiService: AiService,
     private readonly contentRepurposeService: ContentRepurposeService,
-  ) {}
+    private readonly config: ConfigService,
+  ) {
+    const region = this.config.get<string>('AWS_REGION');
+    const accessKeyId = this.config.get<string>('AWS_ACCESS_KEY_ID');
+    const secretAccessKey = this.config.get<string>('AWS_SECRET_ACCESS_KEY');
+    this.s3Bucket = this.config.get<string>('AWS_S3_BUCKET', 'creator-platform-uploads');
+
+    if (region && accessKeyId && secretAccessKey) {
+      this.s3Client = new S3Client({
+        region,
+        credentials: { accessKeyId, secretAccessKey },
+      });
+    } else {
+      this.s3Client = null;
+      this.logger.warn('S3 client not initialized — AWS credentials missing');
+    }
+  }
 
   async requestUploadUrl(userId: string, tenantId: string, dto: RequestUploadUrlDto) {
     const s3Key = `videos/${tenantId}/${Date.now()}-${dto.filename}`;
@@ -53,13 +75,24 @@ export class VideoService {
       },
     });
 
-    // TODO: Generate actual S3 presigned URL using @aws-sdk/s3-request-presigner
-    // const command = new PutObjectCommand({ Bucket, Key: s3Key, ContentType: dto.contentType });
-    // const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
-    const uploadUrl = `https://s3.amazonaws.com/${s3Key}`;
+    let uploadUrl: string;
+
+    if (this.s3Client) {
+      const command = new PutObjectCommand({
+        Bucket: this.s3Bucket,
+        Key: s3Key,
+        ContentType: dto.contentType,
+        Metadata: { videoId: video.id, userId, tenantId },
+      });
+      uploadUrl = await getSignedUrl(this.s3Client, command, { expiresIn: 3600 });
+    } else {
+      // Fallback: local upload URL
+      uploadUrl = `/api/v1/videos/upload/${video.id}`;
+      this.logger.warn(`S3 not configured — using local upload fallback for video ${video.id}`);
+    }
 
     this.logger.log(`Upload URL generated for video ${video.id}`);
-    return { uploadUrl, videoId: video.id };
+    return { uploadUrl, videoId: video.id, s3Key };
   }
 
   async handleDirectUpload(userId: string, tenantId: string, file: Express.Multer.File) {

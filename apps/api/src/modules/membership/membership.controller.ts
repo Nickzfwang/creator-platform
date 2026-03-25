@@ -117,6 +117,25 @@ export class MembershipController {
     return this.membershipService.getMyMemberships(fanUserId, tenantId);
   }
 
+  // ─── Stripe Connect (Creator) ───
+
+  @Post('connect/onboard')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Create or resume Stripe Connect onboarding' })
+  async createConnectAccount(
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.membershipService.createConnectAccount(userId);
+  }
+
+  @Get('connect/status')
+  @ApiOperation({ summary: 'Get Stripe Connect account status' })
+  async getConnectStatus(
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.membershipService.getConnectStatus(userId);
+  }
+
   // ─── Cancel (Fan) ───
 
   @Post(':id/cancel')

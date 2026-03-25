@@ -7,4 +7,5 @@ import { MembershipService } from './membership.service';
   providers: [MembershipService],
   exports: [MembershipService],
 })
+// ConfigService is available globally via ConfigModule.forRoot({ isGlobal: true })
 export class MembershipModule {}
