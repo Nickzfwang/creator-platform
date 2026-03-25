@@ -23,6 +23,7 @@ import {
   Mail,
   Lightbulb,
   DollarSign,
+  MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRequireAuth } from "@/hooks/use-require-auth";
@@ -54,6 +55,7 @@ const sidebarItems = [
   { label: "Landing Page", href: "/landing", icon: PanelTop },
   { label: "商品商店", href: "/store", icon: ShoppingBag },
   { label: "Email 行銷", href: "/email", icon: Mail },
+  { label: "粉絲互動", href: "/interactions", icon: MessageSquare },
   { label: "變現顧問", href: "/monetize", icon: DollarSign },
   { label: "數據分析", href: "/analytics", icon: BarChart3 },
   { label: "設定", href: "/settings", icon: Settings },
@@ -73,6 +75,7 @@ const pageTitles: Record<string, string> = {
   "/landing": "Landing Page",
   "/store": "商品商店",
   "/email": "Email 行銷",
+  "/interactions": "粉絲互動",
   "/monetize": "變現顧問",
   "/analytics": "數據分析",
   "/settings": "設定",

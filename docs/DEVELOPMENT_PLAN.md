@@ -486,6 +486,38 @@ pnpm dev                      # 啟動前後端
 
 ---
 
+## Phase 5c：AI 粉絲互動管理 ✅
+
+**檔案位置：** `apps/api/src/modules/interactions/`、`apps/web/hooks/use-interactions.ts`
+
+後端 API：
+- [x] Prisma Schema 新增 FanComment model + 2 enums（CommentCategory, CommentPriority）
+- [x] InteractionsService — 留言匯入 + AI 分類（6 類別 + 情緒分析）+ AI 代擬回覆（含 RAG）+ 統計
+- [x] InteractionsController — 6 支 API endpoints
+- [x] POST /v1/interactions/comments/import — 匯入留言 + 自動 AI 分類
+- [x] GET /v1/interactions/comments — 列出留言（category/priority/isReplied 篩選）
+- [x] POST /v1/interactions/comments/:id/generate-reply — AI 代擬回覆（多語氣 + RAG）
+- [x] PATCH /v1/interactions/comments/:id — 更新（標記已回覆）
+- [x] DELETE /v1/interactions/comments/:id — 刪除
+- [x] GET /v1/interactions/stats — 互動統計（分類分佈 + 情緒趨勢）
+
+前端 UI：
+- [x] use-interactions.ts hooks
+- [x] /interactions 頁面 2 個 Tab（留言管理、互動統計）
+- [x] 留言匯入 Dialog + AI 回覆面板 + 情緒圖表
+- [x] 側邊欄新增「粉絲互動」導航
+
+測試：
+- [x] 13 個單元測試通過
+- [x] 13 個 E2E 測試通過
+
+待完成（外部服務整合）：
+- [ ] YouTube Comment API 自動抓取留言
+- [ ] Instagram Comment API
+- [ ] 即時通知（高優先留言）
+
+---
+
 ## 技術債 / 基礎設施待辦
 
 - [ ] CI/CD Pipeline（GitHub Actions：lint → test → build → deploy）

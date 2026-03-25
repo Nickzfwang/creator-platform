@@ -168,6 +168,21 @@ enum SuggestionSource {
   MIXED
 }
 
+enum CommentCategory {
+  POSITIVE
+  NEGATIVE
+  QUESTION
+  COLLABORATION
+  SPAM
+  NEUTRAL
+}
+
+enum CommentPriority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
 enum ConfidenceLevel {
   HIGH
   MEDIUM
@@ -213,6 +228,7 @@ model Tenant {
   topicSuggestions  TopicSuggestion[]
   calendarItems     ContentCalendar[]
   competitors       Competitor[]
+  fanComments       FanComment[]
 
   @@map("tenants")
 }
@@ -255,6 +271,7 @@ model User {
   topicSuggestions      TopicSuggestion[]
   calendarItems         ContentCalendar[]
   competitors           Competitor[]
+  fanComments           FanComment[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -942,4 +959,36 @@ model CompetitorVideo {
   @@unique([competitorId, platformVideoId])
   @@index([competitorId, publishedAt(sort: Desc)])
   @@map("competitor_videos")
+}
+
+// ─── Fan Interactions ───
+
+model FanComment {
+  id              String          @id @default(uuid()) @db.Uuid
+  userId          String          @map("user_id") @db.Uuid
+  tenantId        String          @map("tenant_id") @db.Uuid
+  platform        String?         @db.VarChar(50)
+  authorName      String          @map("author_name") @db.VarChar(255)
+  authorAvatar    String?         @map("author_avatar")
+  content         String
+  publishedAt     DateTime?       @map("published_at")
+  sourceUrl       String?         @map("source_url")
+  category        CommentCategory @default(NEUTRAL)
+  sentiment       Float           @default(0)
+  priority        CommentPriority @default(LOW)
+  isReplied       Boolean         @default(false) @map("is_replied")
+  aiReply         String?         @map("ai_reply")
+  finalReply      String?         @map("final_reply")
+  repliedAt       DateTime?       @map("replied_at")
+  metadata        Json?
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  user            User            @relation(fields: [userId], references: [id])
+  tenant          Tenant          @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, userId, category])
+  @@index([tenantId, userId, isReplied])
+  @@index([createdAt(sort: Desc)])
+  @@map("fan_comments")
 }
