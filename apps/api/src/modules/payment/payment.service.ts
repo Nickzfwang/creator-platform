@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SubscriptionPlan, SubscriptionStatus, Prisma } from '@prisma/client';
+import Stripe from 'stripe';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import { PLAN_LIMITS, PLAN_INFO, PlanLimits } from './constants/plan-limits';
@@ -20,11 +21,24 @@ interface UsageJson {
 @Injectable()
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
+  private readonly stripe: Stripe | null;
+  private readonly frontendUrl: string;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
-  ) {}
+  ) {
+    const stripeKey = this.config.get<string>('STRIPE_SECRET_KEY');
+    this.stripe = stripeKey
+      ? new Stripe(stripeKey, { apiVersion: '2024-06-20' })
+      : null;
+
+    if (!this.stripe) {
+      this.logger.warn('Stripe SDK not initialized — STRIPE_SECRET_KEY missing');
+    }
+
+    this.frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3001');
+  }
 
   // ─── Plans ───
 
@@ -43,7 +57,6 @@ export class PaymentService {
       where: { tenantId, userId },
     });
 
-    // Auto-create FREE subscription if none exists
     if (!subscription) {
       subscription = await this.prisma.subscription.create({
         data: {
@@ -110,28 +123,48 @@ export class PaymentService {
       throw new BadRequestException(`Stripe price not configured for ${dto.planId}`);
     }
 
-    // TODO: Integrate with Stripe
-    // 1. Get or create Stripe Customer (using user.stripeCustomerId)
-    // 2. If existing subscription → stripe.subscriptions.update (proration)
-    // 3. If new → stripe.checkout.sessions.create
-    //
-    // const session = await stripe.checkout.sessions.create({
-    //   customer: stripeCustomerId,
-    //   mode: 'subscription',
-    //   line_items: [{ price: stripePriceId, quantity: 1 }],
-    //   success_url: dto.successUrl ?? `${frontendUrl}/settings/billing?success=true`,
-    //   cancel_url: dto.cancelUrl ?? `${frontendUrl}/settings/billing?cancelled=true`,
-    //   metadata: { tenantId, userId },
-    // });
+    if (!this.stripe) {
+      throw new BadRequestException('Stripe 尚未設定，請聯繫管理員');
+    }
 
-    const sessionId = `cs_placeholder_${Date.now()}`;
-    const checkoutUrl = `https://checkout.stripe.com/placeholder/${sessionId}`;
+    // Get or create Stripe Customer
+    const stripeCustomerId = await this.getOrCreateStripeCustomer(userId);
 
-    this.logger.log(
-      `Checkout session created for user ${userId}, plan ${dto.planId}`,
-    );
+    // If user already has a Stripe subscription, update it (proration)
+    if (subscription?.stripeSubscriptionId) {
+      const stripeSub = await this.stripe.subscriptions.retrieve(subscription.stripeSubscriptionId);
+      if (stripeSub.status === 'active' || stripeSub.status === 'trialing') {
+        await this.stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+          items: [{
+            id: stripeSub.items.data[0].id,
+            price: stripePriceId,
+          }],
+          proration_behavior: 'create_prorations',
+        });
 
-    return { checkoutUrl, sessionId };
+        this.logger.log(`Subscription updated for user ${userId} to plan ${dto.planId}`);
+        return {
+          checkoutUrl: null,
+          sessionId: null,
+          message: '方案已升級，帳單將按比例調整',
+          upgraded: true,
+        };
+      }
+    }
+
+    // Create new Checkout Session
+    const session = await this.stripe.checkout.sessions.create({
+      customer: stripeCustomerId,
+      mode: 'subscription',
+      line_items: [{ price: stripePriceId, quantity: 1 }],
+      success_url: dto.successUrl ?? `${this.frontendUrl}/settings?billing=success`,
+      cancel_url: dto.cancelUrl ?? `${this.frontendUrl}/settings?billing=cancelled`,
+      metadata: { tenantId, userId },
+    });
+
+    this.logger.log(`Checkout session created for user ${userId}, plan ${dto.planId}`);
+
+    return { checkoutUrl: session.url, sessionId: session.id };
   }
 
   // ─── Customer Portal ───
@@ -148,16 +181,17 @@ export class PaymentService {
       );
     }
 
-    // TODO: Integrate with Stripe
-    // const session = await stripe.billingPortal.sessions.create({
-    //   customer: user.stripeCustomerId,
-    //   return_url: returnUrl ?? `${frontendUrl}/settings/billing`,
-    // });
+    if (!this.stripe) {
+      throw new BadRequestException('Stripe 尚未設定');
+    }
 
-    const portalUrl = `https://billing.stripe.com/placeholder/${user.stripeCustomerId}`;
+    const session = await this.stripe.billingPortal.sessions.create({
+      customer: user.stripeCustomerId,
+      return_url: returnUrl ?? `${this.frontendUrl}/settings`,
+    });
 
     this.logger.log(`Portal session created for user ${userId}`);
-    return { portalUrl };
+    return { portalUrl: session.url };
   }
 
   // ─── Webhook ───
@@ -167,34 +201,46 @@ export class PaymentService {
       throw new BadRequestException('Missing raw body');
     }
 
-    // TODO: Verify Stripe signature
-    // const webhookSecret = this.config.get('STRIPE_WEBHOOK_SECRET');
-    // const event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+    let event: Stripe.Event;
 
-    let event: { type: string; data: { object: Record<string, unknown> } };
-    try {
+    if (this.stripe) {
+      const webhookSecret = this.config.get<string>('STRIPE_WEBHOOK_SECRET');
+      if (webhookSecret) {
+        try {
+          event = this.stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+        } catch (err) {
+          this.logger.error(`Webhook signature verification failed: ${err}`);
+          throw new BadRequestException('Invalid webhook signature');
+        }
+      } else {
+        // Fallback: parse without verification (dev mode)
+        this.logger.warn('STRIPE_WEBHOOK_SECRET not set — skipping signature verification');
+        event = JSON.parse(rawBody.toString());
+      }
+    } else {
+      // No Stripe SDK — parse raw
       event = JSON.parse(rawBody.toString());
-    } catch {
-      throw new BadRequestException('Invalid webhook payload');
     }
 
     this.logger.log(`Stripe webhook received: ${event.type}`);
 
+    const obj = event.data.object as unknown as Record<string, unknown>;
+
     switch (event.type) {
       case 'checkout.session.completed':
-        await this.handleCheckoutCompleted(event.data.object);
+        await this.handleCheckoutCompleted(obj);
         break;
       case 'invoice.paid':
-        await this.handleInvoicePaid(event.data.object);
+        await this.handleInvoicePaid(obj);
         break;
       case 'customer.subscription.updated':
-        await this.handleSubscriptionUpdated(event.data.object);
+        await this.handleSubscriptionUpdated(obj);
         break;
       case 'customer.subscription.deleted':
-        await this.handleSubscriptionDeleted(event.data.object);
+        await this.handleSubscriptionDeleted(obj);
         break;
       case 'invoice.payment_failed':
-        await this.handlePaymentFailed(event.data.object);
+        await this.handlePaymentFailed(obj);
         break;
       default:
         this.logger.log(`Unhandled event type: ${event.type}`);
@@ -279,35 +325,63 @@ export class PaymentService {
     const stripeSubscriptionId = data.subscription as string | undefined;
     if (!stripeSubscriptionId) return;
 
-    // TODO: Fetch subscription from Stripe to determine plan from price ID
-    const plan = SubscriptionPlan.PRO; // placeholder
+    // Determine plan from Stripe subscription's price ID
+    let plan: SubscriptionPlan = SubscriptionPlan.PRO; // default fallback
+    if (this.stripe) {
+      try {
+        const stripeSub = await this.stripe.subscriptions.retrieve(stripeSubscriptionId);
+        const priceId = stripeSub.items.data[0]?.price?.id;
+        plan = this.planFromPriceId(priceId) ?? SubscriptionPlan.PRO;
 
+        // Store currentPeriodEnd
+        const periodEnd = new Date(stripeSub.current_period_end * 1000);
+
+        const existing = await this.prisma.subscription.findFirst({
+          where: { tenantId: metadata.tenantId },
+        });
+
+        const subData = {
+          plan,
+          stripeSubscriptionId,
+          status: SubscriptionStatus.ACTIVE,
+          currentPeriodEnd: periodEnd,
+          limits: PLAN_LIMITS[plan] as unknown as Prisma.InputJsonValue,
+          usage: { videosUsed: 0, postsUsed: 0, botMessagesUsed: 0, brandDealsUsed: 0 } as unknown as Prisma.InputJsonValue,
+        };
+
+        if (existing) {
+          await this.prisma.subscription.update({ where: { id: existing.id }, data: subData });
+        } else {
+          await this.prisma.subscription.create({
+            data: { tenantId: metadata.tenantId, userId: metadata.userId, ...subData },
+          });
+        }
+
+        this.logger.log(`Checkout completed for tenant ${metadata.tenantId}, plan ${plan}`);
+        return;
+      } catch (err) {
+        this.logger.error(`Failed to retrieve Stripe subscription: ${err}`);
+      }
+    }
+
+    // Fallback without Stripe SDK
     const existing = await this.prisma.subscription.findFirst({
       where: { tenantId: metadata.tenantId },
     });
 
+    const subData = {
+      plan,
+      stripeSubscriptionId,
+      status: SubscriptionStatus.ACTIVE,
+      limits: PLAN_LIMITS[plan] as unknown as Prisma.InputJsonValue,
+      usage: { videosUsed: 0, postsUsed: 0, botMessagesUsed: 0, brandDealsUsed: 0 } as unknown as Prisma.InputJsonValue,
+    };
+
     if (existing) {
-      await this.prisma.subscription.update({
-        where: { id: existing.id },
-        data: {
-          plan,
-          stripeSubscriptionId,
-          status: SubscriptionStatus.ACTIVE,
-          limits: PLAN_LIMITS[plan] as unknown as Prisma.InputJsonValue,
-          usage: { videosUsed: 0, postsUsed: 0, botMessagesUsed: 0, brandDealsUsed: 0 } as unknown as Prisma.InputJsonValue,
-        },
-      });
+      await this.prisma.subscription.update({ where: { id: existing.id }, data: subData });
     } else {
       await this.prisma.subscription.create({
-        data: {
-          tenantId: metadata.tenantId,
-          userId: metadata.userId,
-          plan,
-          stripeSubscriptionId,
-          status: SubscriptionStatus.ACTIVE,
-          limits: PLAN_LIMITS[plan] as unknown as Prisma.InputJsonValue,
-          usage: { videosUsed: 0, postsUsed: 0, botMessagesUsed: 0, brandDealsUsed: 0 } as unknown as Prisma.InputJsonValue,
-        },
+        data: { tenantId: metadata.tenantId, userId: metadata.userId, ...subData },
       });
     }
 
@@ -323,12 +397,18 @@ export class PaymentService {
     });
     if (!subscription) return;
 
+    // Extract period end from invoice data
+    const periodEnd = data.period_end
+      ? new Date((data.period_end as number) * 1000)
+      : undefined;
+
     await this.prisma.subscription.update({
       where: { id: subscription.id },
       data: {
         status: SubscriptionStatus.ACTIVE,
+        ...(periodEnd && { currentPeriodEnd: periodEnd }),
+        // Reset usage on new billing cycle
         usage: { videosUsed: 0, postsUsed: 0, botMessagesUsed: 0, brandDealsUsed: 0 } as unknown as Prisma.InputJsonValue,
-        // TODO: Update currentPeriodEnd from Stripe invoice
       },
     });
 
@@ -353,12 +433,28 @@ export class PaymentService {
 
     const newStatus = statusMap[status] ?? subscription.status;
 
+    // Update plan if price changed
+    const items = data.items as { data?: { price?: { id?: string } }[] } | undefined;
+    const priceId = items?.data?.[0]?.price?.id;
+    const newPlan = priceId ? this.planFromPriceId(priceId) : null;
+
+    const periodEnd = data.current_period_end
+      ? new Date((data.current_period_end as number) * 1000)
+      : undefined;
+
     await this.prisma.subscription.update({
       where: { id: subscription.id },
-      data: { status: newStatus },
+      data: {
+        status: newStatus,
+        ...(newPlan && {
+          plan: newPlan,
+          limits: PLAN_LIMITS[newPlan] as unknown as Prisma.InputJsonValue,
+        }),
+        ...(periodEnd && { currentPeriodEnd: periodEnd }),
+      },
     });
 
-    this.logger.log(`Subscription ${subscription.id} updated to status ${newStatus}`);
+    this.logger.log(`Subscription ${subscription.id} updated to status ${newStatus}${newPlan ? `, plan ${newPlan}` : ''}`);
   }
 
   private async handleSubscriptionDeleted(data: Record<string, unknown>) {
@@ -401,6 +497,47 @@ export class PaymentService {
   }
 
   // ─── Helpers ───
+
+  private async getOrCreateStripeCustomer(userId: string): Promise<string> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { stripeCustomerId: true, email: true, displayName: true },
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+
+    if (user.stripeCustomerId) return user.stripeCustomerId;
+
+    if (!this.stripe) throw new BadRequestException('Stripe 尚未設定');
+
+    const customer = await this.stripe.customers.create({
+      email: user.email,
+      name: user.displayName,
+      metadata: { userId },
+    });
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { stripeCustomerId: customer.id },
+    });
+
+    this.logger.log(`Created Stripe customer ${customer.id} for user ${userId}`);
+    return customer.id;
+  }
+
+  private planFromPriceId(priceId: string | undefined): SubscriptionPlan | null {
+    if (!priceId) return null;
+
+    const starterPrice = this.config.get<string>('STRIPE_PRICE_STARTER');
+    const proPrice = this.config.get<string>('STRIPE_PRICE_PRO');
+    const businessPrice = this.config.get<string>('STRIPE_PRICE_BUSINESS');
+
+    if (priceId === starterPrice) return SubscriptionPlan.STARTER;
+    if (priceId === proPrice) return SubscriptionPlan.PRO;
+    if (priceId === businessPrice) return SubscriptionPlan.BUSINESS;
+
+    return null;
+  }
 
   private calcPercentage(used: number, limit: number): number | null {
     if (limit === -1) return null;
