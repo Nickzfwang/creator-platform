@@ -463,6 +463,29 @@ pnpm dev                      # 啟動前後端
 
 ---
 
+## Phase 5b：AI 變現顧問 ✅
+
+**檔案位置：** `apps/api/src/modules/monetize/`、`apps/web/hooks/use-monetize.ts`
+
+後端 API：
+- [x] MonetizeService — 收入健診（整合 5 個管道）+ AI 建議（GPT-4o）+ 收入預測
+- [x] MonetizeController — 3 支 API endpoints
+- [x] MonetizeModule — 模組註冊
+- [x] GET /v1/monetize/health — 收入健診報告（各管道 KPI、佔比、成長率）
+- [x] GET /v1/monetize/advice — AI 變現建議 + 定價建議 + 未使用管道推薦
+- [x] GET /v1/monetize/forecast — 收入預測（1-3 個月 + 信心區間）
+
+前端 UI：
+- [x] use-monetize.ts hooks
+- [x] /monetize 頁面 3 個 Tab（收入總覽、AI 建議、收入預測）
+- [x] 側邊欄新增「變現顧問」導航
+
+測試：
+- [x] 11 個單元測試通過
+- [x] 13 個 E2E 測試通過
+
+---
+
 ## 技術債 / 基礎設施待辦
 
 - [ ] CI/CD Pipeline（GitHub Actions：lint → test → build → deploy）

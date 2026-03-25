@@ -29,6 +29,7 @@ import { DigitalProductModule } from './modules/digital-product/digital-product.
 import { EmailMarketingModule } from './modules/email-marketing/email-marketing.module';
 import { ContentRepurposeModule } from './modules/content-repurpose/content-repurpose.module';
 import { ContentStrategyModule } from './modules/content-strategy/content-strategy.module';
+import { MonetizeModule } from './modules/monetize/monetize.module';
 
 @Module({
   imports: [
@@ -74,6 +75,7 @@ import { ContentStrategyModule } from './modules/content-strategy/content-strate
     EmailMarketingModule,
     ContentRepurposeModule,
     ContentStrategyModule,
+    MonetizeModule,
   ],
 })
 export class AppModule {}
