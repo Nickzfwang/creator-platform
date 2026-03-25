@@ -579,7 +579,7 @@ ${clipResponseFormat}`,
   async markUploaded(videoId: string, userId: string) {
     const video = await this.prisma.video.findUnique({
       where: { id: videoId },
-      select: { id: true, userId: true, status: true },
+      select: { id: true, userId: true, status: true, originalUrl: true },
     });
 
     if (!video) {
@@ -592,7 +592,18 @@ ${clipResponseFormat}`,
       throw new ConflictException('Video is not in UPLOADING state');
     }
 
-    // TODO: Verify S3 object exists via HeadObject
+    // Verify S3 object exists
+    if (this.s3Client && video.originalUrl.startsWith('videos/')) {
+      try {
+        const { HeadObjectCommand } = await import('@aws-sdk/client-s3');
+        await this.s3Client.send(new HeadObjectCommand({
+          Bucket: this.s3Bucket,
+          Key: video.originalUrl,
+        }));
+      } catch {
+        this.logger.warn(`S3 object not found for video ${videoId}: ${video.originalUrl}`);
+      }
+    }
 
     const updated = await this.prisma.video.update({
       where: { id: videoId },

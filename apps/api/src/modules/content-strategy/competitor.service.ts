@@ -6,6 +6,8 @@ import {
   ConflictException,
   Logger,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { google } from 'googleapis';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { COMPETITOR_LIMITS } from './constants/plan-limits';
@@ -35,10 +37,18 @@ interface YouTubeVideoInfo {
 export class CompetitorService {
   private readonly logger = new Logger(CompetitorService.name);
 
+  private readonly youtubeApiKey: string | undefined;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiService: AiService,
-  ) {}
+    private readonly config: ConfigService,
+  ) {
+    this.youtubeApiKey = this.config.get<string>('YOUTUBE_API_KEY');
+    if (!this.youtubeApiKey) {
+      this.logger.warn('YOUTUBE_API_KEY not set — competitor tracking will use placeholder data');
+    }
+  }
 
   async addCompetitor(userId: string, tenantId: string, channelUrl: string) {
     // Check plan limit
@@ -352,20 +362,133 @@ export class CompetitorService {
     return subscription?.plan || 'FREE';
   }
 
-  // TODO: Replace with actual YouTube Data API calls
+  private getYouTubePublicClient() {
+    return google.youtube({ version: 'v3', auth: this.youtubeApiKey });
+  }
+
   private async fetchChannelInfo(channelId: string): Promise<YouTubeChannelInfo> {
-    // Placeholder — will be replaced with YouTube Data API v3 channels.list
-    return {
-      channelId,
-      channelName: `Channel ${channelId}`,
-      channelAvatar: null,
-      subscriberCount: null,
-      videoCount: null,
-    };
+    if (!this.youtubeApiKey) {
+      return {
+        channelId,
+        channelName: `Channel ${channelId}`,
+        channelAvatar: null,
+        subscriberCount: null,
+        videoCount: null,
+      };
+    }
+
+    const youtube = this.getYouTubePublicClient();
+
+    try {
+      // Handle @username vs channel ID
+      let resolvedChannelId = channelId;
+      if (channelId.startsWith('@')) {
+        const searchRes = await youtube.search.list({
+          part: ['snippet'],
+          q: channelId,
+          type: ['channel'],
+          maxResults: 1,
+        });
+        resolvedChannelId = searchRes.data.items?.[0]?.snippet?.channelId || channelId;
+      } else if (channelId.startsWith('c/') || channelId.startsWith('user/')) {
+        const searchRes = await youtube.search.list({
+          part: ['snippet'],
+          q: channelId.replace(/^(c|user)\//, ''),
+          type: ['channel'],
+          maxResults: 1,
+        });
+        resolvedChannelId = searchRes.data.items?.[0]?.snippet?.channelId || channelId;
+      }
+
+      const res = await youtube.channels.list({
+        part: ['snippet', 'statistics'],
+        id: [resolvedChannelId],
+      });
+
+      const channel = res.data.items?.[0];
+      if (!channel) {
+        return {
+          channelId: resolvedChannelId,
+          channelName: `Channel ${resolvedChannelId}`,
+          channelAvatar: null,
+          subscriberCount: null,
+          videoCount: null,
+        };
+      }
+
+      return {
+        channelId: channel.id || resolvedChannelId,
+        channelName: channel.snippet?.title || `Channel ${resolvedChannelId}`,
+        channelAvatar: channel.snippet?.thumbnails?.default?.url || null,
+        subscriberCount: Number(channel.statistics?.subscriberCount) || null,
+        videoCount: Number(channel.statistics?.videoCount) || null,
+      };
+    } catch (err) {
+      this.logger.error(`YouTube channels.list failed for ${channelId}: ${err}`);
+      return {
+        channelId,
+        channelName: `Channel ${channelId}`,
+        channelAvatar: null,
+        subscriberCount: null,
+        videoCount: null,
+      };
+    }
   }
 
   private async fetchRecentVideos(channelId: string): Promise<YouTubeVideoInfo[]> {
-    // Placeholder — will be replaced with YouTube Data API v3 search.list + videos.list
-    return [];
+    if (!this.youtubeApiKey) return [];
+
+    const youtube = this.getYouTubePublicClient();
+
+    try {
+      // Step 1: Search for recent videos
+      const searchRes = await youtube.search.list({
+        part: ['snippet'],
+        channelId: channelId.startsWith('UC') ? channelId : undefined,
+        q: !channelId.startsWith('UC') ? channelId : undefined,
+        type: ['video'],
+        order: 'date',
+        maxResults: 50,
+      });
+
+      const videoIds = (searchRes.data.items || [])
+        .map((item) => item.id?.videoId)
+        .filter(Boolean) as string[];
+
+      if (videoIds.length === 0) return [];
+
+      // Step 2: Get video statistics (batch, max 50)
+      const videosRes = await youtube.videos.list({
+        part: ['snippet', 'statistics', 'contentDetails'],
+        id: videoIds,
+      });
+
+      return (videosRes.data.items || []).map((v) => ({
+        videoId: v.id!,
+        title: v.snippet?.title || '',
+        description: v.snippet?.description?.slice(0, 500) || null,
+        thumbnailUrl: v.snippet?.thumbnails?.medium?.url || null,
+        viewCount: Number(v.statistics?.viewCount) || null,
+        likeCount: Number(v.statistics?.likeCount) || null,
+        commentCount: Number(v.statistics?.commentCount) || null,
+        publishedAt: new Date(v.snippet?.publishedAt || Date.now()),
+        durationSeconds: this.parseDuration(v.contentDetails?.duration),
+        tags: v.snippet?.tags?.slice(0, 10) || [],
+      }));
+    } catch (err) {
+      this.logger.error(`YouTube video fetch failed for ${channelId}: ${err}`);
+      return [];
+    }
+  }
+
+  private parseDuration(duration: string | undefined | null): number | null {
+    if (!duration) return null;
+    // ISO 8601 duration: PT1H2M3S
+    const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+    if (!match) return null;
+    const hours = parseInt(match[1] || '0');
+    const minutes = parseInt(match[2] || '0');
+    const seconds = parseInt(match[3] || '0');
+    return hours * 3600 + minutes * 60 + seconds;
   }
 }

@@ -209,19 +209,28 @@ export class AnalyticsService {
       );
     }
 
-    // Subscription revenue (placeholder — actual from Stripe webhooks)
+    // Subscription revenue — based on plan pricing
     if (source === 'all' || source === 'subscription') {
-      // TODO: Pull actual subscription revenue from Stripe/payment records
-      // For now, count active paid subscriptions
-      const paidSubs = await this.prisma.subscription.count({
+      const activeSubs = await this.prisma.subscription.findMany({
         where: {
           userId,
           tenantId,
           status: 'ACTIVE',
           plan: { not: 'FREE' },
         },
+        select: { plan: true },
       });
-      results.subscription = paidSubs * 10; // Placeholder estimate
+
+      const planPrices: Record<string, number> = {
+        STARTER: 29,
+        PRO: 79,
+        BUSINESS: 199,
+      };
+
+      results.subscription = activeSubs.reduce(
+        (sum, sub) => sum + (planPrices[sub.plan] ?? 0),
+        0,
+      );
     }
 
     results.total = results.subscription + results.membership + results.affiliate;

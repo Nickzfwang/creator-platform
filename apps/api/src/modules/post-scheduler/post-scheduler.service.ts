@@ -394,10 +394,7 @@ ${dto.additionalContext ? `\n額外資訊：${dto.additionalContext}` : ''}`;
       take: 100,
     });
 
-    // TODO: Correlate with PlatformAnalytics engagement data
-    // TODO: Use GPT-4o to analyze patterns and generate recommendations
-
-    // Placeholder: analyze posting hour distribution
+    // Analyze posting hour distribution + correlate with AI below
     const hourCounts: Record<number, number> = {};
     const dayCounts: Record<number, number> = {};
 

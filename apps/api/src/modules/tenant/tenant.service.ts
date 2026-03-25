@@ -293,18 +293,44 @@ export class TenantService {
   // ─── Domain Verification ───
 
   async verifyDomain(tenantId: string, domain: string) {
-    // TODO: Actually verify DNS CNAME record points to our platform
-    // const records = await dns.resolveCname(domain);
-    // const expected = `${tenant.slug}.platform.com`;
-    // const verified = records.includes(expected);
+    const expectedCname = 'cname.creatorplatform.app';
+    let verified = false;
 
-    this.logger.log(`Domain verification requested for ${domain} on tenant ${tenantId}`);
+    try {
+      const dns = await import('dns');
+      const records = await new Promise<string[]>((resolve, reject) => {
+        dns.resolveCname(domain, (err, addresses) => {
+          if (err) reject(err);
+          else resolve(addresses || []);
+        });
+      });
+
+      verified = records.some(
+        (r) => r.toLowerCase() === expectedCname.toLowerCase(),
+      );
+
+      this.logger.log(
+        `DNS verification for ${domain}: ${verified ? 'PASS' : 'FAIL'} (records: ${records.join(', ')})`,
+      );
+    } catch (err) {
+      this.logger.warn(`DNS verification failed for ${domain}: ${err}`);
+    }
+
+    // Update tenant's custom domain if verified
+    if (verified) {
+      await this.prisma.tenant.update({
+        where: { id: tenantId },
+        data: { customDomain: domain },
+      });
+    }
 
     return {
       domain,
-      verified: false, // Placeholder — will be true when DNS is verified
-      expectedCname: `cname.creatorplatform.app`,
-      instructions: `Add a CNAME record pointing ${domain} to cname.creatorplatform.app`,
+      verified,
+      expectedCname,
+      instructions: verified
+        ? '域名驗證成功'
+        : `請新增 CNAME 記錄，將 ${domain} 指向 ${expectedCname}`,
     };
   }
 
