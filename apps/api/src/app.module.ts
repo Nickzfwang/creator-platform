@@ -28,6 +28,7 @@ import { LandingPageModule } from './modules/landing-page/landing-page.module';
 import { DigitalProductModule } from './modules/digital-product/digital-product.module';
 import { EmailMarketingModule } from './modules/email-marketing/email-marketing.module';
 import { ContentRepurposeModule } from './modules/content-repurpose/content-repurpose.module';
+import { ContentStrategyModule } from './modules/content-strategy/content-strategy.module';
 
 @Module({
   imports: [
@@ -72,6 +73,7 @@ import { ContentRepurposeModule } from './modules/content-repurpose/content-repu
     DigitalProductModule,
     EmailMarketingModule,
     ContentRepurposeModule,
+    ContentStrategyModule,
   ],
 })
 export class AppModule {}

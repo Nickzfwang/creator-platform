@@ -410,6 +410,59 @@ pnpm dev                      # 啟動前後端
 
 ---
 
+## Phase 5：AI 內容策略引擎 ✅
+
+**檔案位置：** `apps/api/src/modules/content-strategy/`、`apps/web/hooks/use-content-strategy.ts`
+
+後端 API：
+- [x] Prisma Schema 新增 TopicSuggestion + ContentCalendar + Competitor + CompetitorVideo（3 enums, 4 models）
+- [x] DTOs（GenerateSuggestions, AdoptSuggestion, CreateCalendarItem, UpdateCalendarItem, CalendarQuery, AddCompetitor, CreatePostFromCalendar, UpdateStrategySettings）
+- [x] ContentStrategyService — AI 主題推薦引擎（GPT-4o 綜合推理）+ 內容日曆 CRUD + 策略回顧
+- [x] CompetitorService — 競品追蹤（YouTube URL 解析 + Data API placeholder）+ AI 競品分析
+- [x] ContentStrategyProcessor — BullMQ Worker（每週自動生成）
+- [x] CompetitorSyncProcessor — BullMQ Worker（每日競品同步）
+- [x] ContentStrategyCron — Cron jobs（每週一 9AM + 每日 3AM）
+- [x] ContentStrategyController — 17 支 API endpoints
+- [x] ContentStrategyModule — 模組註冊 + BullMQ queues + Schedule
+- [x] POST /v1/content-strategy/suggestions/generate — AI 生成主題建議
+- [x] GET /v1/content-strategy/suggestions — 列出建議（cursor-based 分頁）
+- [x] POST /v1/content-strategy/suggestions/:id/adopt — 採用建議排入日曆
+- [x] POST /v1/content-strategy/suggestions/:id/dismiss — 忽略建議
+- [x] POST /v1/content-strategy/suggestions/:id/replace — 換一個
+- [x] GET /v1/content-strategy/calendar — 日曆項目（日期範圍）
+- [x] POST /v1/content-strategy/calendar — 手動新增日曆項目
+- [x] PATCH /v1/content-strategy/calendar/:id — 更新（含狀態轉換驗證）
+- [x] DELETE /v1/content-strategy/calendar/:id — 刪除
+- [x] POST /v1/content-strategy/calendar/:id/create-post — 建立排程 Post
+- [x] POST /v1/content-strategy/competitors — 新增競品頻道
+- [x] GET /v1/content-strategy/competitors — 列出競品（含 quota）
+- [x] GET /v1/content-strategy/competitors/:id/videos — 競品影片列表
+- [x] DELETE /v1/content-strategy/competitors/:id — 取消追蹤
+- [x] GET /v1/content-strategy/competitors/analysis — AI 競品分析
+- [x] GET /v1/content-strategy/review — 策略回顧數據
+- [x] GET /v1/content-strategy/review/insights — AI 洞察報告
+- [x] GET /v1/content-strategy/settings — 策略設定
+- [x] PATCH /v1/content-strategy/settings — 更新設定
+
+前端 UI：
+- [x] use-content-strategy.ts hook（suggestions, calendar, competitors, review）
+- [x] /strategy 頁面（4 個 Tab）
+- [x] AI 推薦面板（偏好切換、建議卡片、排入日曆/忽略/換一個）
+- [x] 內容日曆面板（週分組、狀態標示、手動新增）
+- [x] 競品追蹤面板（頻道列表、影片列表、AI 分析、quota 顯示）
+- [x] 策略回顧面板（總覽卡片、TOP 3 表現、數據來源分析）
+- [x] 側邊欄新增「內容策略」導航項目
+
+待完成（外部服務整合）：
+- [ ] YouTube Data API v3 實際串接（channels.list + search.list + videos.list）
+- [ ] 主題去重（embedding 相似度比對）
+- [ ] 用戶設定持久化（User.metadata JSON）
+- [ ] 儀表板「本週計畫就緒」提示卡片
+- [ ] 前端日曆拖拉功能（@dnd-kit）
+- [ ] Recharts 圖表（回顧趨勢）
+
+---
+
 ## 技術債 / 基礎設施待辦
 
 - [ ] CI/CD Pipeline（GitHub Actions：lint → test → build → deploy）

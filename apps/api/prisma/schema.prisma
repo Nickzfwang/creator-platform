@@ -151,6 +151,29 @@ enum RepurposeItemStatus {
   DISCARDED
 }
 
+enum CalendarItemStatus {
+  SUGGESTED
+  PLANNED
+  IN_PRODUCTION
+  PUBLISHED
+  MEASURED
+  DISMISSED
+  SKIPPED
+}
+
+enum SuggestionSource {
+  HISTORY
+  TREND
+  COMPETITOR
+  MIXED
+}
+
+enum ConfidenceLevel {
+  HIGH
+  MEDIUM
+  LOW
+}
+
 // ─── Models ───
 
 model Tenant {
@@ -187,6 +210,9 @@ model Tenant {
   emailSubscribers EmailSubscriber[]
   emailCampaigns   EmailCampaign[]
   repurposeJobs    RepurposeJob[]
+  topicSuggestions  TopicSuggestion[]
+  calendarItems     ContentCalendar[]
+  competitors       Competitor[]
 
   @@map("tenants")
 }
@@ -226,6 +252,9 @@ model User {
   emailSubscribers     EmailSubscriber[]
   emailCampaigns       EmailCampaign[]
   repurposeJobs        RepurposeJob[]
+  topicSuggestions      TopicSuggestion[]
+  calendarItems         ContentCalendar[]
+  competitors           Competitor[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -804,4 +833,113 @@ model RepurposeItem {
 
   @@index([jobId, type])
   @@map("repurpose_items")
+}
+
+// ─── Content Strategy ───
+
+model TopicSuggestion {
+  id                 String           @id @default(uuid()) @db.Uuid
+  userId             String           @map("user_id") @db.Uuid
+  tenantId           String           @map("tenant_id") @db.Uuid
+  batchId            String           @map("batch_id") @db.Uuid
+  title              String           @db.VarChar(500)
+  description        String
+  reasoning          String
+  dataSource         SuggestionSource @map("data_source")
+  performanceScore   Float            @map("performance_score")
+  confidenceLevel    ConfidenceLevel  @map("confidence_level")
+  confidenceReason   String?          @map("confidence_reason")
+  suggestedDate      DateTime?        @map("suggested_date") @db.Date
+  suggestedPlatforms String[]         @map("suggested_platforms")
+  tags               String[]
+  relatedTrends      String[]         @map("related_trends")
+  competitorRef      String?          @map("competitor_ref")
+  isAdopted          Boolean          @default(false) @map("is_adopted")
+  isDismissed        Boolean          @default(false) @map("is_dismissed")
+  createdAt          DateTime         @default(now()) @map("created_at")
+
+  user               User             @relation(fields: [userId], references: [id])
+  tenant             Tenant           @relation(fields: [tenantId], references: [id])
+  calendarItem       ContentCalendar?
+
+  @@index([tenantId, userId, createdAt(sort: Desc)])
+  @@index([batchId])
+  @@map("topic_suggestions")
+}
+
+model ContentCalendar {
+  id               String             @id @default(uuid()) @db.Uuid
+  userId           String             @map("user_id") @db.Uuid
+  tenantId         String             @map("tenant_id") @db.Uuid
+  suggestionId     String?            @unique @map("suggestion_id") @db.Uuid
+  title            String             @db.VarChar(500)
+  description      String?
+  status           CalendarItemStatus @default(SUGGESTED)
+  scheduledDate    DateTime           @map("scheduled_date") @db.Date
+  scheduledTime    String?            @map("scheduled_time") @db.VarChar(5)
+  targetPlatforms  String[]           @map("target_platforms")
+  videoId          String?            @map("video_id") @db.Uuid
+  postId           String?            @map("post_id") @db.Uuid
+  notes            String?
+  actualViews      Int?               @map("actual_views")
+  actualLikes      Int?               @map("actual_likes")
+  actualComments   Int?               @map("actual_comments")
+  actualEngagement Float?             @map("actual_engagement")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+
+  user             User               @relation(fields: [userId], references: [id])
+  tenant           Tenant             @relation(fields: [tenantId], references: [id])
+  suggestion       TopicSuggestion?   @relation(fields: [suggestionId], references: [id])
+
+  @@index([tenantId, userId, scheduledDate])
+  @@index([status])
+  @@map("content_calendar")
+}
+
+model Competitor {
+  id              String            @id @default(uuid()) @db.Uuid
+  userId          String            @map("user_id") @db.Uuid
+  tenantId        String            @map("tenant_id") @db.Uuid
+  platform        String            @default("YOUTUBE") @db.VarChar(50)
+  channelId       String            @map("channel_id") @db.VarChar(255)
+  channelUrl      String            @map("channel_url")
+  channelName     String            @map("channel_name") @db.VarChar(255)
+  channelAvatar   String?           @map("channel_avatar")
+  subscriberCount Int?              @map("subscriber_count")
+  videoCount      Int?              @map("video_count")
+  isActive        Boolean           @default(true) @map("is_active")
+  lastSyncedAt    DateTime?         @map("last_synced_at")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  user            User              @relation(fields: [userId], references: [id])
+  tenant          Tenant            @relation(fields: [tenantId], references: [id])
+  videos          CompetitorVideo[]
+
+  @@unique([userId, channelId])
+  @@index([tenantId, userId])
+  @@map("competitors")
+}
+
+model CompetitorVideo {
+  id              String     @id @default(uuid()) @db.Uuid
+  competitorId    String     @map("competitor_id") @db.Uuid
+  platformVideoId String     @map("platform_video_id") @db.VarChar(255)
+  title           String     @db.VarChar(500)
+  description     String?
+  thumbnailUrl    String?    @map("thumbnail_url")
+  viewCount       Int?       @map("view_count")
+  likeCount       Int?       @map("like_count")
+  commentCount    Int?       @map("comment_count")
+  publishedAt     DateTime   @map("published_at")
+  durationSeconds Int?       @map("duration_seconds")
+  tags            String[]
+  createdAt       DateTime   @default(now()) @map("created_at")
+
+  competitor      Competitor @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+
+  @@unique([competitorId, platformVideoId])
+  @@index([competitorId, publishedAt(sort: Desc)])
+  @@map("competitor_videos")
 }

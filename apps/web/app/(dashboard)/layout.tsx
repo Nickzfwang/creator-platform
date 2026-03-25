@@ -21,6 +21,7 @@ import {
   PanelTop,
   ShoppingBag,
   Mail,
+  Lightbulb,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRequireAuth } from "@/hooks/use-require-auth";
@@ -45,6 +46,7 @@ const sidebarItems = [
   { label: "Bot 設定", href: "/bot", icon: Bot },
   { label: "會員管理", href: "/members", icon: Users },
   { label: "品牌合作", href: "/brand", icon: Handshake },
+  { label: "內容策略", href: "/strategy", icon: Lightbulb },
   { label: "趨勢雷達", href: "/trends", icon: Radar },
   { label: "收藏庫", href: "/clips", icon: Bookmark },
   { label: "AI 社群探索", href: "/browse", icon: Globe },
@@ -62,6 +64,7 @@ const pageTitles: Record<string, string> = {
   "/bot": "Bot 設定",
   "/members": "會員管理",
   "/brand": "品牌合作",
+  "/strategy": "內容策略",
   "/trends": "趨勢雷達",
   "/clips": "收藏庫",
   "/browse": "AI 社群探索",
