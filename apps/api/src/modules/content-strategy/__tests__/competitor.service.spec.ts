@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { NotFoundException, ForbiddenException, ConflictException, BadRequestException } from '@nestjs/common';
 import { CompetitorService } from '../competitor.service';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -44,6 +45,12 @@ describe('CompetitorService', () => {
           provide: AiService,
           useValue: {
             generateJson: jest.fn(),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn(),
           },
         },
       ],

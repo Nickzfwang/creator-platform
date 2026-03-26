@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import {
   NotFoundException,
   ForbiddenException,
@@ -42,6 +43,7 @@ describe('VideoService — Post-Production Tools', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: AiService, useValue: aiService },
         { provide: ContentRepurposeService, useValue: mockRepurposeService() },
+        { provide: ConfigService, useValue: { get: jest.fn() } },
       ],
     }).compile();
 
