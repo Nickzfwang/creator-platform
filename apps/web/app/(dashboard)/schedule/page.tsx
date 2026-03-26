@@ -299,9 +299,9 @@ export default function SchedulePage() {
                       <SelectValue placeholder="選擇影片" />
                     </SelectTrigger>
                     <SelectContent>
-                      {videosData?.data?.map((v: { id: string; title: string; durationSeconds: number }) => (
+                      {videosData?.data?.map((v) => (
                         <SelectItem key={v.id} value={v.id}>
-                          {v.title} ({v.durationSeconds}s)
+                          {v.title} ({v.durationSeconds ?? 0}s)
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -318,9 +318,9 @@ export default function SchedulePage() {
                       <SelectValue placeholder={selectedVideoId ? "選擇片段" : "先選影片"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {clipsData?.map((c: { id: string; title: string; durationSeconds: number }) => (
+                      {clipsData?.map((c) => (
                         <SelectItem key={c.id} value={c.id}>
-                          {c.title} ({c.durationSeconds}s)
+                          {c.title} ({c.durationSeconds ?? 0}s)
                         </SelectItem>
                       ))}
                     </SelectContent>
