@@ -189,6 +189,34 @@ enum ConfidenceLevel {
   LOW
 }
 
+enum TrendPhase {
+  NEW
+  RISING
+  PEAK
+  DECLINING
+}
+
+enum TrendSourcePlatform {
+  RSS_TECHORANGE
+  RSS_ITHOME
+  RSS_BNEXT
+  RSS_TECHCRUNCH
+  RSS_THEVERGE
+  RSS_PRODUCTHUNT
+  RSS_CREATOR_ECONOMY
+  API_DCARD
+  API_YOUTUBE_TRENDING
+  SCRAPER_TIKTOK
+  SCRAPER_THREADS
+}
+
+enum NotificationType {
+  TREND_KEYWORD_HIT
+  TREND_VIRAL_ALERT
+  TREND_DAILY_SUMMARY
+  SYSTEM
+}
+
 // ─── Models ───
 
 model Tenant {
@@ -229,6 +257,9 @@ model Tenant {
   calendarItems     ContentCalendar[]
   competitors       Competitor[]
   fanComments       FanComment[]
+  trendKeywords     TrendKeyword[]
+  trendUserSettings TrendUserSettings[]
+  notifications     Notification[]
 
   @@map("tenants")
 }
@@ -272,6 +303,9 @@ model User {
   calendarItems         ContentCalendar[]
   competitors           Competitor[]
   fanComments           FanComment[]
+  trendKeywords         TrendKeyword[]
+  trendSettings         TrendUserSettings?
+  notifications         Notification[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -991,4 +1025,104 @@ model FanComment {
   @@index([tenantId, userId, isReplied])
   @@index([createdAt(sort: Desc)])
   @@map("fan_comments")
+}
+
+// ─── Trend Radar 2.0 ───
+
+model TrendSnapshot {
+  id          String               @id @default(uuid()) @db.Uuid
+  sources     TrendSourcePlatform[]
+  topicCount  Int                  @map("topic_count")
+  aiAnalysis  String               @map("ai_analysis")
+  generatedAt DateTime             @default(now()) @map("generated_at")
+
+  topics      TrendTopic[]
+
+  @@index([generatedAt(sort: Desc)])
+  @@map("trend_snapshots")
+}
+
+model TrendTopic {
+  id              String              @id @default(uuid()) @db.Uuid
+  snapshotId      String              @map("snapshot_id") @db.Uuid
+  fingerprint     String              @db.VarChar(64)
+  title           String              @db.VarChar(500)
+  summary         String
+  source          String              @db.VarChar(100)
+  sourcePlatform  TrendSourcePlatform @map("source_platform")
+  category        String              @db.VarChar(50)
+  relevanceScore  Float               @map("relevance_score")
+  contentIdeas    String[]            @map("content_ideas")
+  url             String?
+  phase           TrendPhase          @default(NEW)
+  isCrossPlatform Boolean             @default(false) @map("is_cross_platform")
+  firstSeenAt     DateTime            @default(now()) @map("first_seen_at")
+
+  snapshot        TrendSnapshot       @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  @@index([snapshotId])
+  @@index([fingerprint, snapshotId])
+  @@index([category])
+  @@map("trend_topics")
+}
+
+model TrendKeyword {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  keyword   String    @db.VarChar(100)
+  isActive  Boolean   @default(true) @map("is_active")
+  lastHitAt DateTime? @map("last_hit_at")
+  hitCount  Int       @default(0) @map("hit_count")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user      User      @relation(fields: [userId], references: [id])
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+
+  @@unique([userId, keyword])
+  @@index([tenantId, userId])
+  @@map("trend_keywords")
+}
+
+model TrendUserSettings {
+  id                 String   @id @default(uuid()) @db.Uuid
+  userId             String   @unique @map("user_id") @db.Uuid
+  tenantId           String   @map("tenant_id") @db.Uuid
+  notifyKeywordHit   Boolean  @default(true) @map("notify_keyword_hit")
+  notifyViralAlert   Boolean  @default(true) @map("notify_viral_alert")
+  notifyDailySummary Boolean  @default(true) @map("notify_daily_summary")
+  emailKeywordHit    Boolean  @default(false) @map("email_keyword_hit")
+  emailViralAlert    Boolean  @default(false) @map("email_viral_alert")
+  emailDailySummary  Boolean  @default(true) @map("email_daily_summary")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  user               User     @relation(fields: [userId], references: [id])
+  tenant             Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@map("trend_user_settings")
+}
+
+// ─── Notifications (shared) ───
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  tenantId  String           @map("tenant_id") @db.Uuid
+  type      NotificationType
+  title     String           @db.VarChar(200)
+  body      String
+  metadata  Json?            @default("{}")
+  linkUrl   String?          @map("link_url")
+  isRead    Boolean          @default(false) @map("is_read")
+  readAt    DateTime?        @map("read_at")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user      User             @relation(fields: [userId], references: [id])
+  tenant    Tenant           @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, userId, isRead, createdAt(sort: Desc)])
+  @@index([createdAt])
+  @@map("notifications")
 }

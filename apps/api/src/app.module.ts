@@ -33,6 +33,8 @@ import { ContentRepurposeModule } from './modules/content-repurpose/content-repu
 import { ContentStrategyModule } from './modules/content-strategy/content-strategy.module';
 import { MonetizeModule } from './modules/monetize/monetize.module';
 import { InteractionsModule } from './modules/interactions/interactions.module';
+import { NotificationModule } from './modules/notification/notification.module';
+import { BrevoModule } from './modules/brevo/brevo.module';
 
 @Module({
   imports: [
@@ -82,6 +84,8 @@ import { InteractionsModule } from './modules/interactions/interactions.module';
     ContentStrategyModule,
     MonetizeModule,
     InteractionsModule,
+    NotificationModule,
+    BrevoModule,
   ],
 })
 export class AppModule {}

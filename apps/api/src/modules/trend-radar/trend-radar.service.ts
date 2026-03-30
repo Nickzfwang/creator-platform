@@ -1,193 +1,318 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
+import { generateFingerprint } from './utils/fingerprint';
+import { RssFeedItem, TrendSource } from './sources/base-source';
+import { createRssSources } from './sources/rss.source';
+import { DcardApiSource } from './sources/dcard-api.source';
+import { YouTubeTrendingSource } from './sources/youtube-trending.source';
+import { TikTokScraperSource } from './sources/tiktok-scraper.source';
+import { ThreadsScraperSource } from './sources/threads-scraper.source';
+import { TrendPhase, TrendSourcePlatform } from '@prisma/client';
 
-interface RssFeedItem {
-  title: string;
-  link: string;
-  pubDate?: string;
-  source: string;
-}
-
-export interface TrendTopic {
+export interface TrendTopicResponse {
+  id: string;
+  fingerprint: string;
   title: string;
   summary: string;
   source: string;
+  sourcePlatform: TrendSourcePlatform;
   category: string;
   relevanceScore: number;
   contentIdeas: string[];
-  url?: string;
+  url: string | null;
+  phase: TrendPhase;
+  isCrossPlatform: boolean;
+  firstSeenAt: string;
 }
 
-export interface TrendReport {
-  topics: TrendTopic[];
+export interface TrendReportResponse {
+  topics: TrendTopicResponse[];
   aiAnalysis: string;
   generatedAt: string;
   sources: string[];
+  nextRefreshAt: string;
 }
-
-// RSS feed sources - public and legal
-const RSS_FEEDS: Array<{ name: string; url: string; category: string }> = [
-  // Taiwan tech & digital
-  { name: 'Dcard 熱門', url: 'https://www.dcard.tw/service/api/v2/posts?popular=true&limit=15', category: '社群討論' },
-  { name: 'TechOrange 科技報橘', url: 'https://buzzorange.com/techorange/feed/', category: '科技' },
-  { name: 'iThome', url: 'https://www.ithome.com.tw/rss', category: '科技' },
-  { name: '數位時代', url: 'https://www.bnext.com.tw/rss', category: '商業科技' },
-  // International
-  { name: 'TechCrunch', url: 'https://techcrunch.com/feed/', category: '國際科技' },
-  { name: 'The Verge', url: 'https://www.theverge.com/rss/index.xml', category: '國際科技' },
-  { name: 'Product Hunt', url: 'https://www.producthunt.com/feed', category: '新產品' },
-  // YouTube / Creator economy
-  { name: 'Creator Economy (Substack)', url: 'https://creatoreconomy.so/feed', category: '創作者經濟' },
-];
 
 @Injectable()
 export class TrendRadarService {
   private readonly logger = new Logger(TrendRadarService.name);
-  private cachedReport: TrendReport | null = null;
-  private cacheTimestamp = 0;
-  private readonly CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
-  constructor(private readonly aiService: AiService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly aiService: AiService,
+  ) {}
 
+  /**
+   * Get latest trends from DB. If no snapshot or stale (>2hr), triggers sync refresh.
+   */
   async getTrends(
     category?: string,
-    forceRefresh = false,
-  ): Promise<TrendReport> {
-    // Return cache if fresh
-    if (
-      !forceRefresh &&
-      this.cachedReport &&
-      Date.now() - this.cacheTimestamp < this.CACHE_TTL
-    ) {
-      if (category) {
-        return {
-          ...this.cachedReport,
-          topics: this.cachedReport.topics.filter(
-            (t) => t.category === category,
-          ),
-        };
-      }
-      return this.cachedReport;
+    platform?: string,
+    phase?: string,
+  ): Promise<TrendReportResponse> {
+    let snapshot = await this.prisma.trendSnapshot.findFirst({
+      orderBy: { generatedAt: 'desc' },
+      include: { topics: { orderBy: { relevanceScore: 'desc' } } },
+    });
+
+    // If no snapshot at all, must do a sync refresh (first boot)
+    if (!snapshot) {
+      snapshot = await this.refreshTrends(false);
+    } else if (Date.now() - snapshot.generatedAt.getTime() > 2 * 60 * 60 * 1000) {
+      // Stale snapshot — return it immediately, cron will refresh in background
+      this.logger.warn('Snapshot is stale, returning cached data. Cron will refresh.');
     }
 
-    // Fetch RSS feeds in parallel
-    const feedResults = await Promise.allSettled(
-      RSS_FEEDS.map((feed) => this.fetchFeed(feed)),
+    let topics = snapshot.topics;
+
+    // Apply filters
+    if (category) {
+      topics = topics.filter(t => t.category === category);
+    }
+    if (platform) {
+      topics = topics.filter(t => t.sourcePlatform === platform);
+    }
+    if (phase) {
+      topics = topics.filter(t => t.phase === phase);
+    }
+
+    // Calculate next refresh time (next even hour during 8-22 UTC+8)
+    const nextRefresh = new Date(snapshot.generatedAt.getTime() + 2 * 60 * 60 * 1000);
+
+    return {
+      topics: topics.map(t => ({
+        id: t.id,
+        fingerprint: t.fingerprint,
+        title: t.title,
+        summary: t.summary,
+        source: t.source,
+        sourcePlatform: t.sourcePlatform,
+        category: t.category,
+        relevanceScore: t.relevanceScore,
+        contentIdeas: t.contentIdeas,
+        url: t.url,
+        phase: t.phase,
+        isCrossPlatform: t.isCrossPlatform,
+        firstSeenAt: t.firstSeenAt.toISOString(),
+      })),
+      aiAnalysis: snapshot.aiAnalysis,
+      generatedAt: snapshot.generatedAt.toISOString(),
+      sources: snapshot.sources.map(s => s.toString()),
+      nextRefreshAt: nextRefresh.toISOString(),
+    };
+  }
+
+  /**
+   * Full refresh: fetch all sources, AI analyze, persist to DB.
+   * Returns the new snapshot with topics included.
+   */
+  async refreshTrends(includeScraper: boolean = false) {
+    // 1. Collect from all sources in parallel
+    const rssSources = createRssSources();
+    const apiSources: TrendSource[] = [
+      new DcardApiSource(),
+      new YouTubeTrendingSource(),
+    ];
+
+    const scraperSources: TrendSource[] = includeScraper
+      ? [new TikTokScraperSource(), new ThreadsScraperSource()]
+      : [];
+
+    const allSources = [...rssSources, ...apiSources, ...scraperSources];
+    const results = await Promise.allSettled(
+      allSources.map(s => s.fetch()),
     );
 
     const allItems: RssFeedItem[] = [];
-    const activeSources: string[] = [];
+    const activePlatforms: TrendSourcePlatform[] = [];
 
-    for (let i = 0; i < feedResults.length; i++) {
-      const result = feedResults[i];
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
       if (result.status === 'fulfilled' && result.value.length > 0) {
         allItems.push(...result.value);
-        activeSources.push(RSS_FEEDS[i].name);
+        const platformStr = allSources[i].sourcePlatform;
+        if (!activePlatforms.includes(platformStr as TrendSourcePlatform)) {
+          activePlatforms.push(platformStr as TrendSourcePlatform);
+        }
       }
     }
 
-    this.logger.log(
-      `Fetched ${allItems.length} items from ${activeSources.length} sources`,
+    this.logger.log(`Fetched ${allItems.length} items from ${activePlatforms.length} sources`);
+
+    // 2. Deduplicate by URL
+    const seen = new Set<string>();
+    const uniqueItems = allItems.filter(item => {
+      if (!item.link || seen.has(item.link)) return false;
+      seen.add(item.link);
+      return true;
+    });
+
+    // 3. AI analysis (limit to 60 items)
+    const itemsForAi = uniqueItems.slice(0, 60);
+    const { topics: aiTopics, aiAnalysis } = await this.analyzeWithAi(itemsForAi);
+
+    // 4. Get previous snapshot for phase calculation
+    const previousSnapshot = await this.prisma.trendSnapshot.findFirst({
+      orderBy: { generatedAt: 'desc' },
+      include: { topics: true },
+    });
+    const previousTopicsMap = new Map(
+      (previousSnapshot?.topics ?? []).map(t => [t.fingerprint, t]),
     );
 
-    // Use GPT to analyze and rank trends
-    const report = await this.analyzeWithAi(allItems, activeSources);
-    this.cachedReport = report;
-    this.cacheTimestamp = Date.now();
+    // 5. Pre-compute fingerprints (avoid O(n²))
+    const topicsWithFingerprint = aiTopics.map(topic => ({
+      ...topic,
+      fingerprint: generateFingerprint(topic.title),
+    }));
 
-    if (category) {
-      return {
-        ...report,
-        topics: report.topics.filter((t) => t.category === category),
-      };
+    // Build cross-platform lookup: fingerprint → Set of sourcePlatforms
+    const crossPlatformMap = new Map<string, Set<string>>();
+    for (const t of topicsWithFingerprint) {
+      const set = crossPlatformMap.get(t.fingerprint) || new Set();
+      set.add(t.sourcePlatform);
+      crossPlatformMap.set(t.fingerprint, set);
     }
-    return report;
-  }
 
-  private async fetchFeed(feed: {
-    name: string;
-    url: string;
-    category: string;
-  }): Promise<RssFeedItem[]> {
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 8000);
+    // Batch query: get earliest firstSeenAt for all fingerprints
+    const allFingerprints = [...new Set(topicsWithFingerprint.map(t => t.fingerprint))];
+    const historicalFirstSeen = await this.prisma.trendTopic.groupBy({
+      by: ['fingerprint'],
+      where: { fingerprint: { in: allFingerprints } },
+      _min: { firstSeenAt: true },
+    });
+    const firstSeenMap = new Map(
+      historicalFirstSeen.map(h => [h.fingerprint, h._min.firstSeenAt]),
+    );
 
-      const res = await fetch(feed.url, {
-        signal: controller.signal,
-        headers: { 'User-Agent': 'CreatorPlatform/1.0 (RSS Reader)' },
-      });
-      clearTimeout(timeout);
+    // Calculate phases and build topics
+    const topicsToCreate = topicsWithFingerprint.map(topic => {
+      const prev = previousTopicsMap.get(topic.fingerprint);
 
-      if (!res.ok) return [];
-
-      const text = await res.text();
-      const items: RssFeedItem[] = [];
-
-      if (feed.url.includes('dcard.tw')) {
-        // Dcard returns JSON
-        try {
-          const posts = JSON.parse(text);
-          if (Array.isArray(posts)) {
-            for (const post of posts.slice(0, 10)) {
-              items.push({
-                title: post.title || '',
-                link: `https://www.dcard.tw/f/${post.forumAlias}/p/${post.id}`,
-                pubDate: post.createdAt,
-                source: feed.name,
-              });
-            }
-          }
-        } catch {
-          /* ignore parse errors */
-        }
-      } else {
-        // Parse RSS/Atom XML - simple regex extraction
-        const titleMatches = text.matchAll(
-          /<title[^>]*><!\[CDATA\[(.*?)\]\]><\/title>|<title[^>]*>(.*?)<\/title>/g,
-        );
-        const linkMatches = text.matchAll(
-          /<link[^>]*href="([^"]*)"[^>]*\/>|<link[^>]*>(.*?)<\/link>/g,
-        );
-
-        const titles: string[] = [];
-        const links: string[] = [];
-
-        for (const match of titleMatches) {
-          const t = (match[1] || match[2] || '').trim();
-          if (t && t !== feed.name && !t.includes('<?xml')) titles.push(t);
-        }
-        for (const match of linkMatches) {
-          const l = (match[1] || match[2] || '').trim();
-          if (l && l.startsWith('http')) links.push(l);
-        }
-
-        for (let i = 0; i < Math.min(titles.length, 10); i++) {
-          items.push({
-            title: titles[i],
-            link: links[i] || '',
-            source: feed.name,
-          });
-        }
+      let phase: TrendPhase = 'NEW';
+      if (prev) {
+        const scoreDiff = topic.relevanceScore - prev.relevanceScore;
+        if (scoreDiff >= 0.05) phase = 'RISING';
+        else if (scoreDiff <= -0.05) phase = 'DECLINING';
+        else phase = 'PEAK';
       }
 
-      return items;
-    } catch (error) {
-      this.logger.warn(`Failed to fetch ${feed.name}: ${error}`);
-      return [];
-    }
+      const isCrossPlatform = (crossPlatformMap.get(topic.fingerprint)?.size ?? 0) >= 2;
+
+      return {
+        fingerprint: topic.fingerprint,
+        title: topic.title,
+        summary: topic.summary,
+        source: topic.source,
+        sourcePlatform: topic.sourcePlatform as TrendSourcePlatform,
+        category: topic.category,
+        relevanceScore: topic.relevanceScore,
+        contentIdeas: topic.contentIdeas,
+        url: topic.url || null,
+        phase,
+        isCrossPlatform,
+        firstSeenAt: firstSeenMap.get(topic.fingerprint) ?? new Date(),
+      };
+    });
+
+    // 6. Write to DB in a transaction
+    const snapshot = await this.prisma.$transaction(async (tx) => {
+      const snap = await tx.trendSnapshot.create({
+        data: {
+          sources: activePlatforms,
+          topicCount: topicsToCreate.length,
+          aiAnalysis,
+        },
+      });
+
+      if (topicsToCreate.length > 0) {
+        await tx.trendTopic.createMany({
+          data: topicsToCreate.map(t => ({
+            snapshotId: snap.id,
+            ...t,
+          })),
+        });
+      }
+
+      return tx.trendSnapshot.findUniqueOrThrow({
+        where: { id: snap.id },
+        include: { topics: { orderBy: { relevanceScore: 'desc' } } },
+      });
+    });
+
+    this.logger.log(`Created snapshot ${snapshot.id} with ${snapshot.topicCount} topics`);
+    return snapshot;
   }
 
-  private async analyzeWithAi(
-    items: RssFeedItem[],
-    sources: string[],
-  ): Promise<TrendReport> {
-    // Prepare titles for GPT analysis
+  /**
+   * Get 14-day history for a specific trend by fingerprint.
+   */
+  async getTrendHistory(fingerprint: string) {
+    const fourteenDaysAgo = new Date();
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+    const topics = await this.prisma.trendTopic.findMany({
+      where: {
+        fingerprint,
+        snapshot: { generatedAt: { gte: fourteenDaysAgo } },
+      },
+      include: { snapshot: { select: { generatedAt: true } } },
+      orderBy: { snapshot: { generatedAt: 'asc' } },
+    });
+
+    if (topics.length === 0) return null;
+
+    // Group by date, take highest score per day
+    const dailyMap = new Map<string, { date: string; relevanceScore: number; snapshotId: string }>();
+    for (const t of topics) {
+      const date = t.snapshot.generatedAt.toISOString().split('T')[0];
+      const existing = dailyMap.get(date);
+      if (!existing || t.relevanceScore > existing.relevanceScore) {
+        dailyMap.set(date, {
+          date,
+          relevanceScore: t.relevanceScore,
+          snapshotId: t.snapshotId,
+        });
+      }
+    }
+
+    const history = [...dailyMap.values()].sort((a, b) => a.date.localeCompare(b.date));
+    const latest = topics[topics.length - 1];
+    const peak = topics.reduce((max, t) => t.relevanceScore > max.relevanceScore ? t : max, topics[0]);
+
+    return {
+      fingerprint,
+      title: latest.title,
+      currentPhase: latest.phase,
+      history,
+      firstSeenAt: topics[0].firstSeenAt.toISOString(),
+      peakScore: peak.relevanceScore,
+      peakDate: peak.snapshot.generatedAt.toISOString().split('T')[0],
+    };
+  }
+
+  /**
+   * AI analysis: generate structured trend topics + daily summary.
+   */
+  private async analyzeWithAi(items: RssFeedItem[]): Promise<{
+    topics: Array<{
+      title: string;
+      summary: string;
+      source: string;
+      sourcePlatform: string;
+      category: string;
+      relevanceScore: number;
+      contentIdeas: string[];
+      url?: string;
+    }>;
+    aiAnalysis: string;
+  }> {
     const titlesText = items
-      .slice(0, 50) // Limit to avoid token overflow
       .map((item, i) => `${i + 1}. [${item.source}] ${item.title}`)
       .join('\n');
 
+    // Step 1: Structured analysis
     const jsonResult = await this.aiService.generateJson<{
       topics: Array<{
         title: string;
@@ -201,7 +326,7 @@ export class TrendRadarService {
     }>(
       `你是一位專業的社群趨勢分析師，專門為台灣的內容創作者提供趨勢洞察。
 
-請分析以下從各大平台收集的熱門標題（每條前面有編號），識別出 8-12 個最值得關注的趨勢話題。
+請分析以下從各大平台收集的熱門標題（每條前面有編號），識別出 8-15 個最值得關注的趨勢話題。
 
 對每個趨勢，提供：
 - title: 趨勢主題名稱（繁體中文，簡潔有力）
@@ -210,7 +335,7 @@ export class TrendRadarService {
 - category: 分類（科技/生活/商業/娛樂/社會議題/創作者經濟）
 - relevanceScore: 對創作者的相關度 0-1（越高越相關）
 - contentIdeas: 2-3 個基於此趨勢的影片/內容創意（每個一句話）
-- sourceArticleIndex: 這個趨勢最相關的原始文章編號（1-based，對應上面列表的編號）
+- sourceArticleIndex: 這個趨勢最相關的原始文章編號（1-based）
 
 按 relevanceScore 降序排列。
 
@@ -219,40 +344,38 @@ export class TrendRadarService {
       { maxTokens: 2048 },
     );
 
-    // Generate overall analysis
-    const analysis = await this.aiService.chat(
-      `你是一位台灣創作者的趨勢顧問。根據以下今日熱門趨勢，用繁體中文寫一段 150-200 字的趨勢總結。
+    // Step 2: Daily summary
+    const topicsSummary = (jsonResult?.topics ?? [])
+      .map(t => `- ${t.title}: ${t.summary}`)
+      .join('\n');
 
+    const aiAnalysis = await this.aiService.chat(
+      `你是一位台灣創作者的趨勢顧問。根據以下今日熱門趨勢，用繁體中文寫一段 150-200 字的趨勢總結。
 語氣要像一個親切的早報主播，告訴創作者今天有什麼值得關注的。
 用 emoji 增加可讀性，分 2-3 個重點段落。
 最後給一個「今日行動建議」。`,
-      `今日趨勢主題：\n${(jsonResult?.topics ?? []).map((t) => `- ${t.title}: ${t.summary}`).join('\n')}`,
+      `今日趨勢主題：\n${topicsSummary}`,
       { maxTokens: 400 },
     );
 
-    const limitedItems = items.slice(0, 50);
-    const topics: TrendTopic[] = (jsonResult?.topics ?? []).map((t) => {
-      // Use GPT-provided index (1-based) to look up the original article URL
-      const idx = (t as any).sourceArticleIndex;
-      const matchedItem = typeof idx === 'number' && idx >= 1 && idx <= limitedItems.length
-        ? limitedItems[idx - 1]
+    // Map back to source platforms and URLs
+    const topics = (jsonResult?.topics ?? []).map(t => {
+      const idx = t.sourceArticleIndex;
+      const matchedItem = typeof idx === 'number' && idx >= 1 && idx <= items.length
+        ? items[idx - 1]
         : undefined;
       return {
         title: t.title,
         summary: t.summary,
         source: t.source,
+        sourcePlatform: matchedItem?.sourcePlatform || items[0]?.sourcePlatform || 'RSS_ITHOME',
         category: t.category,
         relevanceScore: t.relevanceScore,
         contentIdeas: t.contentIdeas,
-        url: matchedItem?.link || undefined,
+        url: matchedItem?.link,
       };
     });
 
-    return {
-      topics,
-      aiAnalysis: analysis,
-      generatedAt: new Date().toISOString(),
-      sources,
-    };
+    return { topics, aiAnalysis };
   }
 }
