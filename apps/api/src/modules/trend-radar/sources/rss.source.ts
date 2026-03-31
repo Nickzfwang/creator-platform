@@ -51,6 +51,12 @@ const RSS_FEED_CONFIGS: RssSourceConfig[] = [
     sourcePlatform: 'RSS_CREATOR_ECONOMY',
     category: '創作者經濟',
   },
+  {
+    name: 'Reddit r/technology',
+    url: 'https://www.reddit.com/r/technology/.rss',
+    sourcePlatform: 'RSS_REDDIT',
+    category: '國際科技',
+  },
 ];
 
 export class RssSource implements TrendSource {

@@ -54,6 +54,8 @@ const platformFilters = [
   { label: "TikTok", value: "SCRAPER_TIKTOK" },
   { label: "Threads", value: "SCRAPER_THREADS" },
   { label: "Dcard", value: "API_DCARD" },
+  { label: "Reddit", value: "RSS_REDDIT" },
+  { label: "Claude Code", value: "RSS_CLAUDE_CODE" },
   { label: "媒體", value: "rss" },
 ];
 
@@ -109,7 +111,8 @@ export default function TrendsPage() {
       queryClient.setQueryData(["trends"], data);
       toast.success("趨勢已重新整理");
     },
-    onError: () => toast.error("重新整理失敗，請稍後再試"),
+    onError: (err: Error & { detail?: string }) =>
+      toast.error(err.detail || err.message || "重新整理失敗，請稍後再試"),
   });
 
   const isRefreshing = refreshMutation.isPending;

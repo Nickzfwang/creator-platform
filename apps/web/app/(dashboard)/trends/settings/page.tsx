@@ -30,9 +30,9 @@ interface Keyword {
 }
 
 interface TrendSettings {
-  inAppKeywordHit: boolean;
-  inAppViralAlert: boolean;
-  inAppDailySummary: boolean;
+  notifyKeywordHit: boolean;
+  notifyViralAlert: boolean;
+  notifyDailySummary: boolean;
   emailKeywordHit: boolean;
   emailViralAlert: boolean;
   emailDailySummary: boolean;
@@ -45,9 +45,9 @@ const notificationOptions: {
   label: string;
   group: string;
 }[] = [
-  { key: "inAppKeywordHit", label: "關鍵字命中", group: "站內通知" },
-  { key: "inAppViralAlert", label: "爆紅警報", group: "站內通知" },
-  { key: "inAppDailySummary", label: "每日摘要", group: "站內通知" },
+  { key: "notifyKeywordHit", label: "關鍵字命中", group: "站內通知" },
+  { key: "notifyViralAlert", label: "爆紅警報", group: "站內通知" },
+  { key: "notifyDailySummary", label: "每日摘要", group: "站內通知" },
   { key: "emailKeywordHit", label: "關鍵字命中", group: "Email 通知" },
   { key: "emailViralAlert", label: "爆紅警報", group: "Email 通知" },
   { key: "emailDailySummary", label: "每日摘要", group: "Email 通知" },
@@ -59,10 +59,14 @@ export default function TrendSettingsPage() {
   const queryClient = useQueryClient();
 
   // --- Keywords ---
-  const { data: keywords = [], isLoading: keywordsLoading } = useQuery({
+  const { data: keywordsData, isLoading: keywordsLoading } = useQuery({
     queryKey: ["trends", "keywords"],
-    queryFn: () => api<Keyword[]>("/v1/trends/keywords"),
+    queryFn: () =>
+      api<{ keywords: Keyword[]; quota: { used: number; max: number } }>(
+        "/v1/trends/keywords",
+      ),
   });
+  const keywords = Array.isArray(keywordsData?.keywords) ? keywordsData.keywords : [];
 
   const addKeywordMutation = useMutation({
     mutationFn: (keyword: string) =>

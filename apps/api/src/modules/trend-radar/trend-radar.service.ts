@@ -8,6 +8,7 @@ import { DcardApiSource } from './sources/dcard-api.source';
 import { YouTubeTrendingSource } from './sources/youtube-trending.source';
 import { TikTokScraperSource } from './sources/tiktok-scraper.source';
 import { ThreadsScraperSource } from './sources/threads-scraper.source';
+import { ClaudeCodeDocsSource } from './sources/claude-code-docs.source';
 import { TrendPhase, TrendSourcePlatform } from '@prisma/client';
 
 export interface TrendTopicResponse {
@@ -113,6 +114,7 @@ export class TrendRadarService {
     const apiSources: TrendSource[] = [
       new DcardApiSource(),
       new YouTubeTrendingSource(),
+      new ClaudeCodeDocsSource(),
     ];
 
     const scraperSources: TrendSource[] = includeScraper
@@ -308,8 +310,11 @@ export class TrendRadarService {
     }>;
     aiAnalysis: string;
   }> {
+    const sanitize = (s: string) =>
+      s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim();
+
     const titlesText = items
-      .map((item, i) => `${i + 1}. [${item.source}] ${item.title}`)
+      .map((item, i) => `${i + 1}. [${sanitize(item.source)}] ${sanitize(item.title)}`)
       .join('\n');
 
     // Step 1: Structured analysis
@@ -358,6 +363,14 @@ export class TrendRadarService {
       { maxTokens: 400 },
     );
 
+    // Build source-name → platform lookup for robust mapping
+    const sourceNameToPlatform = new Map<string, string>();
+    for (const item of items) {
+      if (!sourceNameToPlatform.has(item.source)) {
+        sourceNameToPlatform.set(item.source, item.sourcePlatform);
+      }
+    }
+
     // Map back to source platforms and URLs
     const topics = (jsonResult?.topics ?? []).map(t => {
       const idx = t.sourceArticleIndex;
@@ -368,7 +381,9 @@ export class TrendRadarService {
         title: t.title,
         summary: t.summary,
         source: t.source,
-        sourcePlatform: matchedItem?.sourcePlatform || items[0]?.sourcePlatform || 'RSS_ITHOME',
+        sourcePlatform: matchedItem?.sourcePlatform
+          || sourceNameToPlatform.get(t.source)
+          || 'RSS_ITHOME',
         category: t.category,
         relevanceScore: t.relevanceScore,
         contentIdeas: t.contentIdeas,

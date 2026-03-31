@@ -62,7 +62,7 @@ export class TrendRadarController {
       throw new ForbiddenException('請等待 10 分鐘後再重新掃描');
     }
     this.lastRefreshAt = now;
-    await this.trendRadarService.refreshTrends(false);
+    await this.trendRadarService.refreshTrends(true);
     return this.trendRadarService.getTrends();
   }
 
