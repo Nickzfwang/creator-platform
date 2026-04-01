@@ -4,10 +4,10 @@ import { AiService } from '../ai/ai.service';
 import { generateFingerprint } from './utils/fingerprint';
 import { RssFeedItem, TrendSource } from './sources/base-source';
 import { createRssSources } from './sources/rss.source';
-import { DcardApiSource } from './sources/dcard-api.source';
 import { YouTubeTrendingSource } from './sources/youtube-trending.source';
 import { TikTokScraperSource } from './sources/tiktok-scraper.source';
 import { ThreadsScraperSource } from './sources/threads-scraper.source';
+import { DcardScraperSource } from './sources/dcard-scraper.source';
 import { ClaudeCodeDocsSource } from './sources/claude-code-docs.source';
 import { TrendPhase, TrendSourcePlatform } from '@prisma/client';
 
@@ -59,7 +59,12 @@ export class TrendRadarService {
 
     // If no snapshot at all, must do a sync refresh (first boot)
     if (!snapshot) {
-      snapshot = await this.refreshTrends(false);
+      try {
+        snapshot = await this.refreshTrends(false);
+      } catch (error) {
+        this.logger.error(`First boot refresh failed: ${error}`);
+        throw error;
+      }
     } else if (Date.now() - snapshot.generatedAt.getTime() > 2 * 60 * 60 * 1000) {
       // Stale snapshot — return it immediately, cron will refresh in background
       this.logger.warn('Snapshot is stale, returning cached data. Cron will refresh.');
@@ -112,13 +117,12 @@ export class TrendRadarService {
     // 1. Collect from all sources in parallel
     const rssSources = createRssSources();
     const apiSources: TrendSource[] = [
-      new DcardApiSource(),
       new YouTubeTrendingSource(),
       new ClaudeCodeDocsSource(),
     ];
 
     const scraperSources: TrendSource[] = includeScraper
-      ? [new TikTokScraperSource(), new ThreadsScraperSource()]
+      ? [new TikTokScraperSource(), new ThreadsScraperSource(), new DcardScraperSource()]
       : [];
 
     const allSources = [...rssSources, ...apiSources, ...scraperSources];
@@ -131,16 +135,30 @@ export class TrendRadarService {
 
     for (let i = 0; i < results.length; i++) {
       const result = results[i];
-      if (result.status === 'fulfilled' && result.value.length > 0) {
-        allItems.push(...result.value);
-        const platformStr = allSources[i].sourcePlatform;
-        if (!activePlatforms.includes(platformStr as TrendSourcePlatform)) {
-          activePlatforms.push(platformStr as TrendSourcePlatform);
-        }
+      const sourceName = allSources[i].name;
+      if (result.status === 'rejected') {
+        this.logger.warn(`Source "${sourceName}" failed: ${result.reason}`);
+        continue;
+      }
+      if (result.value.length === 0) {
+        this.logger.warn(`Source "${sourceName}" returned 0 items`);
+        continue;
+      }
+      allItems.push(...result.value);
+      const platformStr = allSources[i].sourcePlatform;
+      if (!activePlatforms.includes(platformStr as TrendSourcePlatform)) {
+        activePlatforms.push(platformStr as TrendSourcePlatform);
       }
     }
 
-    this.logger.log(`Fetched ${allItems.length} items from ${activePlatforms.length} sources`);
+    this.logger.log(
+      `Fetched ${allItems.length} items from ${activePlatforms.length} sources: ${activePlatforms.join(', ')}`,
+    );
+
+    if (allItems.length === 0) {
+      this.logger.error('All sources returned 0 items — cannot create snapshot');
+      throw new Error('All trend sources failed to return data');
+    }
 
     // 2. Deduplicate by URL
     const seen = new Set<string>();
@@ -150,9 +168,65 @@ export class TrendRadarService {
       return true;
     });
 
-    // 3. AI analysis (limit to 60 items)
-    const itemsForAi = uniqueItems.slice(0, 60);
-    const { topics: aiTopics, aiAnalysis } = await this.analyzeWithAi(itemsForAi);
+    // 3. Stratified sampling: ensure every platform is represented in AI input
+    const AI_ITEM_LIMIT = 60;
+    const itemsForAi = this.stratifiedSample(uniqueItems, AI_ITEM_LIMIT);
+    let aiTopics: Awaited<ReturnType<typeof this.analyzeWithAi>>['topics'];
+    let aiAnalysis: string;
+
+    try {
+      const result = await this.analyzeWithAi(itemsForAi);
+      aiTopics = result.topics;
+      aiAnalysis = result.aiAnalysis;
+    } catch (error) {
+      this.logger.error(`AI analysis failed, using fallback: ${error}`);
+      aiTopics = [];
+      aiAnalysis = '';
+    }
+
+    // Fallback: if AI returned no topics, create basic topics from raw items
+    if (aiTopics.length === 0 && itemsForAi.length > 0) {
+      this.logger.warn(`AI returned 0 topics, creating ${itemsForAi.length} fallback topics from raw items`);
+      aiTopics = itemsForAi.map(item => ({
+        title: item.title,
+        summary: '',
+        source: item.source,
+        sourcePlatform: item.sourcePlatform,
+        category: '未分類',
+        relevanceScore: 0.5,
+        contentIdeas: [],
+        url: item.link,
+      }));
+      aiAnalysis = aiAnalysis || '⚠️ AI 分析暫時無法使用，以下為各平台原始熱門內容。';
+    }
+
+    // 3b. Ensure every active platform has at least 1 topic (AI may skip some)
+    const coveredPlatforms = new Set(aiTopics.map(t => t.sourcePlatform));
+    const itemsByPlatform = new Map<string, RssFeedItem[]>();
+    for (const item of uniqueItems) {
+      const list = itemsByPlatform.get(item.sourcePlatform) || [];
+      list.push(item);
+      itemsByPlatform.set(item.sourcePlatform, list);
+    }
+
+    for (const [platform, platformItems] of itemsByPlatform) {
+      if (coveredPlatforms.has(platform)) continue;
+      // This platform had items but AI didn't select any — add top items as fallback
+      const fillCount = Math.min(2, platformItems.length);
+      this.logger.warn(`Platform ${platform} missing from AI topics, adding ${fillCount} fallback items`);
+      for (const item of platformItems.slice(0, fillCount)) {
+        aiTopics.push({
+          title: item.title,
+          summary: `來自 ${item.source} 的熱門內容`,
+          source: item.source,
+          sourcePlatform: item.sourcePlatform,
+          category: '未分類',
+          relevanceScore: 0.4,
+          contentIdeas: [],
+          url: item.link,
+        });
+      }
+    }
 
     // 4. Get previous snapshot for phase calculation
     const previousSnapshot = await this.prisma.trendSnapshot.findFirst({
@@ -295,6 +369,46 @@ export class TrendRadarService {
   }
 
   /**
+   * Stratified sampling: pick items evenly across platforms so AI sees all sources.
+   * Each platform gets at least `floor(limit / platformCount)` items,
+   * remaining slots filled round-robin.
+   */
+  private stratifiedSample(items: RssFeedItem[], limit: number): RssFeedItem[] {
+    if (items.length <= limit) return items;
+
+    // Group by sourcePlatform
+    const byPlatform = new Map<string, RssFeedItem[]>();
+    for (const item of items) {
+      const list = byPlatform.get(item.sourcePlatform) || [];
+      list.push(item);
+      byPlatform.set(item.sourcePlatform, list);
+    }
+
+    const platforms = [...byPlatform.keys()];
+    const perPlatform = Math.max(1, Math.floor(limit / platforms.length));
+    const result: RssFeedItem[] = [];
+
+    // First pass: take perPlatform items from each
+    for (const platform of platforms) {
+      const platItems = byPlatform.get(platform)!;
+      result.push(...platItems.slice(0, perPlatform));
+    }
+
+    // Second pass: fill remaining slots from platforms that have more items
+    if (result.length < limit) {
+      const remaining = limit - result.length;
+      const extras: RssFeedItem[] = [];
+      for (const platform of platforms) {
+        const platItems = byPlatform.get(platform)!;
+        extras.push(...platItems.slice(perPlatform));
+      }
+      result.push(...extras.slice(0, remaining));
+    }
+
+    return result;
+  }
+
+  /**
    * AI analysis: generate structured trend topics + daily summary.
    */
   private async analyzeWithAi(items: RssFeedItem[]): Promise<{
@@ -317,6 +431,17 @@ export class TrendRadarService {
       .map((item, i) => `${i + 1}. [${sanitize(item.source)}] ${sanitize(item.title)}`)
       .join('\n');
 
+    // Build platform summary for AI prompt
+    const platformCounts = new Map<string, number>();
+    for (const item of items) {
+      platformCounts.set(item.source, (platformCounts.get(item.source) || 0) + 1);
+    }
+    const platformSummary = [...platformCounts.entries()]
+      .map(([name, count]) => `${name}(${count}條)`)
+      .join('、');
+
+    this.logger.log(`Sending ${items.length} items to AI for analysis (platforms: ${platformSummary})`);
+
     // Step 1: Structured analysis
     const jsonResult = await this.aiService.generateJson<{
       topics: Array<{
@@ -331,23 +456,32 @@ export class TrendRadarService {
     }>(
       `你是一位專業的社群趨勢分析師，專門為台灣的內容創作者提供趨勢洞察。
 
-請分析以下從各大平台收集的熱門標題（每條前面有編號），識別出 8-15 個最值得關注的趨勢話題。
+請分析以下從各大平台收集的熱門標題（每條前面有編號），識別出 12-20 個最值得關注的趨勢話題。
+
+**重要：你必須確保每個來源平台至少被選入 1 個趨勢。** 來源平台包括：${platformSummary}。
+不要只選媒體/RSS 來源，YouTube、Dcard、Reddit、TikTok、Threads 等社群平台的趨勢同樣重要。
 
 對每個趨勢，提供：
 - title: 趨勢主題名稱（繁體中文，簡潔有力）
 - summary: 30-50 字的趨勢摘要，說明為什麼創作者應該關注
-- source: 來源平台名稱
+- source: 來源平台名稱（必須與原始文章的來源名稱完全一致）
 - category: 分類（科技/生活/商業/娛樂/社會議題/創作者經濟）
 - relevanceScore: 對創作者的相關度 0-1（越高越相關）
 - contentIdeas: 2-3 個基於此趨勢的影片/內容創意（每個一句話）
-- sourceArticleIndex: 這個趨勢最相關的原始文章編號（1-based）
+- sourceArticleIndex: 這個趨勢最相關的原始文章編號（1-based，必須準確對應）
 
 按 relevanceScore 降序排列。
 
 回覆 JSON 格式：{ "topics": [...] }`,
       `以下是今日從各平台收集的熱門標題：\n\n${titlesText}`,
-      { maxTokens: 2048 },
+      { maxTokens: 3000 },
     );
+
+    if (!jsonResult || !jsonResult.topics || jsonResult.topics.length === 0) {
+      this.logger.warn('AI generateJson returned null or empty topics');
+    } else {
+      this.logger.log(`AI returned ${jsonResult.topics.length} topics`);
+    }
 
     // Step 2: Daily summary
     const topicsSummary = (jsonResult?.topics ?? [])
@@ -377,13 +511,33 @@ export class TrendRadarService {
       const matchedItem = typeof idx === 'number' && idx >= 1 && idx <= items.length
         ? items[idx - 1]
         : undefined;
+
+      // Resolve sourcePlatform: prefer matched item, then name lookup, then fuzzy match
+      let resolvedPlatform = matchedItem?.sourcePlatform
+        || sourceNameToPlatform.get(t.source);
+
+      if (!resolvedPlatform) {
+        // Fuzzy match: AI might return slightly different source names
+        const lowerSource = t.source.toLowerCase();
+        for (const [name, platform] of sourceNameToPlatform) {
+          if (lowerSource.includes(name.toLowerCase()) || name.toLowerCase().includes(lowerSource)) {
+            resolvedPlatform = platform;
+            break;
+          }
+        }
+      }
+
+      // Final fallback: use the most common non-RSS platform, or first available
+      if (!resolvedPlatform) {
+        this.logger.warn(`Could not resolve sourcePlatform for AI topic: "${t.title}" (source: "${t.source}")`);
+        resolvedPlatform = 'RSS_ITHOME';
+      }
+
       return {
         title: t.title,
         summary: t.summary,
         source: t.source,
-        sourcePlatform: matchedItem?.sourcePlatform
-          || sourceNameToPlatform.get(t.source)
-          || 'RSS_ITHOME',
+        sourcePlatform: resolvedPlatform,
         category: t.category,
         relevanceScore: t.relevanceScore,
         contentIdeas: t.contentIdeas,

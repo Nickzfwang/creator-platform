@@ -22,12 +22,6 @@ const RSS_FEED_CONFIGS: RssSourceConfig[] = [
     category: '科技',
   },
   {
-    name: '數位時代',
-    url: 'https://www.bnext.com.tw/rss',
-    sourcePlatform: 'RSS_BNEXT',
-    category: '商業科技',
-  },
-  {
     name: 'TechCrunch',
     url: 'https://techcrunch.com/feed/',
     sourcePlatform: 'RSS_TECHCRUNCH',

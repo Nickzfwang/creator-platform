@@ -17,7 +17,8 @@ import {
   Patch,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-// Rate limiting handled at service level (manual timestamp check)
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -36,6 +37,7 @@ export class TrendRadarController {
   constructor(
     private readonly trendRadarService: TrendRadarService,
     private readonly prisma: PrismaService,
+    @InjectQueue('trend-radar') private readonly trendQueue: Queue,
   ) {}
 
   // ─── Trends ───
@@ -53,8 +55,8 @@ export class TrendRadarController {
   private lastRefreshAt = 0;
 
   @Post('refresh')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Force refresh trend data from all sources' })
+  @HttpCode(HttpStatus.ACCEPTED)
+  @ApiOperation({ summary: 'Queue a trend data refresh from all sources' })
   async refreshTrends() {
     // Simple rate limit: 1 refresh per 10 minutes
     const now = Date.now();
@@ -62,8 +64,14 @@ export class TrendRadarController {
       throw new ForbiddenException('請等待 10 分鐘後再重新掃描');
     }
     this.lastRefreshAt = now;
-    await this.trendRadarService.refreshTrends(true);
-    return this.trendRadarService.getTrends();
+
+    const job = await this.trendQueue.add(
+      'refresh',
+      { includeScraper: true },
+      { attempts: 2, backoff: { type: 'exponential', delay: 30000 } },
+    );
+
+    return { success: true, jobId: job.id, message: '趨勢掃描已啟動，請稍後重新整理頁面' };
   }
 
   @Get(':fingerprint/history')

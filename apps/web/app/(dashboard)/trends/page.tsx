@@ -86,9 +86,22 @@ function ScoreBar({ score }: { score: number }) {
   );
 }
 
+// Platforms that have their own dedicated filter tab — exclude from "媒體"
+const dedicatedPlatforms = new Set([
+  "API_YOUTUBE_TRENDING",
+  "SCRAPER_TIKTOK",
+  "SCRAPER_THREADS",
+  "API_DCARD",
+  "RSS_REDDIT",
+  "RSS_CLAUDE_CODE",
+]);
+
 function matchesPlatformFilter(sourcePlatform: string, filterValue: string): boolean {
   if (filterValue === "all") return true;
-  if (filterValue === "rss") return sourcePlatform.startsWith("RSS_");
+  if (filterValue === "rss") {
+    // "媒體" = RSS sources that don't have their own tab
+    return sourcePlatform.startsWith("RSS_") && !dedicatedPlatforms.has(sourcePlatform);
+  }
   return sourcePlatform === filterValue;
 }
 
@@ -106,10 +119,23 @@ export default function TrendsPage() {
   });
 
   const refreshMutation = useMutation({
-    mutationFn: () => api<TrendReport>("/v1/trends/refresh", { method: "POST" }),
-    onSuccess: (data) => {
-      queryClient.setQueryData(["trends"], data);
-      toast.success("趨勢已重新整理");
+    mutationFn: () => api<{ success: boolean; jobId: string }>("/v1/trends/refresh", { method: "POST" }),
+    onSuccess: () => {
+      toast.success("趨勢掃描已啟動，約 30 秒後自動更新");
+      // Poll for new data after background job completes
+      const poll = setInterval(async () => {
+        try {
+          const fresh = await api<TrendReport>("/v1/trends");
+          // Check if snapshot is newer than current (job finished)
+          if (!report?.generatedAt || fresh.generatedAt > report.generatedAt) {
+            queryClient.setQueryData(["trends"], fresh);
+            clearInterval(poll);
+            toast.success(`趨勢已更新（${fresh.topics.length} 個話題）`);
+          }
+        } catch { /* ignore polling errors */ }
+      }, 5000);
+      // Stop polling after 2 minutes
+      setTimeout(() => clearInterval(poll), 120000);
     },
     onError: (err: Error & { detail?: string }) =>
       toast.error(err.detail || err.message || "重新整理失敗，請稍後再試"),
