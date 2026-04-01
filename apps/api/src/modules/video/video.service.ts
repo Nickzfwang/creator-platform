@@ -12,10 +12,11 @@ import { join, basename } from 'path';
 import { unlinkSync, existsSync, mkdirSync } from 'fs';
 import { execSync } from 'child_process';
 import * as ffmpeg from 'fluent-ffmpeg';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
+import { StorageService } from '../storage/storage.service';
 import { ContentRepurposeService } from '../content-repurpose/content-repurpose.service';
 import { RequestUploadUrlDto } from './dto/request-upload-url.dto';
 import { ListVideosQueryDto } from './dto/list-videos-query.dto';
@@ -35,30 +36,14 @@ if (!existsSync(THUMBNAILS_DIR)) {
 export class VideoService {
   private readonly logger = new Logger(VideoService.name);
 
-  private readonly s3Client: S3Client | null;
-  private readonly s3Bucket: string;
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiService: AiService,
+    private readonly storageService: StorageService,
     private readonly contentRepurposeService: ContentRepurposeService,
     private readonly config: ConfigService,
-  ) {
-    const region = this.config.get<string>('AWS_REGION');
-    const accessKeyId = this.config.get<string>('AWS_ACCESS_KEY_ID');
-    const secretAccessKey = this.config.get<string>('AWS_SECRET_ACCESS_KEY');
-    this.s3Bucket = this.config.get<string>('AWS_S3_BUCKET', 'creator-platform-uploads');
-
-    if (region && accessKeyId && secretAccessKey) {
-      this.s3Client = new S3Client({
-        region,
-        credentials: { accessKeyId, secretAccessKey },
-      });
-    } else {
-      this.s3Client = null;
-      this.logger.warn('S3 client not initialized — AWS credentials missing');
-    }
-  }
+    @InjectQueue('video-process') private readonly videoProcessQueue: Queue,
+  ) {}
 
   async requestUploadUrl(userId: string, tenantId: string, dto: RequestUploadUrlDto) {
     const s3Key = `videos/${tenantId}/${Date.now()}-${dto.filename}`;
@@ -77,18 +62,12 @@ export class VideoService {
 
     let uploadUrl: string;
 
-    if (this.s3Client) {
-      const command = new PutObjectCommand({
-        Bucket: this.s3Bucket,
-        Key: s3Key,
-        ContentType: dto.contentType,
-        Metadata: { videoId: video.id, userId, tenantId },
-      });
-      uploadUrl = await getSignedUrl(this.s3Client, command, { expiresIn: 3600 });
+    if (this.storageService.isConfigured) {
+      uploadUrl = await this.storageService.getUploadUrl(s3Key, dto.contentType, 3600);
     } else {
       // Fallback: local upload URL
       uploadUrl = `/api/v1/videos/upload/${video.id}`;
-      this.logger.warn(`S3 not configured — using local upload fallback for video ${video.id}`);
+      this.logger.warn(`Storage not configured — using local upload fallback for video ${video.id}`);
     }
 
     this.logger.log(`Upload URL generated for video ${video.id}`);
@@ -592,16 +571,11 @@ ${clipResponseFormat}`,
       throw new ConflictException('Video is not in UPLOADING state');
     }
 
-    // Verify S3 object exists
-    if (this.s3Client && video.originalUrl.startsWith('videos/')) {
-      try {
-        const { HeadObjectCommand } = await import('@aws-sdk/client-s3');
-        await this.s3Client.send(new HeadObjectCommand({
-          Bucket: this.s3Bucket,
-          Key: video.originalUrl,
-        }));
-      } catch {
-        this.logger.warn(`S3 object not found for video ${videoId}: ${video.originalUrl}`);
+    // Verify storage object exists
+    if (this.storageService.isConfigured && video.originalUrl.startsWith('videos/')) {
+      const objectExists = await this.storageService.exists(video.originalUrl);
+      if (!objectExists) {
+        this.logger.warn(`Storage object not found for video ${videoId}: ${video.originalUrl}`);
       }
     }
 
@@ -610,12 +584,17 @@ ${clipResponseFormat}`,
       data: { status: VideoStatus.PROCESSING },
     });
 
-    // Note: For S3 uploads, the video processing pipeline (transcription, AI analysis, clips)
-    // would be triggered via BullMQ worker after S3 upload completion.
-    // Currently, direct uploads go through handleDirectUpload() which processes synchronously.
-    // S3-based async processing will be added when BullMQ video-processing worker is implemented.
+    // Trigger async video processing via BullMQ
+    await this.videoProcessQueue.add('process-video', {
+      videoId,
+      userId,
+      s3Key: video.originalUrl,
+    }, {
+      attempts: 2,
+      backoff: { type: 'exponential', delay: 10000 },
+    });
 
-    this.logger.log(`Video ${videoId} marked as uploaded, awaiting processing`);
+    this.logger.log(`Video ${videoId} marked as uploaded, processing job queued`);
     return { id: updated.id, status: updated.status, message: 'Video upload confirmed, processing will begin shortly' };
   }
 
@@ -710,6 +689,8 @@ ${clipResponseFormat}`,
         if (existsSync(clipPath)) {
           try { unlinkSync(clipPath); } catch { /* ignore */ }
         }
+      } else if (clip.clipUrl && this.storageService.isConfigured) {
+        try { await this.storageService.delete(clip.clipUrl); } catch { /* ignore */ }
       }
     }
 
@@ -717,12 +698,14 @@ ${clipResponseFormat}`,
     await this.prisma.videoClip.deleteMany({ where: { videoId } });
     await this.prisma.video.delete({ where: { id: videoId } });
 
-    // Clean up local file if it's a local upload
+    // Clean up source file
     if (video.originalUrl?.startsWith('/uploads/')) {
       const filePath = join(process.cwd(), video.originalUrl);
       if (existsSync(filePath)) {
         try { unlinkSync(filePath); } catch { /* ignore */ }
       }
+    } else if (video.originalUrl && this.storageService.isConfigured) {
+      try { await this.storageService.delete(video.originalUrl); } catch { /* ignore */ }
     }
 
     this.logger.log(`Video ${videoId} deleted`);
@@ -915,6 +898,56 @@ ${clipResponseFormat}`,
       return originalUrl;
     }
     return null;
+  }
+
+  /**
+   * Resolve a video source to a local file path.
+   * For S3 keys, downloads to temp directory first.
+   * Caller is responsible for cleaning up temp files via cleanupTempFile().
+   */
+  async resolveSourceFile(originalUrl: string | null): Promise<string | null> {
+    if (!originalUrl) return null;
+
+    // Local file
+    if (originalUrl.startsWith('/uploads/')) {
+      const filePath = join(process.cwd(), originalUrl);
+      return existsSync(filePath) ? filePath : null;
+    }
+
+    // S3/Storage key (e.g. "videos/tenant-1/1234-file.mp4")
+    if (this.storageService.isConfigured && !originalUrl.startsWith('http')) {
+      try {
+        return await this.storageService.downloadToLocal(originalUrl);
+      } catch (e) {
+        this.logger.warn(`Failed to download from storage: ${originalUrl} — ${e}`);
+        return null;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Clean up a temporary file downloaded from storage.
+   */
+  cleanupTempFile(filePath: string | null): void {
+    if (!filePath) return;
+    const tempDir = join(process.cwd(), 'uploads', 'temp');
+    if (filePath.startsWith(tempDir)) {
+      try { unlinkSync(filePath); } catch { /* ignore */ }
+    }
+  }
+
+  /**
+   * Upload a local file to storage and return the storage key.
+   */
+  async uploadToStorage(localPath: string, key: string, contentType?: string): Promise<string> {
+    if (this.storageService.isConfigured) {
+      await this.storageService.uploadFile(key, localPath, contentType);
+      return key;
+    }
+    // Fallback: file is already local, return as local URL
+    return localPath.replace(process.cwd(), '');
   }
 
   private srtToVtt(srt: string): string {
