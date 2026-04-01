@@ -170,11 +170,16 @@ export class EmailUnsubscribeController {
       const result = await this.emailService.processUnsubscribe(subscriberId, token);
       const message = result.alreadyUnsubscribed
         ? '你已經取消訂閱了。'
-        : `已成功取消訂閱 (${result.email})。`;
+        : `已成功取消訂閱 (${this.escapeHtml(result.email)})。`;
       res.send(this.renderUnsubPage(message, false));
     } catch {
       res.status(400).send(this.renderUnsubPage('取消訂閱連結無效或已過期。', true));
     }
+  }
+
+  private escapeHtml(str: string | undefined): string {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
   private renderUnsubPage(message: string, isError: boolean): string {

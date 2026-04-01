@@ -82,8 +82,8 @@ describe('EmailMarketingService', () => {
           useValue: {
             get: jest.fn((key: string, defaultValue?: string) => {
               const config: Record<string, string> = {
-                JWT_SECRET: 'test-secret-key',
-                FRONTEND_URL: 'http://localhost:3001',
+                UNSUBSCRIBE_SECRET: 'test-unsub-secret',
+                API_URL: 'http://localhost:4000',
               };
               return config[key] ?? defaultValue;
             }),

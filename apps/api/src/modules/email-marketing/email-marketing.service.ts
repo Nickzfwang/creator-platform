@@ -11,7 +11,7 @@ import { EmailSendJobData } from './email-send.processor';
 export class EmailMarketingService {
   private readonly logger = new Logger(EmailMarketingService.name);
   private readonly unsubscribeSecret: string;
-  private readonly frontendUrl: string;
+  private readonly apiUrl: string;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -19,8 +19,11 @@ export class EmailMarketingService {
     private readonly config: ConfigService,
     @InjectQueue('email-send') private readonly emailQueue: Queue,
   ) {
-    this.unsubscribeSecret = this.config.get<string>('JWT_SECRET', 'default-unsub-secret');
-    this.frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3001');
+    this.unsubscribeSecret = this.config.get<string>(
+      'UNSUBSCRIBE_SECRET',
+      this.config.get<string>('JWT_SECRET', 'default-unsub-secret'),
+    );
+    this.apiUrl = this.config.get<string>('API_URL', 'http://localhost:4000');
   }
 
   // ─── Unsubscribe Token ───
@@ -37,7 +40,7 @@ export class EmailMarketingService {
 
   getUnsubscribeUrl(subscriberId: string): string {
     const token = this.generateUnsubscribeToken(subscriberId);
-    return `${this.frontendUrl}/api/v1/email/unsubscribe?id=${subscriberId}&token=${token}`;
+    return `${this.apiUrl}/v1/email/unsubscribe?id=${subscriberId}&token=${token}`;
   }
 
   async processUnsubscribe(subscriberId: string, token: string) {
