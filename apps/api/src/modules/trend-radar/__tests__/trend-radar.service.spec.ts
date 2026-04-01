@@ -4,6 +4,56 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { AiService } from '../../ai/ai.service';
 import { TrendPhase, TrendSourcePlatform } from '@prisma/client';
 
+// ─── Mock all external source modules to prevent real HTTP calls ───
+
+const mockFetch = jest.fn().mockResolvedValue([]);
+
+jest.mock('../sources/rss.source', () => ({
+  createRssSources: () => [
+    { name: 'MockRSS', sourcePlatform: 'RSS_ITHOME', fetch: mockFetch },
+  ],
+}));
+
+jest.mock('../sources/youtube-trending.source', () => ({
+  YouTubeTrendingSource: jest.fn().mockImplementation(() => ({
+    name: 'MockYouTube',
+    sourcePlatform: 'YOUTUBE',
+    fetch: mockFetch,
+  })),
+}));
+
+jest.mock('../sources/claude-code-docs.source', () => ({
+  ClaudeCodeDocsSource: jest.fn().mockImplementation(() => ({
+    name: 'MockClaudeDocs',
+    sourcePlatform: 'RSS_ITHOME',
+    fetch: mockFetch,
+  })),
+}));
+
+jest.mock('../sources/tiktok-scraper.source', () => ({
+  TikTokScraperSource: jest.fn().mockImplementation(() => ({
+    name: 'MockTikTok',
+    sourcePlatform: 'TIKTOK',
+    fetch: mockFetch,
+  })),
+}));
+
+jest.mock('../sources/threads-scraper.source', () => ({
+  ThreadsScraperSource: jest.fn().mockImplementation(() => ({
+    name: 'MockThreads',
+    sourcePlatform: 'THREADS',
+    fetch: mockFetch,
+  })),
+}));
+
+jest.mock('../sources/dcard-scraper.source', () => ({
+  DcardScraperSource: jest.fn().mockImplementation(() => ({
+    name: 'MockDcard',
+    sourcePlatform: 'DCARD',
+    fetch: mockFetch,
+  })),
+}));
+
 describe('TrendRadarService', () => {
   let service: TrendRadarService;
   let prisma: jest.Mocked<PrismaService>;
@@ -57,6 +107,7 @@ describe('TrendRadarService', () => {
   beforeEach(async () => {
     jest.useFakeTimers();
     jest.setSystemTime(NOW);
+    mockFetch.mockReset().mockResolvedValue([]);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -99,14 +150,11 @@ describe('TrendRadarService', () => {
 
   describe('getTrends', () => {
     it('should return latest snapshot with topics', async () => {
-      // Arrange
       const snapshot = mockSnapshot();
       (prisma.trendSnapshot.findFirst as jest.Mock).mockResolvedValue(snapshot);
 
-      // Act
       const result = await service.getTrends();
 
-      // Assert
       expect(result.topics).toHaveLength(2);
       expect(result.aiAnalysis).toBe('今日 AI 趨勢分析摘要');
       expect(result.generatedAt).toBe(ONE_HOUR_AGO.toISOString());
@@ -117,60 +165,48 @@ describe('TrendRadarService', () => {
     });
 
     it('should trigger refresh when no snapshot exists', async () => {
-      // Arrange
       (prisma.trendSnapshot.findFirst as jest.Mock).mockResolvedValue(null);
 
       const refreshSpy = jest
         .spyOn(service, 'refreshTrends')
         .mockResolvedValue(mockSnapshot() as any);
 
-      // Act
       const result = await service.getTrends();
 
-      // Assert
       expect(refreshSpy).toHaveBeenCalledWith(false);
       expect(result.topics).toHaveLength(2);
     });
 
     it('should return stale data without blocking when snapshot is old', async () => {
-      // Arrange
       const staleSnapshot = mockSnapshot({ generatedAt: THREE_HOURS_AGO });
       (prisma.trendSnapshot.findFirst as jest.Mock).mockResolvedValue(staleSnapshot);
 
       const refreshSpy = jest.spyOn(service, 'refreshTrends');
 
-      // Act
       const result = await service.getTrends();
 
-      // Assert
       expect(refreshSpy).not.toHaveBeenCalled();
       expect(result.topics).toHaveLength(2);
       expect(result.generatedAt).toBe(THREE_HOURS_AGO.toISOString());
     });
 
     it('should filter topics by category', async () => {
-      // Arrange
       const snapshot = mockSnapshot();
       (prisma.trendSnapshot.findFirst as jest.Mock).mockResolvedValue(snapshot);
 
-      // Act
       const result = await service.getTrends('科技');
 
-      // Assert
       expect(result.topics).toHaveLength(1);
       expect(result.topics[0].category).toBe('科技');
       expect(result.topics[0].title).toBe('AI 趨勢');
     });
 
     it('should filter topics by phase', async () => {
-      // Arrange
       const snapshot = mockSnapshot();
       (prisma.trendSnapshot.findFirst as jest.Mock).mockResolvedValue(snapshot);
 
-      // Act
       const result = await service.getTrends(undefined, undefined, 'RISING');
 
-      // Assert
       expect(result.topics).toHaveLength(1);
       expect(result.topics[0].phase).toBe('RISING');
       expect(result.topics[0].title).toBe('生活趨勢');
@@ -198,63 +234,58 @@ describe('TrendRadarService', () => {
     });
 
     it('should return 14-day history grouped by date', async () => {
-      // Arrange
       const topics = [
         makeHistoryTopic('2026-03-20', 0.7),
-        makeHistoryTopic('2026-03-20', 0.8), // same day, higher score
+        makeHistoryTopic('2026-03-20', 0.8),
         makeHistoryTopic('2026-03-21', 0.85),
         makeHistoryTopic('2026-03-22', 0.6),
       ];
       (prisma.trendTopic.findMany as jest.Mock).mockResolvedValue(topics);
 
-      // Act
       const result = await service.getTrendHistory('fp-ai-trend');
 
-      // Assert
       expect(result).not.toBeNull();
-      expect(result!.history).toHaveLength(3); // 3 unique dates
+      expect(result!.history).toHaveLength(3);
       expect(result!.history[0].date).toBe('2026-03-20');
-      expect(result!.history[0].relevanceScore).toBe(0.8); // peak of the day
+      expect(result!.history[0].relevanceScore).toBe(0.8);
       expect(result!.history[1].date).toBe('2026-03-21');
       expect(result!.history[2].date).toBe('2026-03-22');
     });
 
     it('should return null when no history found', async () => {
-      // Arrange
       (prisma.trendTopic.findMany as jest.Mock).mockResolvedValue([]);
 
-      // Act
       const result = await service.getTrendHistory('fp-nonexistent');
 
-      // Assert
       expect(result).toBeNull();
     });
 
     it('should calculate peak score and peak date correctly', async () => {
-      // Arrange
       const topics = [
         makeHistoryTopic('2026-03-18', 0.5),
-        makeHistoryTopic('2026-03-19', 0.95), // peak
+        makeHistoryTopic('2026-03-19', 0.95),
         makeHistoryTopic('2026-03-20', 0.7),
         makeHistoryTopic('2026-03-21', 0.6),
       ];
       (prisma.trendTopic.findMany as jest.Mock).mockResolvedValue(topics);
 
-      // Act
       const result = await service.getTrendHistory('fp-ai-trend');
 
-      // Assert
       expect(result).not.toBeNull();
       expect(result!.peakScore).toBe(0.95);
       expect(result!.peakDate).toBe('2026-03-19');
-      expect(result!.currentPhase).toBe('RISING'); // from the last topic
+      expect(result!.currentPhase).toBe('RISING');
       expect(result!.firstSeenAt).toBe('2026-03-16T00:00:00.000Z');
     });
   });
 
   describe('refreshTrends', () => {
     it('should create snapshot and topics in transaction', async () => {
-      // Arrange
+      // Mock sources to return actual items
+      mockFetch.mockResolvedValue([
+        { title: 'AI 新突破', link: 'https://example.com/ai', source: 'MockRSS', sourcePlatform: 'RSS_ITHOME', pubDate: NOW.toISOString() },
+      ]);
+
       const mockAiTopics = {
         topics: [
           {
@@ -272,13 +303,9 @@ describe('TrendRadarService', () => {
       (aiService.generateJson as jest.Mock).mockResolvedValue(mockAiTopics);
       (aiService.chat as jest.Mock).mockResolvedValue('今日 AI 趨勢總結...');
 
-      // Previous snapshot for phase calculation
       (prisma.trendSnapshot.findFirst as jest.Mock).mockResolvedValue(null);
-
-      // groupBy for firstSeenAt
       (prisma.trendTopic.groupBy as jest.Mock).mockResolvedValue([]);
 
-      // Transaction mocks — $transaction passes prisma as tx
       const createdSnap = {
         id: 'new-snap-1',
         sources: ['RSS_ITHOME'],
@@ -293,52 +320,23 @@ describe('TrendRadarService', () => {
         generatedAt: NOW,
         topics: [mockTopic({ snapshotId: 'new-snap-1' })],
       };
-      (prisma.trendSnapshot.findUniqueOrThrow as jest.Mock) = jest.fn().mockResolvedValue(fullSnap);
-      // Re-assign since findUniqueOrThrow wasn't in the original mock
       (prisma.trendSnapshot as any).findUniqueOrThrow = jest.fn().mockResolvedValue(fullSnap);
 
-      // Act
       const result = await service.refreshTrends(false);
 
-      // Assert
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
       expect(result.id).toBe('new-snap-1');
       expect(result.topics).toHaveLength(1);
     });
 
-    it('should handle empty source results gracefully', async () => {
-      // Arrange — AI receives empty items, returns empty topics
-      (aiService.generateJson as jest.Mock).mockResolvedValue({ topics: [] });
-      (aiService.chat as jest.Mock).mockResolvedValue('今日沒有明顯趨勢。');
+    it('should throw error when all sources return empty results', async () => {
+      // All mocked sources return [] by default (from beforeEach)
+      await expect(service.refreshTrends(false)).rejects.toThrow(
+        'All trend sources failed to return data',
+      );
 
-      // No previous snapshot
-      (prisma.trendSnapshot.findFirst as jest.Mock).mockResolvedValue(null);
-      (prisma.trendTopic.groupBy as jest.Mock).mockResolvedValue([]);
-
-      const createdSnap = {
-        id: 'empty-snap',
-        sources: [],
-        topicCount: 0,
-        aiAnalysis: '今日沒有明顯趨勢。',
-      };
-      (prisma.trendSnapshot.create as jest.Mock).mockResolvedValue(createdSnap);
-
-      const fullSnap = {
-        ...createdSnap,
-        generatedAt: NOW,
-        topics: [],
-      };
-      (prisma.trendSnapshot as any).findUniqueOrThrow = jest.fn().mockResolvedValue(fullSnap);
-
-      // Act
-      const result = await service.refreshTrends(false);
-
-      // Assert
-      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
-      expect(result.topics).toHaveLength(0);
-      expect(result.topicCount).toBe(0);
-      // createMany should NOT have been called since there are 0 topics
-      expect(prisma.trendTopic.createMany).not.toHaveBeenCalled();
+      // No transaction should have been started
+      expect(prisma.$transaction).not.toHaveBeenCalled();
     });
   });
 });

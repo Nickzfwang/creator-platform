@@ -60,6 +60,8 @@
     "@nestjs/cli": "^10.4.0",
     "@nestjs/schematics": "^10.1.0",
     "@nestjs/testing": "^10.4.0",
+    "@swc/core": "^1.15.21",
+    "@swc/jest": "^0.2.39",
     "@types/bcrypt": "^5.0.2",
     "@types/express": "^4.17.21",
     "@types/jest": "^29.5.0",
@@ -80,7 +82,12 @@
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "^.+\\.ts$": "ts-jest"
+      "^.+\\.ts$": ["@swc/jest", {
+        "jsc": {
+          "parser": { "syntax": "typescript", "decorators": true },
+          "transform": { "legacyDecorator": true, "decoratorMetadata": true }
+        }
+      }]
     },
     "collectCoverageFrom": [
       "**/*.ts",
@@ -88,6 +95,7 @@
       "!**/*.d.ts"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "maxWorkers": 2
   }
 }
