@@ -35,6 +35,7 @@ import { MonetizeModule } from './modules/monetize/monetize.module';
 import { InteractionsModule } from './modules/interactions/interactions.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { BrevoModule } from './modules/brevo/brevo.module';
+import { StorageModule } from './modules/storage/storage.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { BrevoModule } from './modules/brevo/brevo.module';
     RedisModule,
     SentryModule,
     AiModule,
+    StorageModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env.local', '.env'],
