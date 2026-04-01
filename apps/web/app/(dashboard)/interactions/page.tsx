@@ -159,12 +159,12 @@ function CommentsPanel() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
         <div className="flex gap-2 flex-1">
-          <Select value={filter} onValueChange={setFilter}>
+          <Select value={filter || "ALL"} onValueChange={(v) => setFilter(v === "ALL" ? "" : v)}>
             <SelectTrigger className="w-32">
               <SelectValue placeholder="全部分類" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">全部</SelectItem>
+              <SelectItem value="ALL">全部</SelectItem>
               {Object.entries(categoryLabels).map(([k, v]) => (
                 <SelectItem key={k} value={k}>{v}</SelectItem>
               ))}
