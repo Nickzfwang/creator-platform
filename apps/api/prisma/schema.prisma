@@ -768,15 +768,19 @@ model DigitalProduct {
 }
 
 model ProductOrder {
-  id              String   @id @default(uuid()) @db.Uuid
-  productId       String   @map("product_id") @db.Uuid
-  buyerEmail      String   @map("buyer_email") @db.VarChar(255)
-  buyerName       String?  @map("buyer_name") @db.VarChar(255)
-  amount          Int      // cents
-  currency        String   @default("TWD") @db.VarChar(10)
-  status          String   @default("COMPLETED") @db.VarChar(50) // PENDING, COMPLETED, REFUNDED
-  downloadCount   Int      @default(0) @map("download_count")
-  createdAt       DateTime @default(now()) @map("created_at")
+  id                     String   @id @default(uuid()) @db.Uuid
+  productId              String   @map("product_id") @db.Uuid
+  buyerEmail             String   @map("buyer_email") @db.VarChar(255)
+  buyerName              String?  @map("buyer_name") @db.VarChar(255)
+  amount                 Int      // cents
+  currency               String   @default("TWD") @db.VarChar(10)
+  status                 String   @default("PENDING") @db.VarChar(50) // PENDING, COMPLETED, REFUNDED
+  stripeSessionId        String?  @unique @map("stripe_session_id") @db.VarChar(255)
+  stripePaymentIntentId  String?  @map("stripe_payment_intent_id") @db.VarChar(255)
+  downloadCount          Int      @default(0) @map("download_count")
+  downloadToken          String?  @unique @map("download_token") @db.VarChar(64)
+  downloadExpiresAt      DateTime? @map("download_expires_at")
+  createdAt              DateTime @default(now()) @map("created_at")
 
   product DigitalProduct @relation(fields: [productId], references: [id])
 

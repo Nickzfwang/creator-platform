@@ -1,6 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
+import { EmailSendJobData } from './email-send.processor';
 
 @Injectable()
 export class EmailMarketingService {
@@ -9,6 +12,7 @@ export class EmailMarketingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiService: AiService,
+    @InjectQueue('email-send') private readonly emailQueue: Queue,
   ) {}
 
   // ─── Subscribers ───
@@ -199,6 +203,83 @@ ${count > 3 ? `4-${count}. 更多信件（持續培養 + 稀缺感）` : ''}
     );
 
     return result;
+  }
+
+  // ─── Send Campaign ───
+
+  async sendCampaign(campaignId: string, userId: string, tenantId: string) {
+    const campaign = await this.prisma.emailCampaign.findUnique({
+      where: { id: campaignId },
+      include: { emails: { orderBy: { sortOrder: 'asc' } } },
+    });
+
+    if (!campaign || campaign.userId !== userId) throw new NotFoundException();
+    if (campaign.status === 'SENT') throw new BadRequestException('此活動已寄送');
+    if (!campaign.emails.length) throw new BadRequestException('此活動沒有郵件模板');
+
+    // Get target subscribers (filter by tags if specified)
+    const where: any = { userId, isActive: true };
+    if (campaign.targetTags.length > 0) {
+      where.tags = { hasSome: campaign.targetTags };
+    }
+
+    const subscribers = await this.prisma.emailSubscriber.findMany({
+      where,
+      select: { email: true, name: true },
+    });
+
+    if (subscribers.length === 0) throw new BadRequestException('沒有符合條件的訂閱者');
+
+    // Update status to SENDING
+    await this.prisma.emailCampaign.update({
+      where: { id: campaignId },
+      data: { status: 'SENDING' },
+    });
+
+    // For SINGLE campaigns: send the first email immediately
+    // For SEQUENCE campaigns: send the first email now, schedule the rest
+    const firstEmail = campaign.emails[0];
+
+    const jobData: EmailSendJobData = {
+      campaignId,
+      userId,
+      subject: firstEmail.subject,
+      htmlContent: firstEmail.body,
+      subscribers: subscribers.map(s => ({ email: s.email, name: s.name })),
+    };
+
+    await this.emailQueue.add('send-campaign', jobData, {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 5000 },
+    });
+
+    // Schedule subsequent emails for SEQUENCE campaigns
+    if (campaign.type === 'SEQUENCE' && campaign.emails.length > 1) {
+      for (let i = 1; i < campaign.emails.length; i++) {
+        const email = campaign.emails[i];
+        const delayMs = email.delayDays * 24 * 60 * 60 * 1000;
+
+        await this.emailQueue.add('send-campaign', {
+          campaignId,
+          userId,
+          subject: email.subject,
+          htmlContent: email.body,
+          subscribers: subscribers.map(s => ({ email: s.email, name: s.name })),
+        } satisfies EmailSendJobData, {
+          delay: delayMs,
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 5000 },
+        });
+      }
+    }
+
+    this.logger.log(`Campaign ${campaignId} queued: ${subscribers.length} subscribers, ${campaign.emails.length} emails`);
+
+    return {
+      queued: true,
+      subscriberCount: subscribers.length,
+      emailCount: campaign.emails.length,
+    };
   }
 
   // ─── Stats ───

@@ -75,6 +75,18 @@ export function useDeleteCampaign() {
   });
 }
 
+export function useSendCampaign() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (campaignId: string) =>
+      api<{ queued: boolean; subscriberCount: number; emailCount: number }>(
+        `/v1/email/campaigns/${campaignId}/send`,
+        { method: "POST" },
+      ),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["email"] }),
+  });
+}
+
 export function useAiGenerateSequence() {
   const qc = useQueryClient();
   return useMutation({

@@ -83,6 +83,51 @@ export class BrevoService {
     });
   }
 
+  /**
+   * Send a campaign email with custom HTML content (no template).
+   * Used by the email-marketing module to send campaigns.
+   */
+  async sendCampaignEmail(
+    to: { email: string; name: string }[],
+    subject: string,
+    htmlContent: string,
+  ): Promise<{ success: boolean; messageId?: string }> {
+    if (!this.isConfigured) {
+      this.logger.warn('Brevo API key not configured, skipping campaign email');
+      return { success: false };
+    }
+
+    try {
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'content-type': 'application/json',
+          'api-key': this.apiKey,
+        },
+        body: JSON.stringify({
+          sender: { email: this.senderEmail, name: this.senderName },
+          to,
+          subject,
+          htmlContent,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        this.logger.error(`Brevo campaign send error: ${response.status} ${error}`);
+        return { success: false };
+      }
+
+      const result = await response.json();
+      this.logger.log(`Campaign email sent to ${to.length} recipients`);
+      return { success: true, messageId: result.messageId };
+    } catch (error) {
+      this.logger.error(`Failed to send campaign email: ${error}`);
+      return { success: false };
+    }
+  }
+
   private async sendTransactionalEmail(payload: {
     to: { email: string; name: string }[];
     templateId: number;

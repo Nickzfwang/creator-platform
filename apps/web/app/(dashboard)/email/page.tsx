@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import {
   useEmailStats, useSubscribers, useAddSubscriber,
   useCampaigns, useCampaign, useDeleteCampaign,
-  useAiGenerateSequence, useAiGenerateSingle,
+  useSendCampaign, useAiGenerateSequence, useAiGenerateSingle,
 } from "@/hooks/use-email";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
@@ -26,6 +26,7 @@ export default function EmailPage() {
   const { data: campaigns } = useCampaigns();
   const addSubscriber = useAddSubscriber();
   const deleteCampaign = useDeleteCampaign();
+  const sendCampaign = useSendCampaign();
   const aiSequence = useAiGenerateSequence();
   const aiSingle = useAiGenerateSingle();
 
@@ -35,6 +36,7 @@ export default function EmailPage() {
   const [genOpen, setGenOpen] = useState(false);
   const [genForm, setGenForm] = useState({ purpose: "", productName: "", tone: "親切專業", emailCount: 3 });
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [sendId, setSendId] = useState<string | null>(null);
   const [previewCampaign, setPreviewCampaign] = useState<string | null>(null);
   const [singleResult, setSingleResult] = useState<{ subject: string; body: string } | null>(null);
 
@@ -149,6 +151,16 @@ export default function EmailPage() {
                           <span className="text-xs text-muted-foreground">
                             {c.sentCount} 寄 · {c.openCount} 開 · {c.clickCount} 點
                           </span>
+                        )}
+                        {c.status === "DRAFT" && (
+                          <Button variant="default" size="sm" className="h-7 px-2 text-xs" onClick={(e) => { e.stopPropagation(); setSendId(c.id); }}>
+                            <Send className="mr-1 h-3 w-3" /> 寄送
+                          </Button>
+                        )}
+                        {c.status === "SENDING" && (
+                          <Badge variant="secondary" className="text-xs">
+                            <Loader2 className="mr-1 h-3 w-3 animate-spin" /> 寄送中
+                          </Badge>
                         )}
                         <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); setDeleteId(c.id); }}>
                           <Trash2 className="h-3.5 w-3.5 text-destructive" />
@@ -312,6 +324,27 @@ export default function EmailPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Send Confirm */}
+      <ConfirmDialog
+        open={!!sendId}
+        onOpenChange={() => setSendId(null)}
+        title="寄送郵件活動"
+        description="確定要寄送此郵件活動給所有符合條件的訂閱者嗎？寄出後無法撤回。"
+        confirmLabel="確認寄送"
+        loading={sendCampaign.isPending}
+        onConfirm={() => {
+          if (sendId) {
+            sendCampaign.mutate(sendId, {
+              onSuccess: (res) => {
+                toast.success(`已排入寄送佇列：${res.subscriberCount} 位訂閱者，${res.emailCount} 封郵件`);
+                setSendId(null);
+              },
+              onError: (e) => toast.error(e.message),
+            });
+          }
+        }}
+      />
 
       {/* Delete Confirm */}
       <ConfirmDialog

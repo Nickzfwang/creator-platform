@@ -5,5 +5,6 @@ import { DigitalProductService } from './digital-product.service';
 @Module({
   controllers: [DigitalProductController],
   providers: [DigitalProductService],
+  exports: [DigitalProductService],
 })
 export class DigitalProductModule {}

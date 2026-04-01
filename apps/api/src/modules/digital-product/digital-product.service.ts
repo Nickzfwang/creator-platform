@@ -1,15 +1,27 @@
-import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { randomBytes } from 'crypto';
+import Stripe from 'stripe';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 
 @Injectable()
 export class DigitalProductService {
   private readonly logger = new Logger(DigitalProductService.name);
+  private readonly stripe: Stripe | null;
+  private readonly frontendUrl: string;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiService: AiService,
-  ) {}
+    private readonly config: ConfigService,
+  ) {
+    const stripeKey = this.config.get<string>('STRIPE_SECRET_KEY');
+    this.stripe = stripeKey
+      ? new Stripe(stripeKey, { apiVersion: '2024-06-20' })
+      : null;
+    this.frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3001');
+  }
 
   async create(userId: string, tenantId: string, dto: {
     name: string;
@@ -131,11 +143,16 @@ export class DigitalProductService {
     });
   }
 
-  // Purchase flow (simplified for MVP)
+  // Purchase flow via Stripe Checkout
   async purchase(productId: string, buyerEmail: string, buyerName?: string) {
     const product = await this.prisma.digitalProduct.findUnique({ where: { id: productId } });
     if (!product || !product.isPublished) throw new NotFoundException('Product not found');
 
+    if (!this.stripe) {
+      throw new BadRequestException('Payment system not configured');
+    }
+
+    // Create order in PENDING state
     const order = await this.prisma.productOrder.create({
       data: {
         productId,
@@ -143,21 +160,114 @@ export class DigitalProductService {
         buyerName: buyerName ?? null,
         amount: product.price,
         currency: product.currency,
-        status: 'COMPLETED',
+        status: 'PENDING',
       },
     });
 
-    // Update sales count
-    await this.prisma.digitalProduct.update({
-      where: { id: productId },
-      data: {
-        salesCount: { increment: 1 },
-        totalRevenue: { increment: product.price },
+    // Create Stripe Checkout Session
+    const session = await this.stripe.checkout.sessions.create({
+      mode: 'payment',
+      payment_method_types: ['card'],
+      customer_email: buyerEmail,
+      line_items: [
+        {
+          price_data: {
+            currency: product.currency.toLowerCase(),
+            unit_amount: product.price, // already in cents
+            product_data: {
+              name: product.name,
+              description: product.aiDescription || product.description || undefined,
+              ...(product.coverImageUrl ? { images: [product.coverImageUrl] } : {}),
+            },
+          },
+          quantity: 1,
+        },
+      ],
+      metadata: {
+        type: 'digital_product',
+        orderId: order.id,
+        productId: product.id,
+        sellerId: product.userId,
       },
+      success_url: `${this.frontendUrl}/store/order/${order.id}?success=1`,
+      cancel_url: `${this.frontendUrl}/store/${product.userId}?cancelled=1`,
     });
 
-    this.logger.log(`Order ${order.id} created for product ${productId}`);
-    return { orderId: order.id, downloadUrl: product.fileUrl };
+    // Store stripe session ID
+    await this.prisma.productOrder.update({
+      where: { id: order.id },
+      data: { stripeSessionId: session.id },
+    });
+
+    this.logger.log(`Checkout session created: ${session.id} for order ${order.id}`);
+    return { orderId: order.id, checkoutUrl: session.url };
+  }
+
+  // Called by webhook when payment succeeds
+  async fulfillOrder(stripeSessionId: string, paymentIntentId: string) {
+    const order = await this.prisma.productOrder.findUnique({
+      where: { stripeSessionId: stripeSessionId },
+      include: { product: true },
+    });
+
+    if (!order) {
+      this.logger.warn(`No order found for session ${stripeSessionId}`);
+      return;
+    }
+
+    if (order.status === 'COMPLETED') return; // idempotent
+
+    // Generate download token (valid 7 days)
+    const downloadToken = randomBytes(32).toString('hex');
+    const downloadExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    await this.prisma.$transaction([
+      this.prisma.productOrder.update({
+        where: { id: order.id },
+        data: {
+          status: 'COMPLETED',
+          stripePaymentIntentId: paymentIntentId,
+          downloadToken,
+          downloadExpiresAt,
+        },
+      }),
+      this.prisma.digitalProduct.update({
+        where: { id: order.productId },
+        data: {
+          salesCount: { increment: 1 },
+          totalRevenue: { increment: order.amount },
+        },
+      }),
+    ]);
+
+    this.logger.log(`Order ${order.id} fulfilled — download token generated`);
+    return { orderId: order.id, downloadToken };
+  }
+
+  // Download with token verification
+  async getDownloadUrl(orderId: string, token: string) {
+    const order = await this.prisma.productOrder.findUnique({
+      where: { id: orderId },
+      include: { product: { select: { fileUrl: true, name: true } } },
+    });
+
+    if (!order) throw new NotFoundException('Order not found');
+    if (order.status !== 'COMPLETED') throw new BadRequestException('Payment not completed');
+    if (order.downloadToken !== token) throw new BadRequestException('Invalid download token');
+    if (order.downloadExpiresAt && order.downloadExpiresAt < new Date()) {
+      throw new BadRequestException('Download link expired');
+    }
+
+    // Increment download count
+    await this.prisma.productOrder.update({
+      where: { id: orderId },
+      data: { downloadCount: { increment: 1 } },
+    });
+
+    return {
+      fileUrl: order.product.fileUrl,
+      fileName: order.product.name,
+    };
   }
 
   // AI regenerate description

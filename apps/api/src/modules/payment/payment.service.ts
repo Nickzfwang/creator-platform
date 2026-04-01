@@ -10,6 +10,7 @@ import Stripe from 'stripe';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import { PLAN_LIMITS, PLAN_INFO, PlanLimits } from './constants/plan-limits';
+import { DigitalProductService } from '../digital-product/digital-product.service';
 
 interface UsageJson {
   videosUsed?: number;
@@ -27,6 +28,7 @@ export class PaymentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly digitalProductService: DigitalProductService,
   ) {
     const stripeKey = this.config.get<string>('STRIPE_SECRET_KEY');
     this.stripe = stripeKey
@@ -316,7 +318,16 @@ export class PaymentService {
   // ─── Webhook Handlers (private) ───
 
   private async handleCheckoutCompleted(data: Record<string, unknown>) {
-    const metadata = data.metadata as { tenantId?: string; userId?: string } | undefined;
+    const metadata = data.metadata as Record<string, string> | undefined;
+
+    // Handle digital product purchase
+    if (metadata?.type === 'digital_product') {
+      const sessionId = data.id as string;
+      const paymentIntentId = data.payment_intent as string;
+      await this.digitalProductService.fulfillOrder(sessionId, paymentIntentId);
+      return;
+    }
+
     if (!metadata?.tenantId || !metadata?.userId) {
       this.logger.warn('checkout.session.completed missing metadata');
       return;

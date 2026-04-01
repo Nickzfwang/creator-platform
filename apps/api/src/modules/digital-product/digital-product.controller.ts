@@ -120,11 +120,20 @@ export class DigitalProductController {
 
   @Post(':id/purchase')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Purchase a product (simplified)' })
+  @ApiOperation({ summary: 'Purchase a product — returns Stripe Checkout URL' })
   async purchase(
     @Param('id', ParseUUIDPipe) productId: string,
     @Body() dto: PurchaseDto,
   ) {
     return this.productService.purchase(productId, dto.buyerEmail, dto.buyerName);
+  }
+
+  @Get('download/:orderId')
+  @ApiOperation({ summary: 'Download purchased product (token-based)' })
+  async download(
+    @Param('orderId', ParseUUIDPipe) orderId: string,
+    @Query('token') token: string,
+  ) {
+    return this.productService.getDownloadUrl(orderId, token);
   }
 }

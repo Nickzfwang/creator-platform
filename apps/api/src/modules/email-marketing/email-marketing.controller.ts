@@ -117,6 +117,18 @@ export class EmailMarketingController {
     return this.emailService.deleteCampaign(campaignId, userId);
   }
 
+  // ─── Send Campaign ───
+  @Post('campaigns/:id/send')
+  @HttpCode(HttpStatus.ACCEPTED)
+  @ApiOperation({ summary: 'Send a campaign to subscribers via Brevo' })
+  async sendCampaign(
+    @CurrentUser('id') userId: string,
+    @CurrentUser('tenantId') tenantId: string,
+    @Param('id', ParseUUIDPipe) campaignId: string,
+  ) {
+    return this.emailService.sendCampaign(campaignId, userId, tenantId);
+  }
+
   // ─── AI Generation ───
   @Post('ai/generate-sequence')
   @ApiOperation({ summary: 'AI generate email sequence (welcome → nurture → sell)' })
