@@ -1,6 +1,8 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import { createHmac } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { EmailSendJobData } from './email-send.processor';
@@ -8,12 +10,54 @@ import { EmailSendJobData } from './email-send.processor';
 @Injectable()
 export class EmailMarketingService {
   private readonly logger = new Logger(EmailMarketingService.name);
+  private readonly unsubscribeSecret: string;
+  private readonly frontendUrl: string;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiService: AiService,
+    private readonly config: ConfigService,
     @InjectQueue('email-send') private readonly emailQueue: Queue,
-  ) {}
+  ) {
+    this.unsubscribeSecret = this.config.get<string>('JWT_SECRET', 'default-unsub-secret');
+    this.frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:3001');
+  }
+
+  // ─── Unsubscribe Token ───
+
+  generateUnsubscribeToken(subscriberId: string): string {
+    const hmac = createHmac('sha256', this.unsubscribeSecret);
+    hmac.update(subscriberId);
+    return hmac.digest('hex').slice(0, 32);
+  }
+
+  verifyUnsubscribeToken(subscriberId: string, token: string): boolean {
+    return this.generateUnsubscribeToken(subscriberId) === token;
+  }
+
+  getUnsubscribeUrl(subscriberId: string): string {
+    const token = this.generateUnsubscribeToken(subscriberId);
+    return `${this.frontendUrl}/api/v1/email/unsubscribe?id=${subscriberId}&token=${token}`;
+  }
+
+  async processUnsubscribe(subscriberId: string, token: string) {
+    if (!this.verifyUnsubscribeToken(subscriberId, token)) {
+      throw new BadRequestException('Invalid unsubscribe link');
+    }
+
+    const sub = await this.prisma.emailSubscriber.findUnique({ where: { id: subscriberId } });
+    if (!sub) throw new NotFoundException('Subscriber not found');
+
+    if (!sub.isActive) return { alreadyUnsubscribed: true };
+
+    await this.prisma.emailSubscriber.update({
+      where: { id: subscriberId },
+      data: { isActive: false },
+    });
+
+    this.logger.log(`Subscriber ${sub.email} unsubscribed via link`);
+    return { unsubscribed: true, email: sub.email };
+  }
 
   // ─── Subscribers ───
 
@@ -225,7 +269,7 @@ ${count > 3 ? `4-${count}. 更多信件（持續培養 + 稀缺感）` : ''}
 
     const subscribers = await this.prisma.emailSubscriber.findMany({
       where,
-      select: { email: true, name: true },
+      select: { id: true, email: true, name: true },
     });
 
     if (subscribers.length === 0) throw new BadRequestException('沒有符合條件的訂閱者');
@@ -245,7 +289,7 @@ ${count > 3 ? `4-${count}. 更多信件（持續培養 + 稀缺感）` : ''}
       userId,
       subject: firstEmail.subject,
       htmlContent: firstEmail.body,
-      subscribers: subscribers.map(s => ({ email: s.email, name: s.name })),
+      subscribers: subscribers.map(s => ({ id: s.id, email: s.email, name: s.name })),
     };
 
     await this.emailQueue.add('send-campaign', jobData, {
@@ -264,7 +308,7 @@ ${count > 3 ? `4-${count}. 更多信件（持續培養 + 稀缺感）` : ''}
           userId,
           subject: email.subject,
           htmlContent: email.body,
-          subscribers: subscribers.map(s => ({ email: s.email, name: s.name })),
+          subscribers: subscribers.map(s => ({ id: s.id, email: s.email, name: s.name })),
         } satisfies EmailSendJobData, {
           delay: delayMs,
           attempts: 3,

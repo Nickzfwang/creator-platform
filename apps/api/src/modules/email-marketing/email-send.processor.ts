@@ -3,13 +3,14 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BrevoService } from '../brevo/brevo.service';
+import { EmailMarketingService } from './email-marketing.service';
 
 export interface EmailSendJobData {
   campaignId: string;
   userId: string;
   subject: string;
   htmlContent: string;
-  subscribers: Array<{ email: string; name: string | null }>;
+  subscribers: Array<{ id: string; email: string; name: string | null }>;
 }
 
 const BATCH_SIZE = 50;
@@ -21,6 +22,7 @@ export class EmailSendProcessor extends WorkerHost {
   constructor(
     private readonly prisma: PrismaService,
     private readonly brevoService: BrevoService,
+    private readonly emailMarketingService: EmailMarketingService,
   ) {
     super();
   }
@@ -35,23 +37,19 @@ export class EmailSendProcessor extends WorkerHost {
     for (let i = 0; i < totalBatches; i++) {
       const batch = subscribers.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE);
 
-      // Brevo supports up to 50 recipients per API call
-      const to = batch.map(s => ({
-        email: s.email,
-        name: s.name || '',
-      }));
-
-      // Replace {{name}} placeholder in HTML for each recipient individually
-      for (const recipient of to) {
+      for (const subscriber of batch) {
         const personalizedHtml = htmlContent.replace(
           /\{\{name\}\}/g,
-          recipient.name || '朋友',
+          subscriber.name || '朋友',
         );
 
+        const unsubscribeUrl = this.emailMarketingService.getUnsubscribeUrl(subscriber.id);
+
         const result = await this.brevoService.sendCampaignEmail(
-          [recipient],
+          [{ email: subscriber.email, name: subscriber.name || '' }],
           subject,
           personalizedHtml,
+          unsubscribeUrl,
         );
 
         if (result.success) {

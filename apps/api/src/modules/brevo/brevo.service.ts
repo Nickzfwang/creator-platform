@@ -91,13 +91,36 @@ export class BrevoService {
     to: { email: string; name: string }[],
     subject: string,
     htmlContent: string,
+    unsubscribeUrl?: string,
   ): Promise<{ success: boolean; messageId?: string }> {
     if (!this.isConfigured) {
       this.logger.warn('Brevo API key not configured, skipping campaign email');
       return { success: false };
     }
 
+    // Append unsubscribe footer to HTML
+    let finalHtml = htmlContent;
+    if (unsubscribeUrl) {
+      finalHtml += `<div style="margin-top:32px;padding-top:16px;border-top:1px solid #e5e7eb;text-align:center;font-size:12px;color:#9ca3af;">
+<p>如果你不想再收到此類郵件，可以<a href="${unsubscribeUrl}" style="color:#6366f1;text-decoration:underline;">取消訂閱</a>。</p></div>`;
+    }
+
     try {
+      const payload: Record<string, unknown> = {
+        sender: { email: this.senderEmail, name: this.senderName },
+        to,
+        subject,
+        htmlContent: finalHtml,
+      };
+
+      // RFC 8058 List-Unsubscribe header
+      if (unsubscribeUrl) {
+        payload.headers = {
+          'List-Unsubscribe': `<${unsubscribeUrl}>`,
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        };
+      }
+
       const response = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
         headers: {
@@ -105,12 +128,7 @@ export class BrevoService {
           'content-type': 'application/json',
           'api-key': this.apiKey,
         },
-        body: JSON.stringify({
-          sender: { email: this.senderEmail, name: this.senderName },
-          to,
-          subject,
-          htmlContent,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
