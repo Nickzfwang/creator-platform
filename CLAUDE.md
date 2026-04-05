@@ -27,7 +27,8 @@ packages/          # 共用型別 + 工具
 ```bash
 pnpm --filter web dev       # 前端
 pnpm --filter api dev       # 後端
-pnpm db:push                # 推送 schema 到 DB
+pnpm db:migrate              # 執行 Prisma migration
+pnpm db:push                # 推送 schema 到 DB（開發用）
 pnpm db:generate             # 產生 Prisma Client
 docker compose up -d         # PostgreSQL + Redis
 ```

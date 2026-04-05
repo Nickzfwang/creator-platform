@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
+import { getQueueToken } from '@nestjs/bullmq';
 import {
   NotFoundException,
   ForbiddenException,
@@ -8,6 +9,7 @@ import {
 import { VideoService } from '../video.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AiService } from '../../ai/ai.service';
+import { StorageService } from '../../storage/storage.service';
 import { ContentRepurposeService } from '../../content-repurpose/content-repurpose.service';
 
 const mockPrisma = () => ({
@@ -28,6 +30,16 @@ const mockRepurposeService = () => ({
   triggerGeneration: jest.fn(),
 });
 
+const mockStorageService = () => ({
+  getPresignedUploadUrl: jest.fn(),
+  getPresignedDownloadUrl: jest.fn(),
+  deleteFile: jest.fn(),
+});
+
+const mockVideoProcessQueue = () => ({
+  add: jest.fn(),
+});
+
 describe('VideoService — Post-Production Tools', () => {
   let service: VideoService;
   let prisma: ReturnType<typeof mockPrisma>;
@@ -42,8 +54,10 @@ describe('VideoService — Post-Production Tools', () => {
         VideoService,
         { provide: PrismaService, useValue: prisma },
         { provide: AiService, useValue: aiService },
+        { provide: StorageService, useValue: mockStorageService() },
         { provide: ContentRepurposeService, useValue: mockRepurposeService() },
         { provide: ConfigService, useValue: { get: jest.fn() } },
+        { provide: getQueueToken('video-process'), useValue: mockVideoProcessQueue() },
       ],
     }).compile();
 
