@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link, usePathname } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import {
   Video,
@@ -40,53 +40,55 @@ import {
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AiAssistant } from "@/components/ai-assistant";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
-const sidebarItems = [
-  { label: "總覽", href: "/", icon: LayoutDashboard },
-  { label: "影片管理", href: "/videos", icon: Video },
-  { label: "排程管理", href: "/schedule", icon: Calendar },
-  { label: "Bot 設定", href: "/bot", icon: Bot },
-  { label: "會員管理", href: "/members", icon: Users },
-  { label: "品牌合作", href: "/brand", icon: Handshake },
-  { label: "內容策略", href: "/strategy", icon: Lightbulb },
-  { label: "趨勢雷達", href: "/trends", icon: Radar },
-  { label: "收藏庫", href: "/clips", icon: Bookmark },
-  { label: "AI 社群探索", href: "/browse", icon: Globe },
-  { label: "Landing Page", href: "/landing", icon: PanelTop },
-  { label: "商品商店", href: "/store", icon: ShoppingBag },
-  { label: "Email 行銷", href: "/email", icon: Mail },
-  { label: "粉絲互動", href: "/interactions", icon: MessageSquare },
-  { label: "變現顧問", href: "/monetize", icon: DollarSign },
-  { label: "數據分析", href: "/analytics", icon: BarChart3 },
-  { label: "設定", href: "/settings", icon: Settings },
-];
+const sidebarItemDefs = [
+  { key: "overview", href: "/", icon: LayoutDashboard },
+  { key: "videos", href: "/videos", icon: Video },
+  { key: "schedule", href: "/schedule", icon: Calendar },
+  { key: "bot", href: "/bot", icon: Bot },
+  { key: "members", href: "/members", icon: Users },
+  { key: "brand", href: "/brand", icon: Handshake },
+  { key: "strategy", href: "/strategy", icon: Lightbulb },
+  { key: "trends", href: "/trends", icon: Radar },
+  { key: "clips", href: "/clips", icon: Bookmark },
+  { key: "browse", href: "/browse", icon: Globe },
+  { key: "landing", href: "/landing", icon: PanelTop },
+  { key: "store", href: "/store", icon: ShoppingBag },
+  { key: "email", href: "/email", icon: Mail },
+  { key: "interactions", href: "/interactions", icon: MessageSquare },
+  { key: "monetize", href: "/monetize", icon: DollarSign },
+  { key: "analytics", href: "/analytics", icon: BarChart3 },
+  { key: "settings", href: "/settings", icon: Settings },
+] as const;
 
-const pageTitles: Record<string, string> = {
-  "/": "總覽",
-  "/videos": "影片管理",
-  "/schedule": "排程管理",
-  "/bot": "Bot 設定",
-  "/members": "會員管理",
-  "/brand": "品牌合作",
-  "/strategy": "內容策略",
-  "/trends": "趨勢雷達",
-  "/clips": "收藏庫",
-  "/browse": "AI 社群探索",
-  "/landing": "Landing Page",
-  "/store": "商品商店",
-  "/email": "Email 行銷",
-  "/interactions": "粉絲互動",
-  "/monetize": "變現顧問",
-  "/analytics": "數據分析",
-  "/settings": "設定",
+const pathToNavKey: Record<string, string> = {
+  "/": "overview",
+  "/videos": "videos",
+  "/schedule": "schedule",
+  "/bot": "bot",
+  "/members": "members",
+  "/brand": "brand",
+  "/strategy": "strategy",
+  "/trends": "trends",
+  "/clips": "clips",
+  "/browse": "browse",
+  "/landing": "landing",
+  "/store": "store",
+  "/email": "email",
+  "/interactions": "interactions",
+  "/monetize": "monetize",
+  "/analytics": "analytics",
+  "/settings": "settings",
 };
 
 function SidebarNav() {
   const pathname = usePathname();
+  const t = useTranslations("nav");
 
   return (
     <nav className="flex-1 space-y-1 p-4">
-      {sidebarItems.map((item) => {
+      {sidebarItemDefs.map((item) => {
         const Icon = item.icon;
         const isActive =
           item.href === "/"
@@ -104,7 +106,7 @@ function SidebarNav() {
             )}
           >
             <Icon className="h-4 w-4" />
-            {item.label}
+            {t(item.key)}
           </Link>
         );
       })}
@@ -155,7 +157,9 @@ export default function DashboardLayout({
     return null; // useRequireAuth will redirect
   }
 
-  const pageTitle = pageTitles[pathname] ?? "儀表板";
+  const t = useTranslations("nav");
+  const navKey = pathToNavKey[pathname];
+  const pageTitle = navKey ? t(navKey) : t("dashboard");
   const initials = user.displayName
     .split(" ")
     .map((n) => n[0])
@@ -181,7 +185,7 @@ export default function DashboardLayout({
             className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
           >
             <LogOut className="h-4 w-4" />
-            登出
+            {t("logout")}
           </button>
         </div>
       </aside>
@@ -210,7 +214,7 @@ export default function DashboardLayout({
               className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
             >
               <LogOut className="h-4 w-4" />
-              登出
+              {t("logout")}
             </button>
           </div>
         </SheetContent>
@@ -233,6 +237,7 @@ export default function DashboardLayout({
           </div>
 
           <div className="flex items-center gap-2">
+            <LanguageSwitcher />
             {/* Notifications placeholder */}
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5" />
@@ -267,13 +272,13 @@ export default function DashboardLayout({
                 <DropdownMenuItem asChild>
                   <Link href="/settings">
                     <Settings className="mr-2 h-4 w-4" />
-                    設定
+                    {t("settings")}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => logout()}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  登出
+                  {t("logout")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

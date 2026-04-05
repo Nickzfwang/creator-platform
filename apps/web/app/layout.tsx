@@ -1,8 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { Providers } from "./providers";
-import { ServiceWorkerRegister } from "@/components/sw-register";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -34,12 +32,5 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <html lang="zh-TW" suppressHydrationWarning>
-      <body className={inter.className}>
-        <Providers>{children}</Providers>
-        <ServiceWorkerRegister />
-      </body>
-    </html>
-  );
+  return children;
 }

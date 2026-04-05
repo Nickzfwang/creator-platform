@@ -2,11 +2,13 @@
 
 import { Bell } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 
 export function NotificationBell() {
+  const t = useTranslations("nav");
   const { data } = useQuery({
     queryKey: ["notifications-unread-count"],
     queryFn: () => api<{ count: number }>("/v1/notifications/unread-count"),
@@ -25,7 +27,7 @@ export function NotificationBell() {
             {count > 99 ? "99+" : count}
           </span>
         )}
-        <span className="sr-only">通知</span>
+        <span className="sr-only">{t("notifications")}</span>
       </Link>
     </Button>
   );

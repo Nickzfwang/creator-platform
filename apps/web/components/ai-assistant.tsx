@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send, Sparkles, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth-store";
@@ -11,13 +12,6 @@ interface Message {
   content: string;
 }
 
-const SUGGESTIONS = [
-  "下一支影片拍什麼好？",
-  "幫我分析目前的成長策略",
-  "如何提高互動率？",
-  "品牌合作報價建議",
-];
-
 export function AiAssistant() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -26,9 +20,17 @@ export function AiAssistant() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuthStore();
+  const t = useTranslations("aiAssistant");
 
   // Don't render if not logged in
   if (!user) return null;
+
+  const suggestions = [
+    t("suggestion1"),
+    t("suggestion2"),
+    t("suggestion3"),
+    t("suggestion4"),
+  ];
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -55,7 +57,7 @@ export function AiAssistant() {
     } catch {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: "抱歉，目前無法回應，請稍後再試。" },
+        { role: "assistant", content: t("errorMessage") },
       ]);
     } finally {
       setLoading(false);
@@ -93,8 +95,8 @@ export function AiAssistant() {
             <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5" />
               <div>
-                <p className="text-sm font-semibold">AI 創作助手</p>
-                <p className="text-xs opacity-80">隨時為您提供創作建議</p>
+                <p className="text-sm font-semibold">{t("title")}</p>
+                <p className="text-xs opacity-80">{t("subtitle")}</p>
               </div>
             </div>
             <button onClick={() => setOpen(false)} className="rounded-full p-1 hover:bg-white/20">
@@ -108,18 +110,18 @@ export function AiAssistant() {
               <div className="space-y-3">
                 <div className="rounded-lg bg-purple-50 p-3 dark:bg-purple-950/30">
                   <p className="text-sm text-purple-900 dark:text-purple-200">
-                    嗨 {user.displayName ?? "創作者"}！👋 我是你的 AI 創作助手「小創」，可以幫你：
+                    {t("greeting", { name: user.displayName ?? t("defaultName") })}
                   </p>
                   <ul className="mt-2 space-y-1 text-xs text-purple-700 dark:text-purple-300">
-                    <li>📊 分析數據和成長策略</li>
-                    <li>💡 提供內容靈感和腳本</li>
-                    <li>🤝 品牌合作建議</li>
-                    <li>💰 變現模式優化</li>
+                    <li>{t("capability1")}</li>
+                    <li>{t("capability2")}</li>
+                    <li>{t("capability3")}</li>
+                    <li>{t("capability4")}</li>
                   </ul>
                 </div>
-                <p className="text-center text-xs text-muted-foreground">試試以下問題：</p>
+                <p className="text-center text-xs text-muted-foreground">{t("trySuggestions")}</p>
                 <div className="grid grid-cols-1 gap-2">
-                  {SUGGESTIONS.map((s) => (
+                  {suggestions.map((s) => (
                     <button
                       key={s}
                       onClick={() => sendMessage(s)}
@@ -156,7 +158,7 @@ export function AiAssistant() {
                   <div className="flex justify-start">
                     <div className="flex items-center gap-2 rounded-2xl bg-gray-100 px-3 py-2 text-sm text-gray-500 dark:bg-gray-800">
                       <Loader2 className="h-3 w-3 animate-spin" />
-                      思考中...
+                      {t("thinking")}
                     </div>
                   </div>
                 )}
@@ -172,7 +174,7 @@ export function AiAssistant() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="輸入你的問題..."
+                placeholder={t("inputPlaceholder")}
                 disabled={loading}
                 className="flex-1 rounded-full border bg-gray-50 px-4 py-2 text-sm outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400 dark:bg-gray-900"
               />

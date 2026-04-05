@@ -1,8 +1,9 @@
+import createMiddleware from 'next-intl/middleware';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { routing } from './i18n/routing';
 
-// Routes that require authentication
-const protectedPaths = ['/', '/videos', '/schedule', '/bot', '/members', '/brand', '/analytics', '/settings'];
+const intlMiddleware = createMiddleware(routing);
 
 // Routes that should redirect to dashboard if already authenticated
 const authPaths = ['/login', '/register'];
@@ -10,23 +11,16 @@ const authPaths = ['/login', '/register'];
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Check for refresh token cookie/presence as a basic indicator
-  // Real auth check happens client-side via useRequireAuth
-  const hasRefreshToken = request.cookies.get('hasAuth')?.value === '1';
-
-  // Protect dashboard routes — redirect to login if no token indicator
-  if (protectedPaths.some((p) => pathname === p || (p !== '/' && pathname.startsWith(p)))) {
-    // We rely on client-side auth check since tokens are in localStorage
-    // Middleware just provides a fast redirect for obvious cases
-    return NextResponse.next();
-  }
+  // Run next-intl middleware first (handles locale detection & routing)
+  const response = intlMiddleware(request);
 
   // Redirect authenticated users away from auth pages
-  if (authPaths.includes(pathname) && hasRefreshToken) {
+  const hasRefreshToken = request.cookies.get('hasAuth')?.value === '1';
+  if (authPaths.some((p) => pathname === p || pathname.endsWith(p)) && hasRefreshToken) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {

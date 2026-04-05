@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import {
   Table,
   TableBody,
@@ -33,7 +34,7 @@ interface DataTableProps<T> {
 export function DataTable<T extends { id: string }>({
   columns,
   data,
-  emptyTitle = "尚無資料",
+  emptyTitle,
   emptyDescription,
   emptyAction,
   onEmptyAction,
@@ -41,10 +42,12 @@ export function DataTable<T extends { id: string }>({
   onLoadMore,
   loadingMore,
 }: DataTableProps<T>) {
+  const t = useTranslations("common");
+
   if (data.length === 0) {
     return (
       <EmptyState
-        title={emptyTitle}
+        title={emptyTitle ?? t("noData")}
         description={emptyDescription}
         actionLabel={emptyAction}
         onAction={onEmptyAction}
@@ -85,7 +88,7 @@ export function DataTable<T extends { id: string }>({
             onClick={onLoadMore}
             disabled={loadingMore}
           >
-            {loadingMore ? "載入中..." : "載入更多"}
+            {loadingMore ? t("loading") : t("loadMore")}
           </Button>
         </div>
       )}
