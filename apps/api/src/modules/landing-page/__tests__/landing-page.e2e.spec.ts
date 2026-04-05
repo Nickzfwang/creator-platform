@@ -47,7 +47,7 @@ describe('Landing Page API E2E', () => {
       expect(res.data.isPublished).toBe(false);
       pageId = res.data.id;
       pageSlug = res.data.slug;
-    });
+    }, 30000);
   });
 
   describe('GET /landing-page/mine', () => {

@@ -107,6 +107,19 @@ export class BotService {
     };
   }
 
+  async getPublicBot(id: string) {
+    const bot = await this.prisma.botConfig.findUnique({ where: { id } });
+    if (!bot || !bot.isPublic) throw new NotFoundException('Bot not found');
+
+    return {
+      id: bot.id,
+      name: bot.name,
+      avatarUrl: bot.avatarUrl,
+      welcomeMessage: bot.welcomeMessage,
+      personality: bot.personality,
+    };
+  }
+
   async update(userId: string, tenantId: string, id: string, dto: UpdateBotDto) {
     const bot = await this.prisma.botConfig.findUnique({ where: { id } });
     if (!bot) throw new NotFoundException('Bot not found');

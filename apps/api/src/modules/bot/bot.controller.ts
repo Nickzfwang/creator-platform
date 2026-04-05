@@ -104,7 +104,13 @@ export class BotController {
     return this.botService.getConversations(userId, tenantId, id, query.limit, query.cursor);
   }
 
-  // ─── Chat (Public for public bots) ───
+  // ─── Public Endpoints (no auth) ───
+
+  @Get(':id/public')
+  @ApiOperation({ summary: 'Get public bot info (no auth, public bots only)' })
+  async getPublicBot(@Param('id', ParseUUIDPipe) id: string) {
+    return this.botService.getPublicBot(id);
+  }
 
   @Post(':id/chat')
   @ApiOperation({ summary: 'Send a chat message to a bot (public for public bots)' })
