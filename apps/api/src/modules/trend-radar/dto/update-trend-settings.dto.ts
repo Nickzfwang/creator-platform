@@ -1,4 +1,4 @@
-import { IsBoolean, IsOptional } from 'class-validator';
+import { IsBoolean, IsOptional, IsArray, IsString } from 'class-validator';
 
 export class UpdateTrendSettingsDto {
   @IsBoolean()
@@ -24,4 +24,9 @@ export class UpdateTrendSettingsDto {
   @IsBoolean()
   @IsOptional()
   emailDailySummary?: boolean;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  preferredPlatforms?: string[];
 }

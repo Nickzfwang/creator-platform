@@ -26,6 +26,7 @@ import { TrendRadarService } from './trend-radar.service';
 import { TrendQueryDto } from './dto/trend-query.dto';
 import { CreateKeywordDto } from './dto/create-keyword.dto';
 import { UpdateTrendSettingsDto } from './dto/update-trend-settings.dto';
+import { CreateCustomRssDto } from './dto/create-custom-rss.dto';
 
 const MAX_KEYWORDS = 20;
 
@@ -75,13 +76,16 @@ export class TrendRadarController {
   }
 
   @Get(':fingerprint/history')
-  @ApiOperation({ summary: 'Get 14-day trend history by fingerprint' })
-  async getTrendHistory(@Param('fingerprint') fingerprint: string) {
-    // Validate fingerprint format (hex string, 16 chars)
+  @ApiOperation({ summary: 'Get trend history by fingerprint (7d/14d/30d)' })
+  async getTrendHistory(
+    @Param('fingerprint') fingerprint: string,
+    @Query('period') period?: string,
+  ) {
     if (!/^[a-f0-9]{16}$/.test(fingerprint)) {
       throw new BadRequestException('Invalid fingerprint format');
     }
-    const history = await this.trendRadarService.getTrendHistory(fingerprint);
+    const days = period === '7d' ? 7 : period === '30d' ? 30 : 14;
+    const history = await this.trendRadarService.getTrendHistory(fingerprint, days);
     if (!history) {
       throw new NotFoundException('Trend not found');
     }
@@ -169,6 +173,7 @@ export class TrendRadarController {
       emailKeywordHit: false,
       emailViralAlert: false,
       emailDailySummary: true,
+      preferredPlatforms: [],
     };
   }
 
@@ -188,5 +193,64 @@ export class TrendRadarController {
       },
       update: dto,
     });
+  }
+
+  // ─── Custom RSS Sources ───
+
+  @Get('rss')
+  @ApiOperation({ summary: 'List custom RSS sources' })
+  async listCustomRss(
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.prisma.customRssSource.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  @Post('rss')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Add a custom RSS source (max 10)' })
+  async addCustomRss(
+    @Body() dto: CreateCustomRssDto,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('tenantId') tenantId: string,
+  ) {
+    const count = await this.prisma.customRssSource.count({ where: { userId } });
+    if (count >= 10) {
+      throw new ForbiddenException('最多新增 10 個自訂 RSS 來源');
+    }
+
+    const existing = await this.prisma.customRssSource.findUnique({
+      where: { userId_url: { userId, url: dto.url } },
+    });
+    if (existing) {
+      throw new ConflictException('此 RSS 來源已新增');
+    }
+
+    return this.prisma.customRssSource.create({
+      data: {
+        userId,
+        tenantId,
+        name: dto.name,
+        url: dto.url,
+      },
+    });
+  }
+
+  @Delete('rss/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Remove a custom RSS source' })
+  async deleteCustomRss(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    const source = await this.prisma.customRssSource.findFirst({
+      where: { id, userId },
+    });
+    if (!source) {
+      throw new NotFoundException('RSS 來源不存在');
+    }
+    await this.prisma.customRssSource.delete({ where: { id } });
   }
 }

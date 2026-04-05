@@ -324,9 +324,10 @@ export class TrendRadarService {
   /**
    * Get 14-day history for a specific trend by fingerprint.
    */
-  async getTrendHistory(fingerprint: string) {
-    const fourteenDaysAgo = new Date();
-    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+  async getTrendHistory(fingerprint: string, days: number = 14) {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    const fourteenDaysAgo = startDate;
 
     const topics = await this.prisma.trendTopic.findMany({
       where: {
