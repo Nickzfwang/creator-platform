@@ -72,5 +72,385 @@
   },
   "metadata": {
     "description": "AI 기반 크리에이터 수익화 플랫폼"
+  },
+  "videos": {
+    "common": {
+      "loading": "로딩 중...",
+      "generating": "생성 중...",
+      "cancel": "취소",
+      "save": "저장",
+      "edit": "편집",
+      "copy": "복사",
+      "copied": "복사됨",
+      "regenerate": "재생성",
+      "selectAll": "전체 선택",
+      "deselectAll": "선택 해제"
+    },
+    "status": {
+      "uploading": "업로드 중",
+      "uploaded": "업로드 완료",
+      "processing": "AI 처리 중",
+      "processed": "완료",
+      "failed": "실패"
+    },
+    "page": {
+      "title": "영상 관리",
+      "description": "영상을 업로드하고 AI로 하이라이트 클립을 자동 편집",
+      "aiScript": "AI 스크립트",
+      "uploading": "업로드 중...",
+      "uploadVideo": "영상 업로드",
+      "uploadingOverlay": "영상 업로드 중...",
+      "uploadingOverlayDesc": "AI가 분석하여 하이라이트 클립을 자동 생성하고 있습니다",
+      "emptyTitle": "영상이 없습니다",
+      "emptyDescription": "첫 번째 영상을 업로드하면 AI가 자동으로 하이라이트 클립을 만들어 드립니다",
+      "clipCount": "{count} 클립"
+    },
+    "detail": {
+      "videoNotSupported": "브라우저에서 영상 재생을 지원하지 않습니다",
+      "status": "상태",
+      "duration": "재생 시간",
+      "createdAt": "생성일",
+      "aiSummary": "AI 요약"
+    },
+    "clips": {
+      "title": "AI 클립",
+      "generating": "생성 중...",
+      "generateBtn": "AI 클립 생성",
+      "generateAllShorts": "쇼츠 일괄 생성",
+      "empty": "클립이 없습니다",
+      "emptyHint": "\"AI 클립 생성\"을 클릭하여 AI가 하이라이트를 식별하도록 하세요",
+      "statusReady": "준비 완료",
+      "generateShortTitle": "세로형 쇼츠 생성",
+      "shortGenerated": "쇼츠가 생성되었습니다",
+      "downloadShort": "쇼츠 다운로드",
+      "copyCopy": "캡션 복사"
+    },
+    "subtitle": {
+      "title": "AI 자막 생성",
+      "transcribing": "Whisper 전사 중...",
+      "generateBtn": "자막 생성",
+      "transcribingDesc": "Whisper가 음성 인식 중 → GPT가 문장 교정 중, 약 30~60초 소요...",
+      "segmentCount": "{count} 자막 세그먼트",
+      "polished": "GPT에 의해 교정됨",
+      "downloadSrt": "SRT 다운로드",
+      "downloadVtt": "VTT 다운로드",
+      "desc": "OpenAI Whisper로 영상 음성을 자동 인식하고, GPT 교정 후 SRT/VTT 자막 파일을 생성합니다"
+    },
+    "postProduction": {
+      "title": "후반 작업 도구",
+      "fillers": "필러 제거",
+      "chapters": "챕터 마커",
+      "scriptSummary": "스크립트 요약",
+      "multiPlatform": "멀티 플랫폼 적용",
+      "fillersDesc": "영상 내 \"음, 어, 그게\" 등 필러 단어를 감지하고 선택 후 원클릭 컷",
+      "detecting": "감지 중...",
+      "detectFillers": "필러 감지",
+      "fillerStats": "감지 {total}개 / 선택 {selected}개 / 예상 절약 {savings}초",
+      "cutting": "컷 중...",
+      "cutBtn": "컷 버전 내보내기 ({count}개 제거)",
+      "cutDone": "컷 완료",
+      "cutResult": "원본: {original}s → 컷 후: {result}s ({saved}s 절약)",
+      "chaptersDesc": "AI가 영상 구조를 분석하여 YouTube 챕터 타임스탬프를 자동 생성",
+      "generateChapters": "챕터 생성",
+      "copyYoutubeFormat": "YouTube 형식 복사",
+      "scriptDesc": "AI가 전사본을 분석하여 구조화된 스크립트 개요를 생성",
+      "generateScript": "스크립트 요약 생성",
+      "copyMarkdown": "Markdown 복사",
+      "exportMd": ".md 내보내기"
+    },
+    "multiPlatform": {
+      "igSquare": "IG 정사각형",
+      "desc": "클립을 선택하고 원클릭으로 멀티 플랫폼 버전 생성 (자막 + AI 캡션 포함)",
+      "selectClip": "클립 선택",
+      "selectClipPlaceholder": "클립을 선택하세요",
+      "targetPlatforms": "타겟 플랫폼",
+      "generatingLong": "생성 중 (1~2분 소요될 수 있음)...",
+      "generateBtn": "{count}개 플랫폼 버전 생성"
+    },
+    "repurpose": {
+      "title": "AI 리퍼포스 콘텐츠",
+      "queuing": "대기열에 추가 중...",
+      "generateBtn": "리퍼포스 콘텐츠 생성",
+      "desc": "AI가 영상 내용을 기반으로 15개의 SNS 게시물, 쇼츠 제안, 이메일 알림을 자동 생성합니다",
+      "processing": "AI가 리퍼포스 콘텐츠를 생성 중...",
+      "processingDesc": "영상 내용을 분석하여 멀티 플랫폼 SNS 게시물, 쇼츠 제안, 이메일 알림을 생성 중, 약 30~60초",
+      "failed": "리퍼포스 콘텐츠 생성 실패: ",
+      "unknownError": "알 수 없는 오류",
+      "itemCount": "{count}개",
+      "tabPosts": "SNS 게시물 ({count})",
+      "tabShorts": "쇼츠 제안 ({count})",
+      "tabEmail": "이메일 ({count})",
+      "platform": "플랫폼",
+      "allPlatforms": "모든 플랫폼",
+      "style": "스타일",
+      "allStyles": "모든 스타일",
+      "styleKnowledge": "지식형",
+      "styleStory": "스토리형",
+      "styleInteractive": "인터랙티브형",
+      "statusEdited": "편집됨",
+      "statusScheduled": "예약됨",
+      "regen": "재생성",
+      "selectedCount": "{count}개 선택됨",
+      "scheduling": "예약 중...",
+      "createSchedule": "예약 생성",
+      "noShortSuggestions": "영상이 짧아 쇼츠 제안이 없습니다",
+      "reason": "추천 이유: ",
+      "campaignCreated": "캠페인이 생성되었습니다",
+      "createCampaign": "캠페인 생성",
+      "editPost": "게시물 편집",
+      "resetOriginal": "원본으로 복원"
+    },
+    "repurposeDialog": {
+      "title": "원클릭 콘텐츠 리퍼포스",
+      "clip": "클립: ",
+      "desc": "AI가 이 클립을 기반으로 모든 플랫폼에 맞춤 게시물을 생성합니다",
+      "generateAll": "AI 모든 플랫폼 게시물 생성",
+      "generating": "AI가 5개 플랫폼에 맞춤 콘텐츠를 생성 중..."
+    },
+    "deleteDialog": {
+      "title": "영상 삭제",
+      "description": "이 영상을 삭제하시겠습니까? 이 작업은 되돌릴 수 없으며 관련된 모든 클립도 함께 삭제됩니다.",
+      "confirm": "삭제"
+    },
+    "scriptDialog": {
+      "title": "AI 영상 스크립트 생성",
+      "desc": "영상 주제를 입력하면 AI가 Hook, 구조, CTA, 촬영 팁, SEO 키워드를 포함한 완전한 스크립트 개요를 생성합니다.",
+      "topicLabel": "영상 주제 *",
+      "topicPlaceholder": "예: AI 도구로 업무 효율을 높이는 방법",
+      "styleLabel": "영상 스타일",
+      "styleTutorial": "📚 튜토리얼",
+      "styleVlog": "📹 Vlog",
+      "styleUnboxing": "📦 언박싱 리뷰",
+      "styleStory": "📖 스토리텔링",
+      "styleRanking": "🏆 랭킹 / Top N",
+      "styleChallenge": "🎯 챌린지",
+      "lengthLabel": "목표 길이 (분)",
+      "length1": "1분 (쇼츠)",
+      "length5": "5분",
+      "length10": "10분",
+      "length15": "15분",
+      "length20": "20분",
+      "length30": "30분 (롱폼)",
+      "audienceLabel": "타겟 시청자 (선택사항)",
+      "audiencePlaceholder": "예: 18~35세 테크 애호가",
+      "notesLabel": "추가 참고사항 (선택사항)",
+      "notesPlaceholder": "예: 개인 경험을 포함하고 싶고, 유머러스하게",
+      "generating": "AI 생성 중...",
+      "generateBtn": "스크립트 생성",
+      "resultBadge": "주제: {topic} · {style} · {length}분"
+    },
+    "toast": {
+      "clipsGenerated": "AI 클립이 생성되었습니다",
+      "shortsGenerated": "{count}개 쇼츠가 생성되었습니다",
+      "shortGenerated": "쇼츠가 생성되었습니다!",
+      "captionCopied": "캡션이 복사되었습니다",
+      "copiedToClipboard": "클립보드에 복사되었습니다",
+      "fillersDetected": "{count}개 필러가 감지되었습니다",
+      "cutComplete": "컷 완료! {original}s → {result}s",
+      "chaptersGenerated": "{count}개 챕터가 생성되었습니다",
+      "chaptersUpdated": "챕터가 업데이트되었습니다",
+      "scriptGenerated": "{count}개 섹션이 생성되었습니다",
+      "markdownDownloaded": "Markdown 파일이 다운로드되었습니다",
+      "multiPlatformDone": "생성 완료: {success} 성공, {failed} 실패",
+      "repurposeQueued": "콘텐츠 생성이 대기열에 추가되었습니다",
+      "repurposeRequeued": "재생성이 대기열에 추가되었습니다",
+      "postsScheduled": "{count}개 게시물이 예약되었습니다",
+      "postsScheduleFailed": "{count}개 예약에 실패했습니다",
+      "saved": "저장되었습니다",
+      "regenerated": "재생성되었습니다",
+      "campaignCreated": "이메일 캠페인이 생성되었습니다",
+      "resetToOriginal": "AI 원본 버전으로 복원되었습니다",
+      "enterTitle": "영상 제목을 입력하세요",
+      "videoCreated": "영상이 생성되었습니다",
+      "uploadSuccess": "영상 업로드 성공, AI 자동 편집 완료",
+      "uploadFailed": "업로드 실패",
+      "videoDeleted": "영상이 삭제되었습니다",
+      "subtitleGenerated": "자막이 생성되었습니다 ({count}개 세그먼트)",
+      "enterTopic": "영상 주제를 입력하세요",
+      "generateFailed": "생성 실패",
+      "scriptCopied": "스크립트가 복사되었습니다"
+    }
+  },
+  "analytics": {
+    "pageTitle": "데이터 분석",
+    "pageDescription": "크로스 플랫폼 성과 및 수익 추적",
+    "period": {
+      "last7Days": "최근 7일",
+      "last30Days": "최근 30일",
+      "last90Days": "최근 90일",
+      "lastYear": "최근 1년"
+    },
+    "stats": {
+      "totalFollowers": "총 팔로워 수",
+      "totalViews": "총 조회수",
+      "totalEngagement": "총 참여 수",
+      "totalRevenue": "총 수익"
+    },
+    "aiInsights": {
+      "title": "AI 데이터 인사이트",
+      "analyzing": "분석 중...",
+      "reanalyze": "재분석",
+      "loadingMessage": "AI가 데이터를 분석 중...",
+      "analyzedAt": "분석 시간: {time}",
+      "noData": "분석할 데이터가 없습니다. 먼저 SNS 계정을 연결하세요."
+    },
+    "tabs": {
+      "platform": "플랫폼 분석",
+      "revenue": "수익 분석",
+      "content": "인기 콘텐츠"
+    },
+    "platform": {
+      "overview": "플랫폼 개요",
+      "noData": "플랫폼 데이터가 없습니다",
+      "crossComparison": "크로스 플랫폼 비교"
+    },
+    "table": {
+      "platform": "플랫폼",
+      "followers": "팔로워",
+      "views": "조회",
+      "engagement": "참여",
+      "account": "계정",
+      "engagementRate": "참여율",
+      "title": "제목"
+    },
+    "revenue": {
+      "subscription": "구독 수익",
+      "membership": "멤버십 수익",
+      "affiliate": "제휴 마케팅 수익",
+      "trend": "수익 추이"
+    },
+    "content": {
+      "noData": "콘텐츠 데이터가 없습니다",
+      "topContent": "인기 콘텐츠"
+    }
+  },
+  "schedule": {
+    "pageTitle": "일정 관리",
+    "pageDescription": "크로스 플랫폼 SNS 게시물을 생성, 예약 및 관리",
+    "addPost": "게시물 추가",
+    "noContent": "콘텐츠 없음",
+    "status": {
+      "draft": "초안",
+      "scheduled": "예약됨",
+      "publishing": "게시 중",
+      "published": "게시됨",
+      "failed": "실패",
+      "cancelled": "취소됨"
+    },
+    "tabs": {
+      "all": "전체",
+      "draft": "초안",
+      "scheduled": "예약됨",
+      "published": "게시됨",
+      "failed": "실패"
+    },
+    "empty": {
+      "title": "게시물이 없습니다",
+      "description": "첫 번째 SNS 게시물을 생성하세요"
+    },
+    "actions": {
+      "edit": "편집",
+      "cancel": "취소",
+      "update": "업데이트",
+      "create": "생성",
+      "processing": "처리 중..."
+    },
+    "dialog": {
+      "createTitle": "게시물 추가",
+      "editTitle": "게시물 편집"
+    },
+    "form": {
+      "platform": "플랫폼",
+      "selectPlatform": "플랫폼 선택",
+      "videoOptional": "영상 (선택사항)",
+      "selectVideo": "영상 선택",
+      "clip": "클립",
+      "selectClip": "클립 선택",
+      "selectVideoFirst": "먼저 영상을 선택하세요",
+      "content": "내용",
+      "aiGenerate": "AI 생성",
+      "aiGenerating": "생성 중...",
+      "contentPlaceholder": "게시물 내용",
+      "scheduledAtOptional": "예약 시간 (선택사항)"
+    },
+    "deleteDialog": {
+      "title": "게시물 삭제",
+      "description": "이 게시물을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
+      "confirm": "삭제"
+    },
+    "toast": {
+      "selectPlatform": "플랫폼을 선택하세요",
+      "selectPlatformFirst": "먼저 플랫폼을 선택하세요",
+      "postCreated": "게시물이 생성되었습니다",
+      "postUpdated": "게시물이 업데이트되었습니다",
+      "postDeleted": "게시물이 삭제되었습니다",
+      "published": "게시되었습니다",
+      "aiGenerated": "AI 콘텐츠가 생성되었습니다"
+    }
+  },
+  "settings": {
+    "pageTitle": "설정",
+    "pageDescription": "계정, SNS 연결 및 API 설정 관리",
+    "tabs": {
+      "profile": "프로필",
+      "social": "SNS 계정",
+      "api": "API 설정"
+    },
+    "profile": {
+      "title": "프로필",
+      "description": "프로필 및 계정 설정 관리",
+      "emailLabel": "이메일",
+      "displayNameLabel": "표시 이름",
+      "updated": "업데이트됨",
+      "updating": "업데이트 중...",
+      "save": "저장"
+    },
+    "social": {
+      "title": "SNS 계정",
+      "description": "SNS 플랫폼 계정 연결",
+      "followerCount": "{count} 팔로워",
+      "disconnect": "연결 해제",
+      "availablePlatforms": "연결 가능한 플랫폼",
+      "disconnectTitle": "연결 해제",
+      "disconnectDescription": "이 SNS 계정의 연결을 해제하시겠습니까?",
+      "disconnected": "연결이 해제되었습니다"
+    },
+    "apiKeys": {
+      "description": "API 액세스 키 관리",
+      "addKey": "키 추가",
+      "noKeys": "API 키가 없습니다",
+      "active": "활성",
+      "revoked": "폐기됨",
+      "createTitle": "API 키 추가",
+      "nameLabel": "이름",
+      "create": "생성",
+      "keyCreated": "API 키가 생성되었습니다",
+      "keyCreatedHint": "지금 이 키를 복사하세요. 다시 표시되지 않습니다.",
+      "revokeTitle": "API 키 폐기",
+      "revokeDescription": "이 키를 폐기하시겠습니까? 이 키를 사용하는 애플리케이션은 API에 접근할 수 없게 됩니다.",
+      "revoke": "폐기",
+      "keyRevoked": "키가 폐기되었습니다"
+    },
+    "rateLimit": {
+      "title": "API 속도 제한",
+      "plan": "플랜",
+      "type": "유형",
+      "custom": "사용자 정의",
+      "default": "기본값",
+      "requestsPerMinute": "분당 요청 수",
+      "requestsPerDay": "일일 요청 수"
+    },
+    "oauth": {
+      "accountConnected": "{platform} 계정이 성공적으로 연결되었습니다",
+      "missingParams": "OAuth 매개변수가 불완전합니다",
+      "invalidState": "OAuth 인증 실패, 다시 시도해 주세요",
+      "serverError": "서버 오류, 나중에 다시 시도해 주세요",
+      "connectFailed": "연결 실패: {error}"
+    },
+    "common": {
+      "cancel": "취소",
+      "confirm": "확인",
+      "copied": "복사됨"
+    }
   }
 }

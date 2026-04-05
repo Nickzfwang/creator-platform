@@ -72,5 +72,385 @@
   },
   "metadata": {
     "description": "AI 驱动的创作者变现工具平台"
+  },
+  "videos": {
+    "common": {
+      "loading": "加载中...",
+      "generating": "生成中...",
+      "cancel": "取消",
+      "save": "保存",
+      "edit": "编辑",
+      "copy": "复制",
+      "copied": "已复制",
+      "regenerate": "重新生成",
+      "selectAll": "全选",
+      "deselectAll": "取消全选"
+    },
+    "status": {
+      "uploading": "上传中",
+      "uploaded": "已上传",
+      "processing": "AI 处理中",
+      "processed": "已完成",
+      "failed": "失败"
+    },
+    "page": {
+      "title": "视频管理",
+      "description": "上传视频并使用 AI 自动剪辑精华片段",
+      "aiScript": "AI 脚本",
+      "uploading": "上传中...",
+      "uploadVideo": "上传视频",
+      "uploadingOverlay": "视频上传中...",
+      "uploadingOverlayDesc": "AI 正在分析并自动生成精华片段",
+      "emptyTitle": "暂无视频",
+      "emptyDescription": "上传您的第一个视频，AI 将自动为您剪辑精彩片段",
+      "clipCount": "{count} 片段"
+    },
+    "detail": {
+      "videoNotSupported": "您的浏览器不支持视频播放",
+      "status": "状态",
+      "duration": "时长",
+      "createdAt": "创建时间",
+      "aiSummary": "AI 摘要"
+    },
+    "clips": {
+      "title": "AI 剪辑片段",
+      "generating": "生成中...",
+      "generateBtn": "AI 生成片段",
+      "generateAllShorts": "一键生成 Shorts",
+      "empty": "暂无剪辑片段",
+      "emptyHint": "点击「AI 生成片段」让 AI 自动识别精华",
+      "statusReady": "就绪",
+      "generateShortTitle": "生成竖屏短视频",
+      "shortGenerated": "短视频已生成",
+      "downloadShort": "下载短视频",
+      "copyCopy": "复制文案"
+    },
+    "subtitle": {
+      "title": "AI 字幕生成",
+      "transcribing": "Whisper 转录中...",
+      "generateBtn": "生成字幕",
+      "transcribingDesc": "Whisper 正在识别语音 → GPT 校正断句中，约需 30-60 秒...",
+      "segmentCount": "{count} 段字幕",
+      "polished": "已由 GPT 校正润饰",
+      "downloadSrt": "下载 SRT",
+      "downloadVtt": "下载 VTT",
+      "desc": "使用 OpenAI Whisper 自动识别视频语音，GPT 校正后生成 SRT/VTT 字幕文件"
+    },
+    "postProduction": {
+      "title": "后期工具",
+      "fillers": "去语气词",
+      "chapters": "章节标记",
+      "scriptSummary": "脚本摘要",
+      "multiPlatform": "多平台适配",
+      "fillersDesc": "检测视频中的「嗯、啊、那个」等语气词，勾选后一键裁切",
+      "detecting": "检测中...",
+      "detectFillers": "检测语气词",
+      "fillerStats": "检测 {total} 个 / 已选 {selected} 个 / 预估省 {savings}s",
+      "cutting": "裁切中...",
+      "cutBtn": "产出裁切版（移除 {count} 个）",
+      "cutDone": "裁切完成",
+      "cutResult": "原始：{original}s → 裁切后：{result}s（省 {saved}s）",
+      "chaptersDesc": "AI 分析视频结构，自动产出 YouTube 章节时间戳",
+      "generateChapters": "生成章节",
+      "copyYoutubeFormat": "复制 YouTube 格式",
+      "scriptDesc": "AI 分析转录稿，产出结构化脚本大纲",
+      "generateScript": "生成脚本摘要",
+      "copyMarkdown": "复制 Markdown",
+      "exportMd": "导出 .md"
+    },
+    "multiPlatform": {
+      "igSquare": "IG 正方形",
+      "desc": "选择片段，一键产出多平台版本（含字幕 + AI 文案）",
+      "selectClip": "选择片段",
+      "selectClipPlaceholder": "选择一个剪辑片段",
+      "targetPlatforms": "目标平台",
+      "generatingLong": "生成中（可能需要 1-2 分钟）...",
+      "generateBtn": "生成 {count} 个平台版本"
+    },
+    "repurpose": {
+      "title": "AI 推广内容",
+      "queuing": "排入中...",
+      "generateBtn": "生成推广内容",
+      "desc": "AI 将根据视频内容自动生成 15 则社交帖文、短视频建议和 Email 通知",
+      "processing": "AI 正在生成推广内容...",
+      "processingDesc": "正在分析视频内容并生成多平台社交帖文、短视频建议和 Email 通知，约需 30-60 秒",
+      "failed": "推广内容生成失败：",
+      "unknownError": "未知错误",
+      "itemCount": "{count} 则",
+      "tabPosts": "社交帖文 ({count})",
+      "tabShorts": "短视频建议 ({count})",
+      "tabEmail": "Email ({count})",
+      "platform": "平台",
+      "allPlatforms": "所有平台",
+      "style": "风格",
+      "allStyles": "所有风格",
+      "styleKnowledge": "知识型",
+      "styleStory": "故事型",
+      "styleInteractive": "互动型",
+      "statusEdited": "已编辑",
+      "statusScheduled": "已排程",
+      "regen": "重生",
+      "selectedCount": "已选 {count} 则",
+      "scheduling": "排程中...",
+      "createSchedule": "创建排程",
+      "noShortSuggestions": "视频时长不足，无短视频建议",
+      "reason": "推荐原因：",
+      "campaignCreated": "已创建 Campaign",
+      "createCampaign": "创建 Campaign",
+      "editPost": "编辑帖文",
+      "resetOriginal": "还原原始"
+    },
+    "repurposeDialog": {
+      "title": "一键内容再制",
+      "clip": "片段：",
+      "desc": "AI 将根据此片段为所有平台生成定制化帖文",
+      "generateAll": "AI 生成所有平台帖文",
+      "generating": "AI 正在为 5 个平台生成定制内容..."
+    },
+    "deleteDialog": {
+      "title": "删除视频",
+      "description": "确定要删除此视频吗？此操作无法撤销，所有相关片段也会一并删除。",
+      "confirm": "删除"
+    },
+    "scriptDialog": {
+      "title": "AI 视频脚本生成",
+      "desc": "输入视频主题，AI 将生成完整的脚本大纲，包含 Hook、段落结构、CTA、拍摄建议和 SEO 关键字。",
+      "topicLabel": "视频主题 *",
+      "topicPlaceholder": "例：如何用 AI 工具提升工作效率",
+      "styleLabel": "视频风格",
+      "styleTutorial": "📚 教学型",
+      "styleVlog": "📹 Vlog",
+      "styleUnboxing": "📦 开箱评测",
+      "styleStory": "📖 故事叙事",
+      "styleRanking": "🏆 排行榜 / Top N",
+      "styleChallenge": "🎯 挑战型",
+      "lengthLabel": "目标时长（分钟）",
+      "length1": "1 分钟（短视频）",
+      "length5": "5 分钟",
+      "length10": "10 分钟",
+      "length15": "15 分钟",
+      "length20": "20 分钟",
+      "length30": "30 分钟（长视频）",
+      "audienceLabel": "目标观众（选填）",
+      "audiencePlaceholder": "例：18-35 岁科技爱好者",
+      "notesLabel": "补充说明（选填）",
+      "notesPlaceholder": "例：想要加入个人经验分享、要有幽默感",
+      "generating": "AI 生成中...",
+      "generateBtn": "生成脚本",
+      "resultBadge": "主题：{topic} · {style} · {length}分钟"
+    },
+    "toast": {
+      "clipsGenerated": "AI 剪辑片段已生成",
+      "shortsGenerated": "已生成 {count} 支短视频",
+      "shortGenerated": "短视频已生成！",
+      "captionCopied": "文案已复制",
+      "copiedToClipboard": "已复制到剪贴板",
+      "fillersDetected": "检测到 {count} 个语气词",
+      "cutComplete": "裁切完成！{original}s → {result}s",
+      "chaptersGenerated": "生成 {count} 个章节",
+      "chaptersUpdated": "章节已更新",
+      "scriptGenerated": "生成 {count} 个段落",
+      "markdownDownloaded": "已下载 Markdown 文件",
+      "multiPlatformDone": "生成完成：{success} 成功，{failed} 失败",
+      "repurposeQueued": "内容生成已排入队列",
+      "repurposeRequeued": "重新生成已排入队列",
+      "postsScheduled": "已排程 {count} 则帖文",
+      "postsScheduleFailed": "{count} 则排程失败",
+      "saved": "已保存",
+      "regenerated": "已重新生成",
+      "campaignCreated": "Email Campaign 已创建",
+      "resetToOriginal": "已还原为 AI 原始版本",
+      "enterTitle": "请输入视频标题",
+      "videoCreated": "视频已创建",
+      "uploadSuccess": "视频上传成功，AI 已自动剪辑",
+      "uploadFailed": "上传失败",
+      "videoDeleted": "视频已删除",
+      "subtitleGenerated": "字幕已生成（{count} 段）",
+      "enterTopic": "请输入视频主题",
+      "generateFailed": "生成失败",
+      "scriptCopied": "脚本已复制"
+    }
+  },
+  "analytics": {
+    "pageTitle": "数据分析",
+    "pageDescription": "追踪跨平台表现和收入",
+    "period": {
+      "last7Days": "过去 7 天",
+      "last30Days": "过去 30 天",
+      "last90Days": "过去 90 天",
+      "lastYear": "过去一年"
+    },
+    "stats": {
+      "totalFollowers": "总粉丝数",
+      "totalViews": "总观看次数",
+      "totalEngagement": "总互动数",
+      "totalRevenue": "总收入"
+    },
+    "aiInsights": {
+      "title": "AI 数据洞察",
+      "analyzing": "分析中...",
+      "reanalyze": "重新分析",
+      "loadingMessage": "AI 正在分析您的数据...",
+      "analyzedAt": "分析时间：{time}",
+      "noData": "暂无数据可分析，请先连接社交账号。"
+    },
+    "tabs": {
+      "platform": "平台分析",
+      "revenue": "收入分析",
+      "content": "热门内容"
+    },
+    "platform": {
+      "overview": "平台概览",
+      "noData": "暂无平台数据",
+      "crossComparison": "跨平台比较"
+    },
+    "table": {
+      "platform": "平台",
+      "followers": "粉丝",
+      "views": "观看",
+      "engagement": "互动",
+      "account": "账号",
+      "engagementRate": "互动率",
+      "title": "标题"
+    },
+    "revenue": {
+      "subscription": "订阅收入",
+      "membership": "会员收入",
+      "affiliate": "联盟营销收入",
+      "trend": "收入趋势"
+    },
+    "content": {
+      "noData": "暂无内容数据",
+      "topContent": "热门内容"
+    }
+  },
+  "schedule": {
+    "pageTitle": "排程管理",
+    "pageDescription": "创建、排程并管理跨平台社交帖文",
+    "addPost": "新增帖文",
+    "noContent": "无内容",
+    "status": {
+      "draft": "草稿",
+      "scheduled": "已排程",
+      "publishing": "发布中",
+      "published": "已发布",
+      "failed": "失败",
+      "cancelled": "已取消"
+    },
+    "tabs": {
+      "all": "全部",
+      "draft": "草稿",
+      "scheduled": "已排程",
+      "published": "已发布",
+      "failed": "失败"
+    },
+    "empty": {
+      "title": "暂无帖文",
+      "description": "创建您的第一篇社交帖文"
+    },
+    "actions": {
+      "edit": "编辑",
+      "cancel": "取消",
+      "update": "更新",
+      "create": "创建",
+      "processing": "处理中..."
+    },
+    "dialog": {
+      "createTitle": "新增帖文",
+      "editTitle": "编辑帖文"
+    },
+    "form": {
+      "platform": "平台",
+      "selectPlatform": "选择平台",
+      "videoOptional": "视频（选填）",
+      "selectVideo": "选择视频",
+      "clip": "片段 Clip",
+      "selectClip": "选择片段",
+      "selectVideoFirst": "先选视频",
+      "content": "内容",
+      "aiGenerate": "AI 生成",
+      "aiGenerating": "生成中...",
+      "contentPlaceholder": "帖文内容",
+      "scheduledAtOptional": "排程时间（选填）"
+    },
+    "deleteDialog": {
+      "title": "删除帖文",
+      "description": "确定要删除此帖文吗？此操作无法撤销。",
+      "confirm": "删除"
+    },
+    "toast": {
+      "selectPlatform": "请选择平台",
+      "selectPlatformFirst": "请先选择平台",
+      "postCreated": "帖文已创建",
+      "postUpdated": "帖文已更新",
+      "postDeleted": "帖文已删除",
+      "published": "已发布",
+      "aiGenerated": "AI 内容已生成"
+    }
+  },
+  "settings": {
+    "pageTitle": "设置",
+    "pageDescription": "管理您的账号、社交连接和 API 设置",
+    "tabs": {
+      "profile": "个人资料",
+      "social": "社交账号",
+      "api": "API 设置"
+    },
+    "profile": {
+      "title": "个人资料",
+      "description": "管理您的个人资料和账号设置",
+      "emailLabel": "电子邮箱",
+      "displayNameLabel": "显示名称",
+      "updated": "已更新",
+      "updating": "更新中...",
+      "save": "保存"
+    },
+    "social": {
+      "title": "社交账号",
+      "description": "连接您的社交平台账号",
+      "followerCount": "{count} 粉丝",
+      "disconnect": "取消连接",
+      "availablePlatforms": "可连接的平台",
+      "disconnectTitle": "取消连接",
+      "disconnectDescription": "确定要取消连接此社交账号吗？",
+      "disconnected": "已取消连接"
+    },
+    "apiKeys": {
+      "description": "管理 API 访问密钥",
+      "addKey": "新增密钥",
+      "noKeys": "暂无 API 密钥",
+      "active": "启用",
+      "revoked": "已撤销",
+      "createTitle": "新增 API 密钥",
+      "nameLabel": "名称",
+      "create": "创建",
+      "keyCreated": "API 密钥已创建",
+      "keyCreatedHint": "请立即复制此密钥，它不会再次显示。",
+      "revokeTitle": "撤销 API 密钥",
+      "revokeDescription": "确定要撤销此密钥吗？使用此密钥的应用程序将无法访问 API。",
+      "revoke": "撤销",
+      "keyRevoked": "密钥已撤销"
+    },
+    "rateLimit": {
+      "title": "API 速率限制",
+      "plan": "方案",
+      "type": "类型",
+      "custom": "自定义",
+      "default": "默认",
+      "requestsPerMinute": "每分钟请求",
+      "requestsPerDay": "每日请求"
+    },
+    "oauth": {
+      "accountConnected": "{platform} 账号已成功连接",
+      "missingParams": "OAuth 参数不完整",
+      "invalidState": "OAuth 验证失败，请重试",
+      "serverError": "服务器错误，请稍后重试",
+      "connectFailed": "连接失败：{error}"
+    },
+    "common": {
+      "cancel": "取消",
+      "confirm": "确定",
+      "copied": "已复制"
+    }
   }
 }

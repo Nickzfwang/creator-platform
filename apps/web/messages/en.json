@@ -72,5 +72,385 @@
   },
   "metadata": {
     "description": "AI-powered creator monetization platform"
+  },
+  "videos": {
+    "common": {
+      "loading": "Loading...",
+      "generating": "Generating...",
+      "cancel": "Cancel",
+      "save": "Save",
+      "edit": "Edit",
+      "copy": "Copy",
+      "copied": "Copied",
+      "regenerate": "Regenerate",
+      "selectAll": "Select all",
+      "deselectAll": "Deselect all"
+    },
+    "status": {
+      "uploading": "Uploading",
+      "uploaded": "Uploaded",
+      "processing": "AI Processing",
+      "processed": "Completed",
+      "failed": "Failed"
+    },
+    "page": {
+      "title": "Video Management",
+      "description": "Upload videos and let AI auto-edit highlight clips",
+      "aiScript": "AI Script",
+      "uploading": "Uploading...",
+      "uploadVideo": "Upload Video",
+      "uploadingOverlay": "Uploading video...",
+      "uploadingOverlayDesc": "AI is analyzing and generating highlight clips",
+      "emptyTitle": "No videos yet",
+      "emptyDescription": "Upload your first video and AI will automatically create highlight clips for you",
+      "clipCount": "{count} clips"
+    },
+    "detail": {
+      "videoNotSupported": "Your browser does not support video playback",
+      "status": "Status",
+      "duration": "Duration",
+      "createdAt": "Created at",
+      "aiSummary": "AI Summary"
+    },
+    "clips": {
+      "title": "AI Clips",
+      "generating": "Generating...",
+      "generateBtn": "AI Generate Clips",
+      "generateAllShorts": "Generate All Shorts",
+      "empty": "No clips yet",
+      "emptyHint": "Click \"AI Generate Clips\" to let AI identify highlights",
+      "statusReady": "Ready",
+      "generateShortTitle": "Generate Vertical Short",
+      "shortGenerated": "Short generated",
+      "downloadShort": "Download Short",
+      "copyCopy": "Copy Caption"
+    },
+    "subtitle": {
+      "title": "AI Subtitle Generation",
+      "transcribing": "Whisper transcribing...",
+      "generateBtn": "Generate Subtitles",
+      "transcribingDesc": "Whisper is recognizing speech → GPT correcting sentences, about 30-60 seconds...",
+      "segmentCount": "{count} subtitle segments",
+      "polished": "Polished by GPT",
+      "downloadSrt": "Download SRT",
+      "downloadVtt": "Download VTT",
+      "desc": "Use OpenAI Whisper to auto-recognize video speech, then GPT corrects and generates SRT/VTT subtitle files"
+    },
+    "postProduction": {
+      "title": "Post-Production Tools",
+      "fillers": "Filler Removal",
+      "chapters": "Chapter Markers",
+      "scriptSummary": "Script Summary",
+      "multiPlatform": "Multi-Platform Adaptation",
+      "fillersDesc": "Detect filler words like \"um, uh, you know\" in the video, select and trim in one click",
+      "detecting": "Detecting...",
+      "detectFillers": "Detect Fillers",
+      "fillerStats": "Detected {total} / Selected {selected} / Est. saving {savings}s",
+      "cutting": "Trimming...",
+      "cutBtn": "Export trimmed version (remove {count})",
+      "cutDone": "Trim complete",
+      "cutResult": "Original: {original}s → Trimmed: {result}s (saved {saved}s)",
+      "chaptersDesc": "AI analyzes video structure and auto-generates YouTube chapter timestamps",
+      "generateChapters": "Generate Chapters",
+      "copyYoutubeFormat": "Copy YouTube Format",
+      "scriptDesc": "AI analyzes transcript and generates a structured script outline",
+      "generateScript": "Generate Script Summary",
+      "copyMarkdown": "Copy Markdown",
+      "exportMd": "Export .md"
+    },
+    "multiPlatform": {
+      "igSquare": "IG Square",
+      "desc": "Select a clip and generate multi-platform versions in one click (with subtitles + AI captions)",
+      "selectClip": "Select Clip",
+      "selectClipPlaceholder": "Select a clip",
+      "targetPlatforms": "Target Platforms",
+      "generatingLong": "Generating (may take 1-2 minutes)...",
+      "generateBtn": "Generate {count} platform versions"
+    },
+    "repurpose": {
+      "title": "AI Repurpose Content",
+      "queuing": "Queuing...",
+      "generateBtn": "Generate Repurpose Content",
+      "desc": "AI will auto-generate 15 social posts, short video suggestions, and email notifications based on the video",
+      "processing": "AI is generating repurpose content...",
+      "processingDesc": "Analyzing video content and generating multi-platform social posts, short video suggestions, and email notifications, about 30-60 seconds",
+      "failed": "Repurpose content generation failed: ",
+      "unknownError": "Unknown error",
+      "itemCount": "{count} items",
+      "tabPosts": "Social Posts ({count})",
+      "tabShorts": "Short Suggestions ({count})",
+      "tabEmail": "Email ({count})",
+      "platform": "Platform",
+      "allPlatforms": "All Platforms",
+      "style": "Style",
+      "allStyles": "All Styles",
+      "styleKnowledge": "Knowledge",
+      "styleStory": "Story",
+      "styleInteractive": "Interactive",
+      "statusEdited": "Edited",
+      "statusScheduled": "Scheduled",
+      "regen": "Regen",
+      "selectedCount": "{count} selected",
+      "scheduling": "Scheduling...",
+      "createSchedule": "Create Schedule",
+      "noShortSuggestions": "Video too short for short suggestions",
+      "reason": "Reason: ",
+      "campaignCreated": "Campaign created",
+      "createCampaign": "Create Campaign",
+      "editPost": "Edit Post",
+      "resetOriginal": "Reset to Original"
+    },
+    "repurposeDialog": {
+      "title": "One-Click Content Repurpose",
+      "clip": "Clip: ",
+      "desc": "AI will generate customized posts for all platforms based on this clip",
+      "generateAll": "AI Generate All Platform Posts",
+      "generating": "AI is generating custom content for 5 platforms..."
+    },
+    "deleteDialog": {
+      "title": "Delete Video",
+      "description": "Are you sure you want to delete this video? This action cannot be undone and all related clips will also be deleted.",
+      "confirm": "Delete"
+    },
+    "scriptDialog": {
+      "title": "AI Video Script Generator",
+      "desc": "Enter a video topic and AI will generate a complete script outline including Hook, structure, CTA, filming tips, and SEO keywords.",
+      "topicLabel": "Video Topic *",
+      "topicPlaceholder": "e.g., How to boost productivity with AI tools",
+      "styleLabel": "Video Style",
+      "styleTutorial": "📚 Tutorial",
+      "styleVlog": "📹 Vlog",
+      "styleUnboxing": "📦 Unboxing Review",
+      "styleStory": "📖 Storytelling",
+      "styleRanking": "🏆 Ranking / Top N",
+      "styleChallenge": "🎯 Challenge",
+      "lengthLabel": "Target Length (minutes)",
+      "length1": "1 minute (short)",
+      "length5": "5 minutes",
+      "length10": "10 minutes",
+      "length15": "15 minutes",
+      "length20": "20 minutes",
+      "length30": "30 minutes (long-form)",
+      "audienceLabel": "Target Audience (optional)",
+      "audiencePlaceholder": "e.g., 18-35 year old tech enthusiasts",
+      "notesLabel": "Additional Notes (optional)",
+      "notesPlaceholder": "e.g., Include personal experiences, add humor",
+      "generating": "AI generating...",
+      "generateBtn": "Generate Script",
+      "resultBadge": "Topic: {topic} · {style} · {length} min"
+    },
+    "toast": {
+      "clipsGenerated": "AI clips generated",
+      "shortsGenerated": "{count} shorts generated",
+      "shortGenerated": "Short generated!",
+      "captionCopied": "Caption copied",
+      "copiedToClipboard": "Copied to clipboard",
+      "fillersDetected": "{count} fillers detected",
+      "cutComplete": "Trim complete! {original}s → {result}s",
+      "chaptersGenerated": "{count} chapters generated",
+      "chaptersUpdated": "Chapters updated",
+      "scriptGenerated": "{count} sections generated",
+      "markdownDownloaded": "Markdown file downloaded",
+      "multiPlatformDone": "Generation complete: {success} succeeded, {failed} failed",
+      "repurposeQueued": "Content generation queued",
+      "repurposeRequeued": "Regeneration queued",
+      "postsScheduled": "{count} posts scheduled",
+      "postsScheduleFailed": "{count} posts failed to schedule",
+      "saved": "Saved",
+      "regenerated": "Regenerated",
+      "campaignCreated": "Email Campaign created",
+      "resetToOriginal": "Reset to AI original version",
+      "enterTitle": "Please enter a video title",
+      "videoCreated": "Video created",
+      "uploadSuccess": "Video uploaded, AI auto-editing complete",
+      "uploadFailed": "Upload failed",
+      "videoDeleted": "Video deleted",
+      "subtitleGenerated": "Subtitles generated ({count} segments)",
+      "enterTopic": "Please enter a video topic",
+      "generateFailed": "Generation failed",
+      "scriptCopied": "Script copied"
+    }
+  },
+  "analytics": {
+    "pageTitle": "Analytics",
+    "pageDescription": "Track cross-platform performance and revenue",
+    "period": {
+      "last7Days": "Last 7 days",
+      "last30Days": "Last 30 days",
+      "last90Days": "Last 90 days",
+      "lastYear": "Last year"
+    },
+    "stats": {
+      "totalFollowers": "Total Followers",
+      "totalViews": "Total Views",
+      "totalEngagement": "Total Engagement",
+      "totalRevenue": "Total Revenue"
+    },
+    "aiInsights": {
+      "title": "AI Data Insights",
+      "analyzing": "Analyzing...",
+      "reanalyze": "Reanalyze",
+      "loadingMessage": "AI is analyzing your data...",
+      "analyzedAt": "Analyzed at: {time}",
+      "noData": "No data to analyze. Please connect a social account first."
+    },
+    "tabs": {
+      "platform": "Platform Analytics",
+      "revenue": "Revenue Analytics",
+      "content": "Top Content"
+    },
+    "platform": {
+      "overview": "Platform Overview",
+      "noData": "No platform data yet",
+      "crossComparison": "Cross-Platform Comparison"
+    },
+    "table": {
+      "platform": "Platform",
+      "followers": "Followers",
+      "views": "Views",
+      "engagement": "Engagement",
+      "account": "Account",
+      "engagementRate": "Engagement Rate",
+      "title": "Title"
+    },
+    "revenue": {
+      "subscription": "Subscription Revenue",
+      "membership": "Membership Revenue",
+      "affiliate": "Affiliate Revenue",
+      "trend": "Revenue Trend"
+    },
+    "content": {
+      "noData": "No content data yet",
+      "topContent": "Top Content"
+    }
+  },
+  "schedule": {
+    "pageTitle": "Schedule Management",
+    "pageDescription": "Create, schedule, and manage cross-platform social posts",
+    "addPost": "Add Post",
+    "noContent": "No content",
+    "status": {
+      "draft": "Draft",
+      "scheduled": "Scheduled",
+      "publishing": "Publishing",
+      "published": "Published",
+      "failed": "Failed",
+      "cancelled": "Cancelled"
+    },
+    "tabs": {
+      "all": "All",
+      "draft": "Drafts",
+      "scheduled": "Scheduled",
+      "published": "Published",
+      "failed": "Failed"
+    },
+    "empty": {
+      "title": "No posts yet",
+      "description": "Create your first social post"
+    },
+    "actions": {
+      "edit": "Edit",
+      "cancel": "Cancel",
+      "update": "Update",
+      "create": "Create",
+      "processing": "Processing..."
+    },
+    "dialog": {
+      "createTitle": "Add Post",
+      "editTitle": "Edit Post"
+    },
+    "form": {
+      "platform": "Platform",
+      "selectPlatform": "Select platform",
+      "videoOptional": "Video (optional)",
+      "selectVideo": "Select video",
+      "clip": "Clip",
+      "selectClip": "Select clip",
+      "selectVideoFirst": "Select a video first",
+      "content": "Content",
+      "aiGenerate": "AI Generate",
+      "aiGenerating": "Generating...",
+      "contentPlaceholder": "Post content",
+      "scheduledAtOptional": "Schedule time (optional)"
+    },
+    "deleteDialog": {
+      "title": "Delete Post",
+      "description": "Are you sure you want to delete this post? This action cannot be undone.",
+      "confirm": "Delete"
+    },
+    "toast": {
+      "selectPlatform": "Please select a platform",
+      "selectPlatformFirst": "Please select a platform first",
+      "postCreated": "Post created",
+      "postUpdated": "Post updated",
+      "postDeleted": "Post deleted",
+      "published": "Published",
+      "aiGenerated": "AI content generated"
+    }
+  },
+  "settings": {
+    "pageTitle": "Settings",
+    "pageDescription": "Manage your account, social connections, and API settings",
+    "tabs": {
+      "profile": "Profile",
+      "social": "Social Accounts",
+      "api": "API Settings"
+    },
+    "profile": {
+      "title": "Profile",
+      "description": "Manage your profile and account settings",
+      "emailLabel": "Email",
+      "displayNameLabel": "Display Name",
+      "updated": "Updated",
+      "updating": "Updating...",
+      "save": "Save"
+    },
+    "social": {
+      "title": "Social Accounts",
+      "description": "Connect your social platform accounts",
+      "followerCount": "{count} followers",
+      "disconnect": "Disconnect",
+      "availablePlatforms": "Available Platforms",
+      "disconnectTitle": "Disconnect",
+      "disconnectDescription": "Are you sure you want to disconnect this social account?",
+      "disconnected": "Disconnected"
+    },
+    "apiKeys": {
+      "description": "Manage API access keys",
+      "addKey": "Add Key",
+      "noKeys": "No API keys yet",
+      "active": "Active",
+      "revoked": "Revoked",
+      "createTitle": "Add API Key",
+      "nameLabel": "Name",
+      "create": "Create",
+      "keyCreated": "API key created",
+      "keyCreatedHint": "Copy this key now. It won't be shown again.",
+      "revokeTitle": "Revoke API Key",
+      "revokeDescription": "Are you sure you want to revoke this key? Applications using this key will lose API access.",
+      "revoke": "Revoke",
+      "keyRevoked": "Key revoked"
+    },
+    "rateLimit": {
+      "title": "API Rate Limits",
+      "plan": "Plan",
+      "type": "Type",
+      "custom": "Custom",
+      "default": "Default",
+      "requestsPerMinute": "Requests per minute",
+      "requestsPerDay": "Requests per day"
+    },
+    "oauth": {
+      "accountConnected": "{platform} account connected successfully",
+      "missingParams": "Incomplete OAuth parameters",
+      "invalidState": "OAuth verification failed, please try again",
+      "serverError": "Server error, please try again later",
+      "connectFailed": "Connection failed: {error}"
+    },
+    "common": {
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "copied": "Copied"
+    }
   }
 }

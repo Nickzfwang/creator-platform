@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Users, Eye, TrendingUp, DollarSign, Sparkles, RefreshCw } from "lucide-react";
 import {
   useOverview,
@@ -42,6 +43,7 @@ function formatNumber(num: number): string {
 }
 
 export default function AnalyticsPage() {
+  const t = useTranslations("analytics");
   const [period, setPeriod] = useState<Period>("30d");
 
   const { data: overview, isLoading: overviewLoading } = useOverview({ period });
@@ -71,18 +73,18 @@ export default function AnalyticsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="數據分析"
-        description="追蹤跨平台表現和收入"
+        title={t("pageTitle")}
+        description={t("pageDescription")}
         action={
           <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="7d">過去 7 天</SelectItem>
-              <SelectItem value="30d">過去 30 天</SelectItem>
-              <SelectItem value="90d">過去 90 天</SelectItem>
-              <SelectItem value="365d">過去一年</SelectItem>
+              <SelectItem value="7d">{t("period.last7Days")}</SelectItem>
+              <SelectItem value="30d">{t("period.last30Days")}</SelectItem>
+              <SelectItem value="90d">{t("period.last90Days")}</SelectItem>
+              <SelectItem value="365d">{t("period.lastYear")}</SelectItem>
             </SelectContent>
           </Select>
         }
@@ -94,24 +96,24 @@ export default function AnalyticsPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
-            label="總粉絲數"
+            label={t("stats.totalFollowers")}
             value={formatNumber(totalFollowers)}
             change={followerGrowth}
             icon={Users}
           />
           <StatCard
-            label="總觀看次數"
+            label={t("stats.totalViews")}
             value={formatNumber(totalViews)}
             change={viewsGrowth}
             icon={Eye}
           />
           <StatCard
-            label="總互動數"
+            label={t("stats.totalEngagement")}
             value={formatNumber(totalEngagement)}
             icon={TrendingUp}
           />
           <StatCard
-            label="總收入"
+            label={t("stats.totalRevenue")}
             value={`NT$${(revenue?.total ?? 0).toLocaleString()}`}
             icon={DollarSign}
           />
@@ -124,7 +126,7 @@ export default function AnalyticsPage() {
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base">
               <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-              AI 數據洞察
+              {t("aiInsights.title")}
             </CardTitle>
             <Button
               variant="ghost"
@@ -134,7 +136,7 @@ export default function AnalyticsPage() {
               className="text-purple-600 hover:text-purple-700 dark:text-purple-400"
             >
               <RefreshCw className={`mr-1 h-3 w-3 ${aiRefetching ? "animate-spin" : ""}`} />
-              {aiRefetching ? "分析中..." : "重新分析"}
+              {aiRefetching ? t("aiInsights.analyzing") : t("aiInsights.reanalyze")}
             </Button>
           </div>
         </CardHeader>
@@ -142,7 +144,7 @@ export default function AnalyticsPage() {
           {aiLoading || aiRefetching ? (
             <div className="flex items-center gap-3 py-4">
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-purple-600 border-t-transparent" />
-              <span className="text-sm text-muted-foreground">AI 正在分析您的數據...</span>
+              <span className="text-sm text-muted-foreground">{t("aiInsights.loadingMessage")}</span>
             </div>
           ) : aiInsights?.insights ? (
             <div className="prose prose-sm max-w-none text-sm leading-relaxed text-gray-700 dark:text-gray-300">
@@ -152,20 +154,20 @@ export default function AnalyticsPage() {
                 </p>
               ))}
               <p className="mt-3 text-xs text-muted-foreground">
-                分析時間：{new Date(aiInsights.generatedAt).toLocaleString("zh-TW")}
+                {t("aiInsights.analyzedAt", { time: new Date(aiInsights.generatedAt).toLocaleString("zh-TW") })}
               </p>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">暫無數據可分析，請先連結社群帳號。</p>
+            <p className="text-sm text-muted-foreground">{t("aiInsights.noData")}</p>
           )}
         </CardContent>
       </Card>
 
       <Tabs defaultValue="platform">
         <TabsList>
-          <TabsTrigger value="platform">平台分析</TabsTrigger>
-          <TabsTrigger value="revenue">收入分析</TabsTrigger>
-          <TabsTrigger value="content">熱門內容</TabsTrigger>
+          <TabsTrigger value="platform">{t("tabs.platform")}</TabsTrigger>
+          <TabsTrigger value="revenue">{t("tabs.revenue")}</TabsTrigger>
+          <TabsTrigger value="content">{t("tabs.content")}</TabsTrigger>
         </TabsList>
 
         {/* Platform Comparison Tab */}
@@ -175,19 +177,19 @@ export default function AnalyticsPage() {
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">平台概覽</CardTitle>
+                <CardTitle className="text-base">{t("platform.overview")}</CardTitle>
               </CardHeader>
               <CardContent>
                 {!platformBreakdown.length ? (
-                  <p className="text-sm text-muted-foreground">尚無平台數據</p>
+                  <p className="text-sm text-muted-foreground">{t("platform.noData")}</p>
                 ) : (
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>平台</TableHead>
-                        <TableHead className="text-right">粉絲</TableHead>
-                        <TableHead className="text-right">觀看</TableHead>
-                        <TableHead className="text-right">互動</TableHead>
+                        <TableHead>{t("table.platform")}</TableHead>
+                        <TableHead className="text-right">{t("table.followers")}</TableHead>
+                        <TableHead className="text-right">{t("table.views")}</TableHead>
+                        <TableHead className="text-right">{t("table.engagement")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -214,17 +216,17 @@ export default function AnalyticsPage() {
           ) : comparison?.length ? (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">跨平台比較</CardTitle>
+                <CardTitle className="text-base">{t("platform.crossComparison")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>帳號</TableHead>
-                      <TableHead>平台</TableHead>
-                      <TableHead className="text-right">粉絲</TableHead>
-                      <TableHead className="text-right">觀看</TableHead>
-                      <TableHead className="text-right">互動率</TableHead>
+                      <TableHead>{t("table.account")}</TableHead>
+                      <TableHead>{t("table.platform")}</TableHead>
+                      <TableHead className="text-right">{t("table.followers")}</TableHead>
+                      <TableHead className="text-right">{t("table.views")}</TableHead>
+                      <TableHead className="text-right">{t("table.engagementRate")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -252,15 +254,15 @@ export default function AnalyticsPage() {
             <>
               <div className="grid gap-4 md:grid-cols-3">
                 <StatCard
-                  label="訂閱收入"
+                  label={t("revenue.subscription")}
                   value={`NT$${(revenue?.subscription ?? 0).toLocaleString()}`}
                 />
                 <StatCard
-                  label="會員收入"
+                  label={t("revenue.membership")}
                   value={`NT$${(revenue?.membership ?? 0).toLocaleString()}`}
                 />
                 <StatCard
-                  label="聯盟行銷收入"
+                  label={t("revenue.affiliate")}
                   value={`NT$${(revenue?.affiliate ?? 0).toLocaleString()}`}
                 />
               </div>
@@ -268,7 +270,7 @@ export default function AnalyticsPage() {
               {revenue?.breakdown && revenue.breakdown.length > 0 && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">收入趨勢</CardTitle>
+                    <CardTitle className="text-base">{t("revenue.trend")}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
@@ -293,22 +295,22 @@ export default function AnalyticsPage() {
           ) : !topContent?.length ? (
             <Card>
               <CardContent className="p-6">
-                <p className="text-sm text-muted-foreground">尚無內容數據</p>
+                <p className="text-sm text-muted-foreground">{t("content.noData")}</p>
               </CardContent>
             </Card>
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">熱門內容</CardTitle>
+                <CardTitle className="text-base">{t("content.topContent")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>標題</TableHead>
-                      <TableHead>平台</TableHead>
-                      <TableHead className="text-right">觀看</TableHead>
-                      <TableHead className="text-right">互動</TableHead>
+                      <TableHead>{t("table.title")}</TableHead>
+                      <TableHead>{t("table.platform")}</TableHead>
+                      <TableHead className="text-right">{t("table.views")}</TableHead>
+                      <TableHead className="text-right">{t("table.engagement")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Plus, Trash2, Eye, EyeOff, Link as LinkIcon, Copy, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/lib/auth-store";
@@ -38,6 +39,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // ─── Profile Tab ───
 function ProfileTab() {
+  const t = useTranslations("settings");
   const user = useAuthStore((s) => s.user);
   const updateProfile = useUpdateProfile();
   const [displayName, setDisplayName] = useState(user?.displayName ?? "");
@@ -45,16 +47,16 @@ function ProfileTab() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">個人資料</CardTitle>
-        <CardDescription>管理您的個人資料和帳號設定</CardDescription>
+        <CardTitle className="text-base">{t("profile.title")}</CardTitle>
+        <CardDescription>{t("profile.description")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label>電子郵件</Label>
+          <Label>{t("profile.emailLabel")}</Label>
           <Input value={user?.email ?? ""} disabled />
         </div>
         <div className="space-y-2">
-          <Label>顯示名稱</Label>
+          <Label>{t("profile.displayNameLabel")}</Label>
           <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
         </div>
         <Button
@@ -62,14 +64,14 @@ function ProfileTab() {
             updateProfile.mutate(
               { displayName },
               {
-                onSuccess: () => toast.success("已更新"),
+                onSuccess: () => toast.success(t("profile.updated")),
                 onError: (e) => toast.error(e.message),
               },
             );
           }}
           disabled={updateProfile.isPending}
         >
-          {updateProfile.isPending ? "更新中..." : "儲存"}
+          {updateProfile.isPending ? t("profile.updating") : t("profile.save")}
         </Button>
       </CardContent>
     </Card>
@@ -78,6 +80,7 @@ function ProfileTab() {
 
 // ─── Social Accounts Tab ───
 function SocialTab() {
+  const t = useTranslations("settings");
   const { data: accounts, isLoading } = useSocialAccounts();
   const connectPlatform = useConnectPlatform();
   const disconnectAccount = useDisconnectAccount();
@@ -89,8 +92,8 @@ function SocialTab() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">社群帳號</CardTitle>
-        <CardDescription>連結您的社群平台帳號</CardDescription>
+        <CardTitle className="text-base">{t("social.title")}</CardTitle>
+        <CardDescription>{t("social.description")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Connected */}
@@ -103,7 +106,7 @@ function SocialTab() {
               </div>
               {account.followerCount !== null && (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {account.followerCount.toLocaleString()} 粉絲
+                  {t("social.followerCount", { count: account.followerCount.toLocaleString() })}
                 </p>
               )}
             </div>
@@ -112,14 +115,14 @@ function SocialTab() {
               size="sm"
               onClick={() => setDisconnectId(account.id)}
             >
-              取消連結
+              {t("social.disconnect")}
             </Button>
           </div>
         ))}
 
         {/* Available to connect */}
         <Separator />
-        <p className="text-sm text-muted-foreground">可連結的平台</p>
+        <p className="text-sm text-muted-foreground">{t("social.availablePlatforms")}</p>
         <div className="flex flex-wrap gap-2">
           {allPlatforms
             .filter((p) => !connectedPlatforms.includes(p))
@@ -140,15 +143,15 @@ function SocialTab() {
         <ConfirmDialog
           open={!!disconnectId}
           onOpenChange={() => setDisconnectId(null)}
-          title="取消連結"
-          description="確定要取消連結此社群帳號嗎？"
-          confirmLabel="取消連結"
+          title={t("social.disconnectTitle")}
+          description={t("social.disconnectDescription")}
+          confirmLabel={t("social.disconnect")}
           variant="destructive"
           loading={disconnectAccount.isPending}
           onConfirm={() => {
             if (disconnectId) {
               disconnectAccount.mutate(disconnectId, {
-                onSuccess: () => { toast.success("已取消連結"); setDisconnectId(null); },
+                onSuccess: () => { toast.success(t("social.disconnected")); setDisconnectId(null); },
                 onError: (e) => toast.error(e.message),
               });
             }
@@ -161,6 +164,7 @@ function SocialTab() {
 
 // ─── API Keys Tab ───
 function ApiKeysTab() {
+  const t = useTranslations("settings");
   const { data: keys, isLoading } = useApiKeys();
   const { data: rateLimits } = useRateLimits();
   const createKey = useCreateApiKey();
@@ -177,17 +181,17 @@ function ApiKeysTab() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-base">API Keys</CardTitle>
-              <CardDescription>管理 API 存取金鑰</CardDescription>
+              <CardDescription>{t("apiKeys.description")}</CardDescription>
             </div>
             <Button size="sm" onClick={() => setCreateOpen(true)}>
               <Plus className="mr-1 h-3 w-3" />
-              新增金鑰
+              {t("apiKeys.addKey")}
             </Button>
           </div>
         </CardHeader>
         <CardContent>
           {!keys?.length ? (
-            <p className="text-sm text-muted-foreground">尚無 API 金鑰</p>
+            <p className="text-sm text-muted-foreground">{t("apiKeys.noKeys")}</p>
           ) : (
             <div className="space-y-3">
               {keys.map((key) => (
@@ -200,7 +204,7 @@ function ApiKeysTab() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant={key.isActive ? "default" : "secondary"}>
-                      {key.isActive ? "啟用" : "已撤銷"}
+                      {key.isActive ? t("apiKeys.active") : t("apiKeys.revoked")}
                     </Badge>
                     {key.isActive && (
                       <Button variant="ghost" size="sm" onClick={() => setRevokeId(key.id)}>
@@ -218,24 +222,24 @@ function ApiKeysTab() {
       {rateLimits && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">API 速率限制</CardTitle>
+            <CardTitle className="text-base">{t("rateLimit.title")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-muted-foreground">方案</p>
+                <p className="text-muted-foreground">{t("rateLimit.plan")}</p>
                 <p className="font-medium">{rateLimits.plan}</p>
               </div>
               <div>
-                <p className="text-muted-foreground">類型</p>
-                <p className="font-medium">{rateLimits.isCustom ? "自訂" : "預設"}</p>
+                <p className="text-muted-foreground">{t("rateLimit.type")}</p>
+                <p className="font-medium">{rateLimits.isCustom ? t("rateLimit.custom") : t("rateLimit.default")}</p>
               </div>
               <div>
-                <p className="text-muted-foreground">每分鐘請求</p>
+                <p className="text-muted-foreground">{t("rateLimit.requestsPerMinute")}</p>
                 <p className="font-medium">{rateLimits.limits.requestsPerMinute}</p>
               </div>
               <div>
-                <p className="text-muted-foreground">每日請求</p>
+                <p className="text-muted-foreground">{t("rateLimit.requestsPerDay")}</p>
                 <p className="font-medium">{rateLimits.limits.requestsPerDay.toLocaleString()}</p>
               </div>
             </div>
@@ -246,13 +250,13 @@ function ApiKeysTab() {
       {/* Create API Key */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>新增 API 金鑰</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("apiKeys.createTitle")}</DialogTitle></DialogHeader>
           <div className="space-y-2">
-            <Label>名稱</Label>
+            <Label>{t("apiKeys.nameLabel")}</Label>
             <Input value={keyName} onChange={(e) => setKeyName(e.target.value)} placeholder="例：Production Key" />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>取消</Button>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>{t("common.cancel")}</Button>
             <Button
               onClick={() => {
                 createKey.mutate(
@@ -269,7 +273,7 @@ function ApiKeysTab() {
               }}
               disabled={createKey.isPending}
             >
-              建立
+              {t("apiKeys.create")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -279,11 +283,11 @@ function ApiKeysTab() {
       <Dialog open={!!newKey} onOpenChange={() => setNewKey(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>API 金鑰已建立</DialogTitle>
+            <DialogTitle>{t("apiKeys.keyCreated")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">
-              請立即複製此金鑰，它不會再次顯示。
+              {t("apiKeys.keyCreatedHint")}
             </p>
             <div className="flex items-center gap-2">
               <Input value={newKey ?? ""} readOnly className="font-mono text-xs" />
@@ -293,7 +297,7 @@ function ApiKeysTab() {
                 onClick={() => {
                   if (newKey) {
                     navigator.clipboard.writeText(newKey);
-                    toast.success("已複製");
+                    toast.success(t("common.copied"));
                   }
                 }}
               >
@@ -302,7 +306,7 @@ function ApiKeysTab() {
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={() => setNewKey(null)}>確定</Button>
+            <Button onClick={() => setNewKey(null)}>{t("common.confirm")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -311,15 +315,15 @@ function ApiKeysTab() {
       <ConfirmDialog
         open={!!revokeId}
         onOpenChange={() => setRevokeId(null)}
-        title="撤銷 API 金鑰"
-        description="確定要撤銷此金鑰嗎？使用此金鑰的應用程式將無法存取 API。"
-        confirmLabel="撤銷"
+        title={t("apiKeys.revokeTitle")}
+        description={t("apiKeys.revokeDescription")}
+        confirmLabel={t("apiKeys.revoke")}
         variant="destructive"
         loading={revokeKey.isPending}
         onConfirm={() => {
           if (revokeId) {
             revokeKey.mutate(revokeId, {
-              onSuccess: () => { toast.success("金鑰已撤銷"); setRevokeId(null); },
+              onSuccess: () => { toast.success(t("apiKeys.keyRevoked")); setRevokeId(null); },
               onError: (e) => toast.error(e.message),
             });
           }
@@ -331,34 +335,35 @@ function ApiKeysTab() {
 
 // ─── Main Page ───
 export default function SettingsPage() {
+  const t = useTranslations("settings");
   const searchParams = useSearchParams();
 
   useEffect(() => {
     const connected = searchParams.get("connected");
     const error = searchParams.get("error");
     if (connected) {
-      toast.success(`${connected} 帳號已成功連結`);
+      toast.success(t("oauth.accountConnected", { platform: connected }));
       window.history.replaceState({}, "", "/settings");
     } else if (error) {
       const messages: Record<string, string> = {
-        missing_params: "OAuth 參數不完整",
-        invalid_state: "OAuth 驗證失敗，請重試",
-        server_error: "伺服器錯誤，請稍後重試",
+        missing_params: t("oauth.missingParams"),
+        invalid_state: t("oauth.invalidState"),
+        server_error: t("oauth.serverError"),
       };
-      toast.error(messages[error] ?? `連結失敗：${error}`);
+      toast.error(messages[error] ?? t("oauth.connectFailed", { error }));
       window.history.replaceState({}, "", "/settings");
     }
-  }, [searchParams]);
+  }, [searchParams, t]);
 
   return (
     <div className="space-y-6">
-      <PageHeader title="設定" description="管理您的帳號、社群連結和 API 設定" />
+      <PageHeader title={t("pageTitle")} description={t("pageDescription")} />
 
       <Tabs defaultValue={searchParams.get("connected") || searchParams.get("error") ? "social" : "profile"}>
         <TabsList>
-          <TabsTrigger value="profile">個人資料</TabsTrigger>
-          <TabsTrigger value="social">社群帳號</TabsTrigger>
-          <TabsTrigger value="api">API 設定</TabsTrigger>
+          <TabsTrigger value="profile">{t("tabs.profile")}</TabsTrigger>
+          <TabsTrigger value="social">{t("tabs.social")}</TabsTrigger>
+          <TabsTrigger value="api">{t("tabs.api")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="mt-4">

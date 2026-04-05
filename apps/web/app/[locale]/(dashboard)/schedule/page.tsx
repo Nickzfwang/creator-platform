@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Plus, Trash2, Calendar, Send, Sparkles, Clock } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -38,15 +39,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Post } from "@/lib/types";
 
-const statusLabels: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  DRAFT: { label: "草稿", variant: "outline" },
-  SCHEDULED: { label: "已排程", variant: "default" },
-  PUBLISHING: { label: "發布中", variant: "secondary" },
-  PUBLISHED: { label: "已發布", variant: "secondary" },
-  FAILED: { label: "失敗", variant: "destructive" },
-  CANCELLED: { label: "已取消", variant: "outline" },
-};
-
 const platformOptions = [
   { value: "YOUTUBE", label: "YouTube" },
   { value: "INSTAGRAM", label: "Instagram" },
@@ -57,6 +49,17 @@ const platformOptions = [
 ];
 
 export default function SchedulePage() {
+  const t = useTranslations("schedule");
+
+  const statusLabels: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+    DRAFT: { label: t("status.draft"), variant: "outline" },
+    SCHEDULED: { label: t("status.scheduled"), variant: "default" },
+    PUBLISHING: { label: t("status.publishing"), variant: "secondary" },
+    PUBLISHED: { label: t("status.published"), variant: "secondary" },
+    FAILED: { label: t("status.failed"), variant: "destructive" },
+    CANCELLED: { label: t("status.cancelled"), variant: "outline" },
+  };
+
   const [tab, setTab] = useState("all");
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -93,7 +96,7 @@ export default function SchedulePage() {
 
   const handleCreate = () => {
     if (!platform) {
-      toast.error("請選擇平台");
+      toast.error(t("toast.selectPlatform"));
       return;
     }
     createPost.mutate(
@@ -105,7 +108,7 @@ export default function SchedulePage() {
       },
       {
         onSuccess: () => {
-          toast.success("貼文已建立");
+          toast.success(t("toast.postCreated"));
           setCreateOpen(false);
           resetForm();
         },
@@ -116,7 +119,7 @@ export default function SchedulePage() {
 
   const handleAiGenerate = () => {
     if (!platform) {
-      toast.error("請先選擇平台");
+      toast.error(t("toast.selectPlatformFirst"));
       return;
     }
     aiGenerate.mutate(
@@ -124,7 +127,7 @@ export default function SchedulePage() {
       {
         onSuccess: (result) => {
           setContentText(result.content);
-          toast.success("AI 內容已生成");
+          toast.success(t("toast.aiGenerated"));
         },
         onError: (e) => toast.error(e.message),
       },
@@ -150,7 +153,7 @@ export default function SchedulePage() {
       },
       {
         onSuccess: () => {
-          toast.success("貼文已更新");
+          toast.success(t("toast.postUpdated"));
           setEditPost(null);
           resetForm();
         },
@@ -162,23 +165,23 @@ export default function SchedulePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="排程管理"
-        description="建立、排程並管理跨平台社群貼文"
+        title={t("pageTitle")}
+        description={t("pageDescription")}
         action={
           <Button onClick={() => { resetForm(); setCreateOpen(true); }}>
             <Plus className="mr-2 h-4 w-4" />
-            新增貼文
+            {t("addPost")}
           </Button>
         }
       />
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
-          <TabsTrigger value="all">全部</TabsTrigger>
-          <TabsTrigger value="draft">草稿</TabsTrigger>
-          <TabsTrigger value="scheduled">已排程</TabsTrigger>
-          <TabsTrigger value="published">已發布</TabsTrigger>
-          <TabsTrigger value="failed">失敗</TabsTrigger>
+          <TabsTrigger value="all">{t("tabs.all")}</TabsTrigger>
+          <TabsTrigger value="draft">{t("tabs.draft")}</TabsTrigger>
+          <TabsTrigger value="scheduled">{t("tabs.scheduled")}</TabsTrigger>
+          <TabsTrigger value="published">{t("tabs.published")}</TabsTrigger>
+          <TabsTrigger value="failed">{t("tabs.failed")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value={tab} className="mt-4">
@@ -187,9 +190,9 @@ export default function SchedulePage() {
           ) : !posts.length ? (
             <EmptyState
               icon={Calendar}
-              title="尚無貼文"
-              description="建立您的第一篇社群貼文"
-              actionLabel="新增貼文"
+              title={t("empty.title")}
+              description={t("empty.description")}
+              actionLabel={t("addPost")}
               onAction={() => { resetForm(); setCreateOpen(true); }}
             />
           ) : (
@@ -206,7 +209,7 @@ export default function SchedulePage() {
                     <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex items-center gap-2">
                         <p className="truncate text-sm font-medium">
-                          {post.contentText?.slice(0, 60) || "無內容"}
+                          {post.contentText?.slice(0, 60) || t("noContent")}
                         </p>
                         <Badge variant={status.variant}>{status.label}</Badge>
                         <Badge variant="outline">{platformLabel}</Badge>
@@ -225,14 +228,14 @@ export default function SchedulePage() {
                       {canEdit && (
                         <>
                           <Button variant="ghost" size="sm" onClick={() => openEdit(post)}>
-                            編輯
+                            {t("actions.edit")}
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => {
                               publishNow.mutate(post.id, {
-                                onSuccess: () => toast.success("已發布"),
+                                onSuccess: () => toast.success(t("toast.published")),
                                 onError: (e) => toast.error(e.message),
                               });
                             }}
@@ -268,14 +271,14 @@ export default function SchedulePage() {
       >
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editPost ? "編輯貼文" : "新增貼文"}</DialogTitle>
+            <DialogTitle>{editPost ? t("dialog.editTitle") : t("dialog.createTitle")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>平台</Label>
+              <Label>{t("form.platform")}</Label>
               <Select value={platform} onValueChange={setPlatform} disabled={!!editPost}>
                 <SelectTrigger>
-                  <SelectValue placeholder="選擇平台" />
+                  <SelectValue placeholder={t("form.selectPlatform")} />
                 </SelectTrigger>
                 <SelectContent>
                   {platformOptions.map((p) => (
@@ -290,13 +293,13 @@ export default function SchedulePage() {
             {!editPost && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>影片（選填）</Label>
+                  <Label>{t("form.videoOptional")}</Label>
                   <Select
                     value={selectedVideoId}
                     onValueChange={(v) => { setSelectedVideoId(v); setSelectedClipId(""); }}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="選擇影片" />
+                      <SelectValue placeholder={t("form.selectVideo")} />
                     </SelectTrigger>
                     <SelectContent>
                       {videosData?.data?.map((v) => (
@@ -308,14 +311,14 @@ export default function SchedulePage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>片段 Clip</Label>
+                  <Label>{t("form.clip")}</Label>
                   <Select
                     value={selectedClipId}
                     onValueChange={setSelectedClipId}
                     disabled={!selectedVideoId}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={selectedVideoId ? "選擇片段" : "先選影片"} />
+                      <SelectValue placeholder={selectedVideoId ? t("form.selectClip") : t("form.selectVideoFirst")} />
                     </SelectTrigger>
                     <SelectContent>
                       {clipsData?.map((c) => (
@@ -331,7 +334,7 @@ export default function SchedulePage() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>內容</Label>
+                <Label>{t("form.content")}</Label>
                 <Button
                   type="button"
                   variant="ghost"
@@ -340,18 +343,18 @@ export default function SchedulePage() {
                   disabled={aiGenerate.isPending}
                 >
                   <Sparkles className="mr-1 h-3 w-3" />
-                  {aiGenerate.isPending ? "生成中..." : "AI 生成"}
+                  {aiGenerate.isPending ? t("form.aiGenerating") : t("form.aiGenerate")}
                 </Button>
               </div>
               <Textarea
                 value={contentText}
                 onChange={(e) => setContentText(e.target.value)}
-                placeholder="貼文內容"
+                placeholder={t("form.contentPlaceholder")}
                 rows={5}
               />
             </div>
             <div className="space-y-2">
-              <Label>排程時間（選填）</Label>
+              <Label>{t("form.scheduledAtOptional")}</Label>
               <Input
                 type="datetime-local"
                 value={scheduledAt}
@@ -368,13 +371,13 @@ export default function SchedulePage() {
                 resetForm();
               }}
             >
-              取消
+              {t("actions.cancel")}
             </Button>
             <Button
               onClick={editPost ? handleUpdate : handleCreate}
               disabled={createPost.isPending || updatePost.isPending}
             >
-              {(createPost.isPending || updatePost.isPending) ? "處理中..." : editPost ? "更新" : "建立"}
+              {(createPost.isPending || updatePost.isPending) ? t("actions.processing") : editPost ? t("actions.update") : t("actions.create")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -384,16 +387,16 @@ export default function SchedulePage() {
       <ConfirmDialog
         open={!!deleteId}
         onOpenChange={() => setDeleteId(null)}
-        title="刪除貼文"
-        description="確定要刪除此貼文嗎？此操作無法復原。"
-        confirmLabel="刪除"
+        title={t("deleteDialog.title")}
+        description={t("deleteDialog.description")}
+        confirmLabel={t("deleteDialog.confirm")}
         variant="destructive"
         loading={deletePost.isPending}
         onConfirm={() => {
           if (deleteId) {
             deletePost.mutate(deleteId, {
               onSuccess: () => {
-                toast.success("貼文已刪除");
+                toast.success(t("toast.postDeleted"));
                 setDeleteId(null);
               },
               onError: (e) => toast.error(e.message),

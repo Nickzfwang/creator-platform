@@ -72,5 +72,385 @@
   },
   "metadata": {
     "description": "AI 驅動的創作者變現工具平台"
+  },
+  "videos": {
+    "common": {
+      "loading": "載入中...",
+      "generating": "生成中...",
+      "cancel": "取消",
+      "save": "儲存",
+      "edit": "編輯",
+      "copy": "複製",
+      "copied": "已複製",
+      "regenerate": "重新生成",
+      "selectAll": "全選",
+      "deselectAll": "取消全選"
+    },
+    "status": {
+      "uploading": "上傳中",
+      "uploaded": "已上傳",
+      "processing": "AI 處理中",
+      "processed": "已完成",
+      "failed": "失敗"
+    },
+    "page": {
+      "title": "影片管理",
+      "description": "上傳影片並使用 AI 自動剪輯精華片段",
+      "aiScript": "AI 腳本",
+      "uploading": "上傳中...",
+      "uploadVideo": "上傳影片",
+      "uploadingOverlay": "影片上傳中...",
+      "uploadingOverlayDesc": "AI 正在分析並自動生成精華片段",
+      "emptyTitle": "尚無影片",
+      "emptyDescription": "上傳您的第一支影片，AI 將自動為您剪輯精彩片段",
+      "clipCount": "{count} 片段"
+    },
+    "detail": {
+      "videoNotSupported": "您的瀏覽器不支援影片播放",
+      "status": "狀態",
+      "duration": "時長",
+      "createdAt": "建立時間",
+      "aiSummary": "AI 摘要"
+    },
+    "clips": {
+      "title": "AI 剪輯片段",
+      "generating": "生成中...",
+      "generateBtn": "AI 生成片段",
+      "generateAllShorts": "一鍵生成 Shorts",
+      "empty": "尚無剪輯片段",
+      "emptyHint": "點擊「AI 生成片段」讓 AI 自動識別精華",
+      "statusReady": "就緒",
+      "generateShortTitle": "生成直式短影片",
+      "shortGenerated": "短影片已生成",
+      "downloadShort": "下載短影片",
+      "copyCopy": "複製文案"
+    },
+    "subtitle": {
+      "title": "AI 字幕生成",
+      "transcribing": "Whisper 轉錄中...",
+      "generateBtn": "生成字幕",
+      "transcribingDesc": "Whisper 正在辨識語音 → GPT 校正斷句中，約需 30-60 秒...",
+      "segmentCount": "{count} 段字幕",
+      "polished": "已由 GPT 校正潤飾",
+      "downloadSrt": "下載 SRT",
+      "downloadVtt": "下載 VTT",
+      "desc": "使用 OpenAI Whisper 自動辨識影片語音，GPT 校正後生成 SRT/VTT 字幕檔"
+    },
+    "postProduction": {
+      "title": "後製工具",
+      "fillers": "去語助詞",
+      "chapters": "章節標記",
+      "scriptSummary": "腳本摘要",
+      "multiPlatform": "多平台適配",
+      "fillersDesc": "偵測影片中的「嗯、啊、那個」等語助詞，勾選後一鍵裁切",
+      "detecting": "偵測中...",
+      "detectFillers": "偵測語助詞",
+      "fillerStats": "偵測 {total} 個 / 已選 {selected} 個 / 預估省 {savings}s",
+      "cutting": "裁切中...",
+      "cutBtn": "產出裁切版（移除 {count} 個）",
+      "cutDone": "裁切完成",
+      "cutResult": "原始：{original}s → 裁切後：{result}s（省 {saved}s）",
+      "chaptersDesc": "AI 分析影片結構，自動產出 YouTube 章節時間戳",
+      "generateChapters": "生成章節",
+      "copyYoutubeFormat": "複製 YouTube 格式",
+      "scriptDesc": "AI 分析轉錄稿，產出結構化腳本大綱",
+      "generateScript": "生成腳本摘要",
+      "copyMarkdown": "複製 Markdown",
+      "exportMd": "匯出 .md"
+    },
+    "multiPlatform": {
+      "igSquare": "IG 正方形",
+      "desc": "選擇片段，一鍵產出多平台版本（含字幕 + AI 文案）",
+      "selectClip": "選擇片段",
+      "selectClipPlaceholder": "選擇一個剪輯片段",
+      "targetPlatforms": "目標平台",
+      "generatingLong": "生成中（可能需要 1-2 分鐘）...",
+      "generateBtn": "生成 {count} 個平台版本"
+    },
+    "repurpose": {
+      "title": "AI 推廣內容",
+      "queuing": "排入中...",
+      "generateBtn": "生成推廣內容",
+      "desc": "AI 將根據影片內容自動生成 15 則社群貼文、短影片建議和 Email 通知",
+      "processing": "AI 正在生成推廣內容...",
+      "processingDesc": "正在分析影片內容並生成多平台社群貼文、短影片建議和 Email 通知，約需 30-60 秒",
+      "failed": "推廣內容生成失敗：",
+      "unknownError": "未知錯誤",
+      "itemCount": "{count} 則",
+      "tabPosts": "社群貼文 ({count})",
+      "tabShorts": "短影片建議 ({count})",
+      "tabEmail": "Email ({count})",
+      "platform": "平台",
+      "allPlatforms": "所有平台",
+      "style": "風格",
+      "allStyles": "所有風格",
+      "styleKnowledge": "知識型",
+      "styleStory": "故事型",
+      "styleInteractive": "互動型",
+      "statusEdited": "已編輯",
+      "statusScheduled": "已排程",
+      "regen": "重生",
+      "selectedCount": "已選 {count} 則",
+      "scheduling": "排程中...",
+      "createSchedule": "建立排程",
+      "noShortSuggestions": "影片時長不足，無短影片建議",
+      "reason": "推薦原因：",
+      "campaignCreated": "已建立 Campaign",
+      "createCampaign": "建立 Campaign",
+      "editPost": "編輯貼文",
+      "resetOriginal": "還原原始"
+    },
+    "repurposeDialog": {
+      "title": "一鍵內容再製",
+      "clip": "片段：",
+      "desc": "AI 將根據此片段為所有平台生成客製化貼文",
+      "generateAll": "AI 生成所有平台貼文",
+      "generating": "AI 正在為 5 個平台生成客製內容..."
+    },
+    "deleteDialog": {
+      "title": "刪除影片",
+      "description": "確定要刪除此影片嗎？此操作無法復原，所有相關片段也會一併刪除。",
+      "confirm": "刪除"
+    },
+    "scriptDialog": {
+      "title": "AI 影片腳本生成",
+      "desc": "輸入影片主題，AI 將生成完整的腳本大綱，包含 Hook、段落結構、CTA、拍攝建議和 SEO 關鍵字。",
+      "topicLabel": "影片主題 *",
+      "topicPlaceholder": "例：如何用 AI 工具提升工作效率",
+      "styleLabel": "影片風格",
+      "styleTutorial": "📚 教學型",
+      "styleVlog": "📹 Vlog",
+      "styleUnboxing": "📦 開箱評測",
+      "styleStory": "📖 故事敘事",
+      "styleRanking": "🏆 排行榜 / Top N",
+      "styleChallenge": "🎯 挑戰型",
+      "lengthLabel": "目標時長（分鐘）",
+      "length1": "1 分鐘（短影音）",
+      "length5": "5 分鐘",
+      "length10": "10 分鐘",
+      "length15": "15 分鐘",
+      "length20": "20 分鐘",
+      "length30": "30 分鐘（長片）",
+      "audienceLabel": "目標觀眾（選填）",
+      "audiencePlaceholder": "例：18-35 歲科技愛好者",
+      "notesLabel": "補充說明（選填）",
+      "notesPlaceholder": "例：想要加入個人經驗分享、要有幽默感",
+      "generating": "AI 生成中...",
+      "generateBtn": "生成腳本",
+      "resultBadge": "主題：{topic} · {style} · {length}分鐘"
+    },
+    "toast": {
+      "clipsGenerated": "AI 剪輯片段已生成",
+      "shortsGenerated": "已生成 {count} 支短影片",
+      "shortGenerated": "短影片已生成！",
+      "captionCopied": "文案已複製",
+      "copiedToClipboard": "已複製到剪貼簿",
+      "fillersDetected": "偵測到 {count} 個語助詞",
+      "cutComplete": "裁切完成！{original}s → {result}s",
+      "chaptersGenerated": "生成 {count} 個章節",
+      "chaptersUpdated": "章節已更新",
+      "scriptGenerated": "生成 {count} 個段落",
+      "markdownDownloaded": "已下載 Markdown 檔案",
+      "multiPlatformDone": "生成完成：{success} 成功，{failed} 失敗",
+      "repurposeQueued": "內容生成已排入佇列",
+      "repurposeRequeued": "重新生成已排入佇列",
+      "postsScheduled": "已排程 {count} 則貼文",
+      "postsScheduleFailed": "{count} 則排程失敗",
+      "saved": "已儲存",
+      "regenerated": "已重新生成",
+      "campaignCreated": "Email Campaign 已建立",
+      "resetToOriginal": "已還原為 AI 原始版本",
+      "enterTitle": "請輸入影片標題",
+      "videoCreated": "影片已建立",
+      "uploadSuccess": "影片上傳成功，AI 已自動剪輯",
+      "uploadFailed": "上傳失敗",
+      "videoDeleted": "影片已刪除",
+      "subtitleGenerated": "字幕已生成（{count} 段）",
+      "enterTopic": "請輸入影片主題",
+      "generateFailed": "生成失敗",
+      "scriptCopied": "腳本已複製"
+    }
+  },
+  "analytics": {
+    "pageTitle": "數據分析",
+    "pageDescription": "追蹤跨平台表現和收入",
+    "period": {
+      "last7Days": "過去 7 天",
+      "last30Days": "過去 30 天",
+      "last90Days": "過去 90 天",
+      "lastYear": "過去一年"
+    },
+    "stats": {
+      "totalFollowers": "總粉絲數",
+      "totalViews": "總觀看次數",
+      "totalEngagement": "總互動數",
+      "totalRevenue": "總收入"
+    },
+    "aiInsights": {
+      "title": "AI 數據洞察",
+      "analyzing": "分析中...",
+      "reanalyze": "重新分析",
+      "loadingMessage": "AI 正在分析您的數據...",
+      "analyzedAt": "分析時間：{time}",
+      "noData": "暫無數據可分析，請先連結社群帳號。"
+    },
+    "tabs": {
+      "platform": "平台分析",
+      "revenue": "收入分析",
+      "content": "熱門內容"
+    },
+    "platform": {
+      "overview": "平台概覽",
+      "noData": "尚無平台數據",
+      "crossComparison": "跨平台比較"
+    },
+    "table": {
+      "platform": "平台",
+      "followers": "粉絲",
+      "views": "觀看",
+      "engagement": "互動",
+      "account": "帳號",
+      "engagementRate": "互動率",
+      "title": "標題"
+    },
+    "revenue": {
+      "subscription": "訂閱收入",
+      "membership": "會員收入",
+      "affiliate": "聯盟行銷收入",
+      "trend": "收入趨勢"
+    },
+    "content": {
+      "noData": "尚無內容數據",
+      "topContent": "熱門內容"
+    }
+  },
+  "schedule": {
+    "pageTitle": "排程管理",
+    "pageDescription": "建立、排程並管理跨平台社群貼文",
+    "addPost": "新增貼文",
+    "noContent": "無內容",
+    "status": {
+      "draft": "草稿",
+      "scheduled": "已排程",
+      "publishing": "發布中",
+      "published": "已發布",
+      "failed": "失敗",
+      "cancelled": "已取消"
+    },
+    "tabs": {
+      "all": "全部",
+      "draft": "草稿",
+      "scheduled": "已排程",
+      "published": "已發布",
+      "failed": "失敗"
+    },
+    "empty": {
+      "title": "尚無貼文",
+      "description": "建立您的第一篇社群貼文"
+    },
+    "actions": {
+      "edit": "編輯",
+      "cancel": "取消",
+      "update": "更新",
+      "create": "建立",
+      "processing": "處理中..."
+    },
+    "dialog": {
+      "createTitle": "新增貼文",
+      "editTitle": "編輯貼文"
+    },
+    "form": {
+      "platform": "平台",
+      "selectPlatform": "選擇平台",
+      "videoOptional": "影片（選填）",
+      "selectVideo": "選擇影片",
+      "clip": "片段 Clip",
+      "selectClip": "選擇片段",
+      "selectVideoFirst": "先選影片",
+      "content": "內容",
+      "aiGenerate": "AI 生成",
+      "aiGenerating": "生成中...",
+      "contentPlaceholder": "貼文內容",
+      "scheduledAtOptional": "排程時間（選填）"
+    },
+    "deleteDialog": {
+      "title": "刪除貼文",
+      "description": "確定要刪除此貼文嗎？此操作無法復原。",
+      "confirm": "刪除"
+    },
+    "toast": {
+      "selectPlatform": "請選擇平台",
+      "selectPlatformFirst": "請先選擇平台",
+      "postCreated": "貼文已建立",
+      "postUpdated": "貼文已更新",
+      "postDeleted": "貼文已刪除",
+      "published": "已發布",
+      "aiGenerated": "AI 內容已生成"
+    }
+  },
+  "settings": {
+    "pageTitle": "設定",
+    "pageDescription": "管理您的帳號、社群連結和 API 設定",
+    "tabs": {
+      "profile": "個人資料",
+      "social": "社群帳號",
+      "api": "API 設定"
+    },
+    "profile": {
+      "title": "個人資料",
+      "description": "管理您的個人資料和帳號設定",
+      "emailLabel": "電子郵件",
+      "displayNameLabel": "顯示名稱",
+      "updated": "已更新",
+      "updating": "更新中...",
+      "save": "儲存"
+    },
+    "social": {
+      "title": "社群帳號",
+      "description": "連結您的社群平台帳號",
+      "followerCount": "{count} 粉絲",
+      "disconnect": "取消連結",
+      "availablePlatforms": "可連結的平台",
+      "disconnectTitle": "取消連結",
+      "disconnectDescription": "確定要取消連結此社群帳號嗎？",
+      "disconnected": "已取消連結"
+    },
+    "apiKeys": {
+      "description": "管理 API 存取金鑰",
+      "addKey": "新增金鑰",
+      "noKeys": "尚無 API 金鑰",
+      "active": "啟用",
+      "revoked": "已撤銷",
+      "createTitle": "新增 API 金鑰",
+      "nameLabel": "名稱",
+      "create": "建立",
+      "keyCreated": "API 金鑰已建立",
+      "keyCreatedHint": "請立即複製此金鑰，它不會再次顯示。",
+      "revokeTitle": "撤銷 API 金鑰",
+      "revokeDescription": "確定要撤銷此金鑰嗎？使用此金鑰的應用程式將無法存取 API。",
+      "revoke": "撤銷",
+      "keyRevoked": "金鑰已撤銷"
+    },
+    "rateLimit": {
+      "title": "API 速率限制",
+      "plan": "方案",
+      "type": "類型",
+      "custom": "自訂",
+      "default": "預設",
+      "requestsPerMinute": "每分鐘請求",
+      "requestsPerDay": "每日請求"
+    },
+    "oauth": {
+      "accountConnected": "{platform} 帳號已成功連結",
+      "missingParams": "OAuth 參數不完整",
+      "invalidState": "OAuth 驗證失敗，請重試",
+      "serverError": "伺服器錯誤，請稍後重試",
+      "connectFailed": "連結失敗：{error}"
+    },
+    "common": {
+      "cancel": "取消",
+      "confirm": "確定",
+      "copied": "已複製"
+    }
   }
 }

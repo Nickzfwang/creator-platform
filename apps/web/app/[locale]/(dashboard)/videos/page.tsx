@@ -4,6 +4,7 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || '';
 const assetUrl = (path: string) => path?.startsWith('http') ? path : `${BACKEND_URL}${path}`;
 
 import { useState, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { Plus, Upload, Trash2, Film, Scissors, Clock, Sparkles, Play, Share2, Loader2, Copy, Check, FileText, Smartphone, Download, Captions, Megaphone, RefreshCw, Mail, Video as VideoIcon, Wrench, ListChecks, BookOpen, Clipboard } from "lucide-react";
 import { toast } from "sonner";
 import { useVideos, useCreateVideo, useDeleteVideo, useDirectUpload, useVideoClips, useGenerateClips, useGenerateShort, useGenerateAllShorts, useGenerateSubtitles } from "@/hooks/use-videos";
@@ -69,14 +70,6 @@ function resolveVideoUrl(url: string | null | undefined): string | null {
   return `${API_HOST}${url}`;
 }
 
-const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  UPLOADING: { label: "上傳中", variant: "outline" },
-  UPLOADED: { label: "已上傳", variant: "secondary" },
-  PROCESSING: { label: "AI 處理中", variant: "default" },
-  PROCESSED: { label: "已完成", variant: "secondary" },
-  FAILED: { label: "失敗", variant: "destructive" },
-};
-
 function fmt(seconds: number | null | undefined): string {
   if (!seconds) return "-";
   const m = Math.floor(seconds / 60);
@@ -85,19 +78,20 @@ function fmt(seconds: number | null | undefined): string {
 }
 
 function VideoClipsPanel({ videoId, onRepurpose }: { videoId: string; onRepurpose?: (clipId: string, clipTitle: string) => void }) {
+  const t = useTranslations("videos");
   const { data: clips, isLoading } = useVideoClips(videoId);
   const generateClips = useGenerateClips();
   const generateShort = useGenerateShort();
   const generateAllShorts = useGenerateAllShorts();
   const [shortResult, setShortResult] = useState<{ title: string; outputUrl: string; suggestedCaption: string; hashtags: string[] } | null>(null);
 
-  if (isLoading) return <div className="p-4 text-sm text-muted-foreground">載入中...</div>;
+  if (isLoading) return <div className="p-4 text-sm text-muted-foreground">{t("common.loading")}</div>;
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h4 className="flex items-center gap-2 text-sm font-medium">
-          <Scissors className="h-4 w-4" /> AI 剪輯片段
+          <Scissors className="h-4 w-4" /> {t("clips.title")}
         </h4>
         <Button
           size="sm"
@@ -106,7 +100,7 @@ function VideoClipsPanel({ videoId, onRepurpose }: { videoId: string; onRepurpos
             generateClips.mutate(
               { videoId },
               {
-                onSuccess: () => toast.success("AI 剪輯片段已生成"),
+                onSuccess: () => toast.success(t("toast.clipsGenerated")),
                 onError: (e) => toast.error(e.message),
               },
             );
@@ -114,7 +108,7 @@ function VideoClipsPanel({ videoId, onRepurpose }: { videoId: string; onRepurpos
           disabled={generateClips.isPending}
         >
           <Sparkles className="mr-1 h-3 w-3" />
-          {generateClips.isPending ? "生成中..." : "AI 生成片段"}
+          {generateClips.isPending ? t("clips.generating") : t("clips.generateBtn")}
         </Button>
         {clips && clips.length > 0 && (
           <Button
@@ -125,7 +119,7 @@ function VideoClipsPanel({ videoId, onRepurpose }: { videoId: string; onRepurpos
                 { videoId, data: { format: "9:16", addSubtitles: true } },
                 {
                   onSuccess: (res) => {
-                    toast.success(`已生成 ${res.length} 支短影片`);
+                    toast.success(t("toast.shortsGenerated", { count: res.length }));
                     if (res.length > 0) setShortResult(res[0]);
                   },
                   onError: (e) => toast.error(e.message),
@@ -135,15 +129,15 @@ function VideoClipsPanel({ videoId, onRepurpose }: { videoId: string; onRepurpos
             disabled={generateAllShorts.isPending}
           >
             <Smartphone className="mr-1 h-3 w-3" />
-            {generateAllShorts.isPending ? "生成中..." : "一鍵生成 Shorts"}
+            {generateAllShorts.isPending ? t("clips.generating") : t("clips.generateAllShorts")}
           </Button>
         )}
       </div>
       {!clips?.length ? (
         <div className="rounded-lg border border-dashed p-6 text-center">
           <Scissors className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">尚無剪輯片段</p>
-          <p className="text-xs text-muted-foreground">點擊「AI 生成片段」讓 AI 自動識別精華</p>
+          <p className="text-sm text-muted-foreground">{t("clips.empty")}</p>
+          <p className="text-xs text-muted-foreground">{t("clips.emptyHint")}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -168,7 +162,7 @@ function VideoClipsPanel({ videoId, onRepurpose }: { videoId: string; onRepurpos
                   </Badge>
                 )}
                 <Badge variant={clip.status === "READY" ? "secondary" : "outline"}>
-                  {clip.status === "READY" ? "就緒" : clip.status}
+                  {clip.status === "READY" ? t("clips.statusReady") : clip.status}
                 </Badge>
                 <Button
                   size="sm"
@@ -181,13 +175,13 @@ function VideoClipsPanel({ videoId, onRepurpose }: { videoId: string; onRepurpos
                       {
                         onSuccess: (res) => {
                           setShortResult(res);
-                          toast.success("短影片已生成！");
+                          toast.success(t("toast.shortGenerated"));
                         },
                         onError: (e) => toast.error(e.message),
                       },
                     );
                   }}
-                  title="生成直式短影片"
+                  title={t("clips.generateShortTitle")}
                 >
                   {generateShort.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Smartphone className="h-3 w-3" />}
                 </Button>
@@ -212,7 +206,7 @@ function VideoClipsPanel({ videoId, onRepurpose }: { videoId: string; onRepurpos
         <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-900 dark:bg-green-950/20">
           <div className="flex items-center gap-2 mb-3">
             <Smartphone className="h-4 w-4 text-green-700" />
-            <h4 className="text-sm font-semibold text-green-900 dark:text-green-100">短影片已生成</h4>
+            <h4 className="text-sm font-semibold text-green-900 dark:text-green-100">{t("clips.shortGenerated")}</h4>
           </div>
           <div className="space-y-2">
             <p className="text-sm font-medium">{shortResult.title}</p>
@@ -232,7 +226,7 @@ function VideoClipsPanel({ videoId, onRepurpose }: { videoId: string; onRepurpos
                 download={`${shortResult.title || "short"}.mp4`}
                 className="inline-flex items-center gap-1 rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700"
               >
-                <Download className="h-3 w-3" /> 下載短影片
+                <Download className="h-3 w-3" /> {t("clips.downloadShort")}
               </a>
               <Button
                 size="sm"
@@ -242,10 +236,10 @@ function VideoClipsPanel({ videoId, onRepurpose }: { videoId: string; onRepurpos
                   navigator.clipboard.writeText(
                     shortResult.suggestedCaption + "\n\n" + shortResult.hashtags.map(t => `#${t}`).join(" ")
                   );
-                  toast.success("文案已複製");
+                  toast.success(t("toast.captionCopied"));
                 }}
               >
-                <Copy className="mr-1 h-3 w-3" /> 複製文案
+                <Copy className="mr-1 h-3 w-3" /> {t("clips.copyCopy")}
               </Button>
             </div>
           </div>
@@ -273,6 +267,7 @@ const platformLabels: Record<string, string> = {
 // ─── Post-Production Tools Panel ───
 
 function PostProductionTab({ videoId }: { videoId: string }) {
+  const t = useTranslations("videos");
   const detectFillers = useDetectFillers();
   const cutFillers = useCutFillers();
   const generateChapters = useGenerateChapters();
@@ -310,24 +305,26 @@ function PostProductionTab({ videoId }: { videoId: string }) {
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopied(true);
-    toast.success("已複製到剪貼簿");
+    toast.success(t("toast.copiedToClipboard"));
     setTimeout(() => setCopied(false), 2000);
   };
+
+  const sectionTabs = [
+    { key: "fillers" as const, label: t("postProduction.fillers"), icon: Scissors },
+    { key: "chapters" as const, label: t("postProduction.chapters"), icon: ListChecks },
+    { key: "script" as const, label: t("postProduction.scriptSummary"), icon: BookOpen },
+    { key: "multiplatform" as const, label: t("postProduction.multiPlatform"), icon: Smartphone },
+  ];
 
   return (
     <div className="rounded-lg border p-4 space-y-3">
       <h4 className="flex items-center gap-2 text-sm font-medium">
-        <Wrench className="h-4 w-4" /> 後製工具
+        <Wrench className="h-4 w-4" /> {t("postProduction.title")}
       </h4>
 
       {/* Section tabs */}
       <div className="flex gap-1 border-b">
-        {[
-          { key: "fillers" as const, label: "去語助詞", icon: Scissors },
-          { key: "chapters" as const, label: "章節標記", icon: ListChecks },
-          { key: "script" as const, label: "腳本摘要", icon: BookOpen },
-          { key: "multiplatform" as const, label: "多平台適配", icon: Smartphone },
-        ].map(tab => (
+        {sectionTabs.map(tab => (
           <button
             key={tab.key}
             className={`flex items-center gap-1 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
@@ -347,7 +344,7 @@ function PostProductionTab({ videoId }: { videoId: string }) {
       {activeSection === "fillers" && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">偵測影片中的「嗯、啊、那個」等語助詞，勾選後一鍵裁切</p>
+            <p className="text-xs text-muted-foreground">{t("postProduction.fillersDesc")}</p>
             <Button
               size="sm"
               variant="outline"
@@ -357,16 +354,16 @@ function PostProductionTab({ videoId }: { videoId: string }) {
                   onSuccess: (res) => {
                     setFillerResult(res);
                     setSelectedFillers(new Set(res.fillers.map(f => f.id)));
-                    toast.success(`偵測到 ${res.totalCount} 個語助詞`);
+                    toast.success(t("toast.fillersDetected", { count: res.totalCount }));
                   },
                   onError: (e) => toast.error(e.message),
                 });
               }}
             >
               {detectFillers.isPending ? (
-                <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> 偵測中...</>
+                <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> {t("postProduction.detecting")}</>
               ) : (
-                <><Sparkles className="mr-1 h-3 w-3" /> 偵測語助詞</>
+                <><Sparkles className="mr-1 h-3 w-3" /> {t("postProduction.detectFillers")}</>
               )}
             </Button>
           </div>
@@ -374,9 +371,9 @@ function PostProductionTab({ videoId }: { videoId: string }) {
           {fillerResult && (
             <>
               <div className="flex items-center justify-between rounded-md bg-muted/50 p-2 text-xs">
-                <span>偵測 {fillerResult.totalCount} 個 / 已選 {selectedFillers.size} 個 / 預估省 {fillerResult.estimatedSavings}s</span>
+                <span>{t("postProduction.fillerStats", { total: fillerResult.totalCount, selected: selectedFillers.size, savings: fillerResult.estimatedSavings })}</span>
                 <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={selectAllFillers}>
-                  {selectedFillers.size === fillerResult.fillers.length ? "取消全選" : "全選"}
+                  {selectedFillers.size === fillerResult.fillers.length ? t("common.deselectAll") : t("common.selectAll")}
                 </Button>
               </div>
 
@@ -410,7 +407,7 @@ function PostProductionTab({ videoId }: { videoId: string }) {
                       {
                         onSuccess: (res) => {
                           setCutResult(res);
-                          toast.success(`裁切完成！${res.originalDuration}s → ${res.newDuration}s`);
+                          toast.success(t("toast.cutComplete", { original: res.originalDuration, result: res.newDuration }));
                         },
                         onError: (e) => toast.error(e.message),
                       },
@@ -418,17 +415,17 @@ function PostProductionTab({ videoId }: { videoId: string }) {
                   }}
                 >
                   {cutFillers.isPending ? (
-                    <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> 裁切中...</>
+                    <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> {t("postProduction.cutting")}</>
                   ) : (
-                    <><Scissors className="mr-1 h-3 w-3" /> 產出裁切版（移除 {selectedFillers.size} 個）</>
+                    <><Scissors className="mr-1 h-3 w-3" /> {t("postProduction.cutBtn", { count: selectedFillers.size })}</>
                   )}
                 </Button>
               )}
 
               {cutResult && (
                 <div className="rounded-md border border-green-200 bg-green-50 p-3 text-xs dark:border-green-900 dark:bg-green-950">
-                  <p className="font-medium text-green-700 dark:text-green-400">裁切完成</p>
-                  <p className="mt-1">原始：{cutResult.originalDuration}s → 裁切後：{cutResult.newDuration}s（省 {Math.round(cutResult.originalDuration - cutResult.newDuration)}s）</p>
+                  <p className="font-medium text-green-700 dark:text-green-400">{t("postProduction.cutDone")}</p>
+                  <p className="mt-1">{t("postProduction.cutResult", { original: cutResult.originalDuration, result: cutResult.newDuration, saved: Math.round(cutResult.originalDuration - cutResult.newDuration) })}</p>
                 </div>
               )}
             </>
@@ -440,7 +437,7 @@ function PostProductionTab({ videoId }: { videoId: string }) {
       {activeSection === "chapters" && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">AI 分析影片結構，自動產出 YouTube 章節時間戳</p>
+            <p className="text-xs text-muted-foreground">{t("postProduction.chaptersDesc")}</p>
             <Button
               size="sm"
               variant="outline"
@@ -450,16 +447,16 @@ function PostProductionTab({ videoId }: { videoId: string }) {
                   onSuccess: (res) => {
                     setChapterResult(res);
                     setEditingChapters(null);
-                    toast.success(`生成 ${res.chapters.length} 個章節`);
+                    toast.success(t("toast.chaptersGenerated", { count: res.chapters.length }));
                   },
                   onError: (e) => toast.error(e.message),
                 });
               }}
             >
               {generateChapters.isPending ? (
-                <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> 生成中...</>
+                <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> {t("common.generating")}</>
               ) : (
-                <><Sparkles className="mr-1 h-3 w-3" /> 生成章節</>
+                <><Sparkles className="mr-1 h-3 w-3" /> {t("postProduction.generateChapters")}</>
               )}
             </Button>
           </div>
@@ -497,7 +494,7 @@ function PostProductionTab({ videoId }: { videoId: string }) {
                       variant="outline"
                       onClick={() => setEditingChapters(null)}
                     >
-                      取消
+                      {t("common.cancel")}
                     </Button>
                     <Button
                       size="sm"
@@ -509,14 +506,14 @@ function PostProductionTab({ videoId }: { videoId: string }) {
                             onSuccess: (res) => {
                               setChapterResult(res);
                               setEditingChapters(null);
-                              toast.success("章節已更新");
+                              toast.success(t("toast.chaptersUpdated"));
                             },
                             onError: (e) => toast.error(e.message),
                           },
                         );
                       }}
                     >
-                      儲存
+                      {t("common.save")}
                     </Button>
                   </>
                 ) : (
@@ -526,7 +523,7 @@ function PostProductionTab({ videoId }: { videoId: string }) {
                       variant="outline"
                       onClick={() => setEditingChapters([...chapterResult.chapters])}
                     >
-                      編輯
+                      {t("common.edit")}
                     </Button>
                     <Button
                       size="sm"
@@ -534,7 +531,7 @@ function PostProductionTab({ videoId }: { videoId: string }) {
                       onClick={() => handleCopy(chapterResult.youtubeFormat)}
                     >
                       {copied ? <Check className="mr-1 h-3 w-3" /> : <Clipboard className="mr-1 h-3 w-3" />}
-                      複製 YouTube 格式
+                      {t("postProduction.copyYoutubeFormat")}
                     </Button>
                   </>
                 )}
@@ -559,7 +556,7 @@ function PostProductionTab({ videoId }: { videoId: string }) {
       {activeSection === "script" && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">AI 分析轉錄稿，產出結構化腳本大綱</p>
+            <p className="text-xs text-muted-foreground">{t("postProduction.scriptDesc")}</p>
             <Button
               size="sm"
               variant="outline"
@@ -568,16 +565,16 @@ function PostProductionTab({ videoId }: { videoId: string }) {
                 generateScriptSummary.mutate(videoId, {
                   onSuccess: (res) => {
                     setScriptResult(res);
-                    toast.success(`生成 ${res.summary.sections.length} 個段落`);
+                    toast.success(t("toast.scriptGenerated", { count: res.summary.sections.length }));
                   },
                   onError: (e) => toast.error(e.message),
                 });
               }}
             >
               {generateScriptSummary.isPending ? (
-                <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> 生成中...</>
+                <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> {t("common.generating")}</>
               ) : (
-                <><Sparkles className="mr-1 h-3 w-3" /> 生成腳本摘要</>
+                <><Sparkles className="mr-1 h-3 w-3" /> {t("postProduction.generateScript")}</>
               )}
             </Button>
           </div>
@@ -618,7 +615,7 @@ function PostProductionTab({ videoId }: { videoId: string }) {
               <div className="flex gap-2">
                 <Button size="sm" variant="outline" onClick={() => handleCopy(scriptResult.markdown)}>
                   {copied ? <Check className="mr-1 h-3 w-3" /> : <Clipboard className="mr-1 h-3 w-3" />}
-                  複製 Markdown
+                  {t("postProduction.copyMarkdown")}
                 </Button>
                 <Button
                   size="sm"
@@ -631,10 +628,10 @@ function PostProductionTab({ videoId }: { videoId: string }) {
                     a.download = `script-summary.md`;
                     a.click();
                     URL.revokeObjectURL(url);
-                    toast.success("已下載 Markdown 檔案");
+                    toast.success(t("toast.markdownDownloaded"));
                   }}
                 >
-                  <Download className="mr-1 h-3 w-3" /> 匯出 .md
+                  <Download className="mr-1 h-3 w-3" /> {t("postProduction.exportMd")}
                 </Button>
               </div>
             </>
@@ -647,16 +644,17 @@ function PostProductionTab({ videoId }: { videoId: string }) {
 
 // ─── Multi-Platform Panel ───
 
-const MULTI_PLATFORMS = [
-  { key: "youtube_shorts", label: "YouTube Shorts", format: "9:16" },
-  { key: "instagram_reels", label: "Instagram Reels", format: "9:16" },
-  { key: "tiktok", label: "TikTok", format: "9:16" },
-  { key: "instagram_square", label: "IG 正方形", format: "1:1" },
-];
-
 function MultiPlatformPanel({ videoId }: { videoId: string }) {
+  const t = useTranslations("videos");
   const { data: clips } = useVideoClips(videoId);
   const multiPlatform = useMultiPlatform();
+
+  const MULTI_PLATFORMS = [
+    { key: "youtube_shorts", label: "YouTube Shorts", format: "9:16" },
+    { key: "instagram_reels", label: "Instagram Reels", format: "9:16" },
+    { key: "tiktok", label: "TikTok", format: "9:16" },
+    { key: "instagram_square", label: t("multiPlatform.igSquare"), format: "1:1" },
+  ];
 
   const [selectedClipId, setSelectedClipId] = useState<string>("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(
@@ -675,14 +673,14 @@ function MultiPlatformPanel({ videoId }: { videoId: string }) {
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-muted-foreground">選擇片段，一鍵產出多平台版本（含字幕 + AI 文案）</p>
+      <p className="text-xs text-muted-foreground">{t("multiPlatform.desc")}</p>
 
       {/* Clip selector */}
       <div className="space-y-1">
-        <label className="text-xs font-medium">選擇片段</label>
+        <label className="text-xs font-medium">{t("multiPlatform.selectClip")}</label>
         <Select value={selectedClipId} onValueChange={setSelectedClipId}>
           <SelectTrigger className="h-8 text-xs">
-            <SelectValue placeholder="選擇一個剪輯片段" />
+            <SelectValue placeholder={t("multiPlatform.selectClipPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
             {(clips ?? []).map((clip: any) => (
@@ -696,7 +694,7 @@ function MultiPlatformPanel({ videoId }: { videoId: string }) {
 
       {/* Platform checkboxes */}
       <div className="space-y-1">
-        <label className="text-xs font-medium">目標平台</label>
+        <label className="text-xs font-medium">{t("multiPlatform.targetPlatforms")}</label>
         <div className="grid grid-cols-2 gap-2">
           {MULTI_PLATFORMS.map(p => (
             <label key={p.key} className="flex items-center gap-2 text-xs cursor-pointer">
@@ -726,7 +724,7 @@ function MultiPlatformPanel({ videoId }: { videoId: string }) {
             {
               onSuccess: (res) => {
                 setMpResult(res);
-                toast.success(`生成完成：${res.results.length} 成功，${res.failed.length} 失敗`);
+                toast.success(t("toast.multiPlatformDone", { success: res.results.length, failed: res.failed.length }));
               },
               onError: (e) => toast.error(e.message),
             },
@@ -734,9 +732,9 @@ function MultiPlatformPanel({ videoId }: { videoId: string }) {
         }}
       >
         {multiPlatform.isPending ? (
-          <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> 生成中（可能需要 1-2 分鐘）...</>
+          <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> {t("multiPlatform.generatingLong")}</>
         ) : (
-          <><Sparkles className="mr-1 h-3 w-3" /> 生成 {selectedPlatforms.size} 個平台版本</>
+          <><Sparkles className="mr-1 h-3 w-3" /> {t("multiPlatform.generateBtn", { count: selectedPlatforms.size })}</>
         )}
       </Button>
 
@@ -774,21 +772,23 @@ function MultiPlatformPanel({ videoId }: { videoId: string }) {
 
 // ─── Content Repurpose Panel ───
 
-const PLATFORM_LABELS: Record<string, string> = {
-  YOUTUBE: "YouTube",
-  INSTAGRAM: "Instagram",
-  FACEBOOK: "Facebook",
-  TWITTER: "X / Twitter",
-  THREADS: "Threads",
-};
-
-const STYLE_LABELS: Record<string, string> = {
-  knowledge: "知識型",
-  story: "故事型",
-  interactive: "互動型",
-};
-
 function RepurposePanel({ videoId }: { videoId: string }) {
+  const t = useTranslations("videos");
+
+  const PLATFORM_LABELS: Record<string, string> = {
+    YOUTUBE: "YouTube",
+    INSTAGRAM: "Instagram",
+    FACEBOOK: "Facebook",
+    TWITTER: "X / Twitter",
+    THREADS: "Threads",
+  };
+
+  const STYLE_LABELS: Record<string, string> = {
+    knowledge: t("repurpose.styleKnowledge"),
+    story: t("repurpose.styleStory"),
+    interactive: t("repurpose.styleInteractive"),
+  };
+
   const { data, isLoading } = useRepurposeJob(videoId);
   const triggerRepurpose = useTriggerRepurpose();
   const updateItem = useUpdateRepurposeItem();
@@ -812,7 +812,7 @@ function RepurposePanel({ videoId }: { videoId: string }) {
       <div className="rounded-lg border p-4">
         <div className="flex items-center justify-between">
           <h4 className="flex items-center gap-2 text-sm font-medium">
-            <Megaphone className="h-4 w-4" /> AI 推廣內容
+            <Megaphone className="h-4 w-4" /> {t("repurpose.title")}
           </h4>
           <Button
             size="sm"
@@ -820,20 +820,20 @@ function RepurposePanel({ videoId }: { videoId: string }) {
             disabled={triggerRepurpose.isPending}
             onClick={() => {
               triggerRepurpose.mutate(videoId, {
-                onSuccess: () => toast.success("內容生成已排入佇列"),
+                onSuccess: () => toast.success(t("toast.repurposeQueued")),
                 onError: (e) => toast.error(e.message),
               });
             }}
           >
             {triggerRepurpose.isPending ? (
-              <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> 排入中...</>
+              <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> {t("repurpose.queuing")}</>
             ) : (
-              <><Sparkles className="mr-1 h-3 w-3" /> 生成推廣內容</>
+              <><Sparkles className="mr-1 h-3 w-3" /> {t("repurpose.generateBtn")}</>
             )}
           </Button>
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
-          AI 將根據影片內容自動生成 15 則社群貼文、短影片建議和 Email 通知
+          {t("repurpose.desc")}
         </p>
       </div>
     );
@@ -845,10 +845,10 @@ function RepurposePanel({ videoId }: { videoId: string }) {
       <div className="rounded-lg border p-4">
         <div className="flex items-center gap-2 text-sm">
           <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-          <span className="font-medium">AI 正在生成推廣內容...</span>
+          <span className="font-medium">{t("repurpose.processing")}</span>
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
-          正在分析影片內容並生成多平台社群貼文、短影片建議和 Email 通知，約需 30-60 秒
+          {t("repurpose.processingDesc")}
         </p>
       </div>
     );
@@ -860,19 +860,19 @@ function RepurposePanel({ videoId }: { videoId: string }) {
       <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950">
         <div className="flex items-center justify-between">
           <p className="text-sm text-red-700 dark:text-red-400">
-            推廣內容生成失敗：{job.errorMessage || "未知錯誤"}
+            {t("repurpose.failed")}{job.errorMessage || t("repurpose.unknownError")}
           </p>
           <Button
             size="sm"
             variant="outline"
             onClick={() => {
               triggerRepurpose.mutate(videoId, {
-                onSuccess: () => toast.success("重新生成已排入佇列"),
+                onSuccess: () => toast.success(t("toast.repurposeRequeued")),
                 onError: (e) => toast.error(e.message),
               });
             }}
           >
-            <RefreshCw className="mr-1 h-3 w-3" /> 重新生成
+            <RefreshCw className="mr-1 h-3 w-3" /> {t("common.regenerate")}
           </Button>
         </div>
       </div>
@@ -906,9 +906,9 @@ function RepurposePanel({ videoId }: { videoId: string }) {
       { itemIds: Array.from(selectedIds) },
       {
         onSuccess: (result) => {
-          toast.success(`已排程 ${result.scheduled.length} 則貼文`);
+          toast.success(t("toast.postsScheduled", { count: result.scheduled.length }));
           if (result.failed.length > 0) {
-            toast.error(`${result.failed.length} 則排程失敗`);
+            toast.error(t("toast.postsScheduleFailed", { count: result.failed.length }));
           }
           setSelectedIds(new Set());
         },
@@ -927,7 +927,7 @@ function RepurposePanel({ videoId }: { videoId: string }) {
       },
       {
         onSuccess: () => {
-          toast.success("已儲存");
+          toast.success(t("toast.saved"));
           setEditingItem(null);
         },
         onError: (e) => toast.error(e.message),
@@ -939,29 +939,29 @@ function RepurposePanel({ videoId }: { videoId: string }) {
     <div className="rounded-lg border p-4 space-y-3">
       <div className="flex items-center justify-between">
         <h4 className="flex items-center gap-2 text-sm font-medium">
-          <Megaphone className="h-4 w-4" /> AI 推廣內容
-          <Badge variant="secondary">{items.length} 則</Badge>
+          <Megaphone className="h-4 w-4" /> {t("repurpose.title")}
+          <Badge variant="secondary">{t("repurpose.itemCount", { count: items.length })}</Badge>
         </h4>
         <Button
           size="sm"
           variant="ghost"
           onClick={() => {
             triggerRepurpose.mutate(videoId, {
-              onSuccess: () => toast.success("重新生成已排入佇列"),
+              onSuccess: () => toast.success(t("toast.repurposeRequeued")),
               onError: (e) => toast.error(e.message),
             });
           }}
         >
-          <RefreshCw className="mr-1 h-3 w-3" /> 重新生成
+          <RefreshCw className="mr-1 h-3 w-3" /> {t("common.regenerate")}
         </Button>
       </div>
 
       {/* Sub-tabs */}
       <div className="flex gap-1 border-b">
         {[
-          { key: "posts" as const, label: `社群貼文 (${socialPosts.length})`, icon: Share2 },
-          { key: "shorts" as const, label: `短影片建議 (${shortSuggestions.length})`, icon: VideoIcon },
-          { key: "email" as const, label: `Email (${emailItems.length})`, icon: Mail },
+          { key: "posts" as const, label: t("repurpose.tabPosts", { count: socialPosts.length }), icon: Share2 },
+          { key: "shorts" as const, label: t("repurpose.tabShorts", { count: shortSuggestions.length }), icon: VideoIcon },
+          { key: "email" as const, label: t("repurpose.tabEmail", { count: emailItems.length }), icon: Mail },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -985,10 +985,10 @@ function RepurposePanel({ videoId }: { videoId: string }) {
           <div className="flex gap-2">
             <Select value={filterPlatform} onValueChange={setFilterPlatform}>
               <SelectTrigger className="w-[140px] h-8 text-xs">
-                <SelectValue placeholder="平台" />
+                <SelectValue placeholder={t("repurpose.platform")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">所有平台</SelectItem>
+                <SelectItem value="all">{t("repurpose.allPlatforms")}</SelectItem>
                 {Object.entries(PLATFORM_LABELS).map(([key, label]) => (
                   <SelectItem key={key} value={key}>{label}</SelectItem>
                 ))}
@@ -996,10 +996,10 @@ function RepurposePanel({ videoId }: { videoId: string }) {
             </Select>
             <Select value={filterStyle} onValueChange={setFilterStyle}>
               <SelectTrigger className="w-[120px] h-8 text-xs">
-                <SelectValue placeholder="風格" />
+                <SelectValue placeholder={t("repurpose.style")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">所有風格</SelectItem>
+                <SelectItem value="all">{t("repurpose.allStyles")}</SelectItem>
                 {Object.entries(STYLE_LABELS).map(([key, label]) => (
                   <SelectItem key={key} value={key}>{label}</SelectItem>
                 ))}
@@ -1039,10 +1039,10 @@ function RepurposePanel({ videoId }: { videoId: string }) {
                           {STYLE_LABELS[item.style ?? ""] ?? item.style}
                         </Badge>
                         {item.status === "EDITED" && (
-                          <Badge className="text-[10px] bg-yellow-100 text-yellow-800">已編輯</Badge>
+                          <Badge className="text-[10px] bg-yellow-100 text-yellow-800">{t("repurpose.statusEdited")}</Badge>
                         )}
                         {isScheduled && (
-                          <Badge className="text-[10px] bg-green-100 text-green-800">已排程</Badge>
+                          <Badge className="text-[10px] bg-green-100 text-green-800">{t("repurpose.statusScheduled")}</Badge>
                         )}
                       </div>
                       <p className="text-xs text-foreground line-clamp-3 whitespace-pre-wrap">
@@ -1067,7 +1067,7 @@ function RepurposePanel({ videoId }: { videoId: string }) {
                               setEditText(content?.contentText ?? "");
                             }}
                           >
-                            編輯
+                            {t("common.edit")}
                           </Button>
                           <Button
                             size="sm"
@@ -1075,12 +1075,12 @@ function RepurposePanel({ videoId }: { videoId: string }) {
                             className="h-6 px-2 text-[10px]"
                             onClick={() => {
                               regenerateItem.mutate(item.id, {
-                                onSuccess: () => toast.success("已重新生成"),
+                                onSuccess: () => toast.success(t("toast.regenerated")),
                                 onError: (e) => toast.error(e.message),
                               });
                             }}
                           >
-                            重生
+                            {t("repurpose.regen")}
                           </Button>
                         </>
                       )}
@@ -1094,16 +1094,16 @@ function RepurposePanel({ videoId }: { videoId: string }) {
           {/* Batch Schedule Bar */}
           {selectedIds.size > 0 && (
             <div className="flex items-center justify-between rounded-md bg-primary/10 p-2">
-              <span className="text-xs font-medium">已選 {selectedIds.size} 則</span>
+              <span className="text-xs font-medium">{t("repurpose.selectedCount", { count: selectedIds.size })}</span>
               <Button
                 size="sm"
                 disabled={scheduleItems.isPending}
                 onClick={handleSchedule}
               >
                 {scheduleItems.isPending ? (
-                  <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> 排程中...</>
+                  <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> {t("repurpose.scheduling")}</>
                 ) : (
-                  <><Clock className="mr-1 h-3 w-3" /> 建立排程</>
+                  <><Clock className="mr-1 h-3 w-3" /> {t("repurpose.createSchedule")}</>
                 )}
               </Button>
             </div>
@@ -1115,7 +1115,7 @@ function RepurposePanel({ videoId }: { videoId: string }) {
       {activeTab === "shorts" && (
         <div className="space-y-2 max-h-64 overflow-y-auto">
           {shortSuggestions.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-4 text-center">影片時長不足，無短影片建議</p>
+            <p className="text-xs text-muted-foreground py-4 text-center">{t("repurpose.noShortSuggestions")}</p>
           ) : (
             shortSuggestions.map((item) => {
               const content = item.content as any;
@@ -1132,7 +1132,7 @@ function RepurposePanel({ videoId }: { videoId: string }) {
                   )}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-muted-foreground">推薦原因：</span>
+                      <span className="text-[10px] text-muted-foreground">{t("repurpose.reason")}</span>
                       <span className="text-[10px]">{content?.reason}</span>
                     </div>
                     {content?.suggestedPlatforms && (
@@ -1162,7 +1162,7 @@ function RepurposePanel({ videoId }: { videoId: string }) {
                   <div>
                     <p className="text-sm font-medium">{content?.subject}</p>
                     {isScheduled && (
-                      <Badge className="text-[10px] bg-green-100 text-green-800 mt-1">已建立 Campaign</Badge>
+                      <Badge className="text-[10px] bg-green-100 text-green-800 mt-1">{t("repurpose.campaignCreated")}</Badge>
                     )}
                   </div>
                   {!isScheduled && (
@@ -1174,7 +1174,7 @@ function RepurposePanel({ videoId }: { videoId: string }) {
                         createCampaign.mutate(
                           { itemId: item.id, data: { targetTags: [] } },
                           {
-                            onSuccess: () => toast.success("Email Campaign 已建立"),
+                            onSuccess: () => toast.success(t("toast.campaignCreated")),
                             onError: (e) => toast.error(e.message),
                           },
                         );
@@ -1185,7 +1185,7 @@ function RepurposePanel({ videoId }: { videoId: string }) {
                       ) : (
                         <Mail className="mr-1 h-3 w-3" />
                       )}
-                      建立 Campaign
+                      {t("repurpose.createCampaign")}
                     </Button>
                   )}
                 </div>
@@ -1205,7 +1205,7 @@ function RepurposePanel({ videoId }: { videoId: string }) {
       <Dialog open={!!editingItem} onOpenChange={() => setEditingItem(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-sm">編輯貼文</DialogTitle>
+            <DialogTitle className="text-sm">{t("repurpose.editPost")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             {editingItem && (
@@ -1232,22 +1232,22 @@ function RepurposePanel({ videoId }: { videoId: string }) {
                   if (!editingItem) return;
                   resetItem.mutate(editingItem.id, {
                     onSuccess: () => {
-                      toast.success("已還原為 AI 原始版本");
+                      toast.success(t("toast.resetToOriginal"));
                       setEditingItem(null);
                     },
                     onError: (e) => toast.error(e.message),
                   });
                 }}
               >
-                還原原始
+                {t("repurpose.resetOriginal")}
               </Button>
               <div className="flex gap-2">
                 <Button size="sm" variant="outline" onClick={() => setEditingItem(null)}>
-                  取消
+                  {t("common.cancel")}
                 </Button>
                 <Button size="sm" disabled={updateItem.isPending} onClick={handleSaveEdit}>
                   {updateItem.isPending ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
-                  儲存
+                  {t("common.save")}
                 </Button>
               </div>
             </div>
@@ -1265,6 +1265,7 @@ function RepurposeDialog({
   state: RepurposeState | null;
   onClose: () => void;
 }) {
+  const t = useTranslations("videos");
   const generatePost = useAiGeneratePost();
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
@@ -1284,7 +1285,7 @@ function RepurposeDialog({
   const handleCopy = (text: string, idx: number) => {
     navigator.clipboard.writeText(text);
     setCopiedIdx(idx);
-    toast.success("已複製到剪貼簿");
+    toast.success(t("toast.copiedToClipboard"));
     setTimeout(() => setCopiedIdx(null), 2000);
   };
 
@@ -1297,17 +1298,17 @@ function RepurposeDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Share2 className="h-5 w-5 text-purple-600" />
-            一鍵內容再製
+            {t("repurposeDialog.title")}
           </DialogTitle>
         </DialogHeader>
         {state && (
           <div className="space-y-4">
             <div className="rounded-lg bg-purple-50 p-3 dark:bg-purple-950/30">
               <p className="text-sm font-medium text-purple-900 dark:text-purple-200">
-                片段：{state.clipTitle}
+                {t("repurposeDialog.clip")}{state.clipTitle}
               </p>
               <p className="text-xs text-purple-600 dark:text-purple-400">
-                AI 將根據此片段為所有平台生成客製化貼文
+                {t("repurposeDialog.desc")}
               </p>
             </div>
 
@@ -1315,7 +1316,7 @@ function RepurposeDialog({
               <div className="text-center py-6">
                 <Button onClick={handleGenerate} className="bg-purple-600 hover:bg-purple-700">
                   <Sparkles className="mr-2 h-4 w-4" />
-                  AI 生成所有平台貼文
+                  {t("repurposeDialog.generateAll")}
                 </Button>
               </div>
             )}
@@ -1323,7 +1324,7 @@ function RepurposeDialog({
             {generatePost.isPending && (
               <div className="flex items-center justify-center gap-3 py-8">
                 <Loader2 className="h-5 w-5 animate-spin text-purple-600" />
-                <span className="text-sm text-muted-foreground">AI 正在為 5 個平台生成客製內容...</span>
+                <span className="text-sm text-muted-foreground">{t("repurposeDialog.generating")}</span>
               </div>
             )}
 
@@ -1363,7 +1364,7 @@ function RepurposeDialog({
                 <div className="flex justify-end gap-2 pt-2">
                   <Button variant="outline" onClick={handleGenerate} disabled={generatePost.isPending}>
                     <Sparkles className="mr-1 h-3 w-3" />
-                    重新生成
+                    {t("common.regenerate")}
                   </Button>
                 </div>
               </div>
@@ -1376,6 +1377,7 @@ function RepurposeDialog({
 }
 
 export default function VideosPage() {
+  const t = useTranslations("videos");
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
@@ -1384,6 +1386,14 @@ export default function VideosPage() {
   const [repurpose, setRepurpose] = useState<RepurposeState | null>(null);
   const [scriptOpen, setScriptOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+    UPLOADING: { label: t("status.uploading"), variant: "outline" },
+    UPLOADED: { label: t("status.uploaded"), variant: "secondary" },
+    PROCESSING: { label: t("status.processing"), variant: "default" },
+    PROCESSED: { label: t("status.processed"), variant: "secondary" },
+    FAILED: { label: t("status.failed"), variant: "destructive" },
+  };
 
   const { data, isLoading } = useVideos();
   const createVideo = useCreateVideo();
@@ -1394,14 +1404,14 @@ export default function VideosPage() {
 
   const handleCreate = () => {
     if (!title.trim()) {
-      toast.error("請輸入影片標題");
+      toast.error(t("toast.enterTitle"));
       return;
     }
     createVideo.mutate(
       { title, description },
       {
         onSuccess: () => {
-          toast.success("影片已建立");
+          toast.success(t("toast.videoCreated"));
           setCreateOpen(false);
           setTitle("");
           setDescription("");
@@ -1413,8 +1423,8 @@ export default function VideosPage() {
 
   const handleUpload = async (file: File) => {
     directUpload.mutate(file, {
-      onSuccess: () => toast.success("影片上傳成功，AI 已自動剪輯"),
-      onError: (e) => toast.error(e instanceof Error ? e.message : "上傳失敗"),
+      onSuccess: () => toast.success(t("toast.uploadSuccess")),
+      onError: (e) => toast.error(e instanceof Error ? e.message : t("toast.uploadFailed")),
     });
   };
 
@@ -1426,13 +1436,13 @@ export default function VideosPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="影片管理"
-        description="上傳影片並使用 AI 自動剪輯精華片段"
+        title={t("page.title")}
+        description={t("page.description")}
         action={
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setScriptOpen(true)}>
               <FileText className="mr-2 h-4 w-4" />
-              AI 腳本
+              {t("page.aiScript")}
             </Button>
             <Button
               variant="outline"
@@ -1440,9 +1450,9 @@ export default function VideosPage() {
               disabled={directUpload.isPending}
             >
               {directUpload.isPending ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />上傳中...</>
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t("page.uploading")}</>
               ) : (
-                <><Upload className="mr-2 h-4 w-4" />上傳影片</>
+                <><Upload className="mr-2 h-4 w-4" />{t("page.uploadVideo")}</>
               )}
             </Button>
             <input
@@ -1463,8 +1473,8 @@ export default function VideosPage() {
             <div className="flex flex-col items-center gap-4">
               <Loader2 className="h-10 w-10 animate-spin text-primary" />
               <div className="text-center">
-                <p className="text-lg font-semibold">影片上傳中...</p>
-                <p className="text-sm text-muted-foreground">AI 正在分析並自動生成精華片段</p>
+                <p className="text-lg font-semibold">{t("page.uploadingOverlay")}</p>
+                <p className="text-sm text-muted-foreground">{t("page.uploadingOverlayDesc")}</p>
               </div>
             </div>
           </div>
@@ -1476,9 +1486,9 @@ export default function VideosPage() {
       ) : !data?.data?.length ? (
         <EmptyState
           icon={Film}
-          title="尚無影片"
-          description="上傳您的第一支影片，AI 將自動為您剪輯精彩片段"
-          actionLabel="上傳影片"
+          title={t("page.emptyTitle")}
+          description={t("page.emptyDescription")}
+          actionLabel={t("page.uploadVideo")}
           onAction={() => fileInputRef.current?.click()}
         />
       ) : (
@@ -1520,7 +1530,7 @@ export default function VideosPage() {
                     <span>{new Date(video.createdAt).toLocaleDateString("zh-TW")}</span>
                     {clipCount > 0 && (
                       <span className="flex items-center gap-1">
-                        <Scissors className="h-3 w-3" /> {clipCount} 片段
+                        <Scissors className="h-3 w-3" /> {t("page.clipCount", { count: clipCount })}
                       </span>
                     )}
                   </div>
@@ -1562,28 +1572,28 @@ export default function VideosPage() {
                     style={{ maxHeight: 360 }}
                     playsInline
                   >
-                    您的瀏覽器不支援影片播放
+                    {t("detail.videoNotSupported")}
                   </video>
                 </div>
               )}
               <div className="grid grid-cols-3 gap-4 rounded-lg bg-muted/50 p-4 text-sm">
                 <div>
-                  <span className="text-xs text-muted-foreground">狀態</span>
+                  <span className="text-xs text-muted-foreground">{t("detail.status")}</span>
                   <p className="font-medium">{statusMap[selectedVideo.status]?.label ?? selectedVideo.status}</p>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground">時長</span>
+                  <span className="text-xs text-muted-foreground">{t("detail.duration")}</span>
                   <p className="font-medium">{fmt(selectedVideo.durationSeconds)}</p>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground">建立時間</span>
+                  <span className="text-xs text-muted-foreground">{t("detail.createdAt")}</span>
                   <p className="font-medium">{new Date(selectedVideo.createdAt).toLocaleDateString("zh-TW")}</p>
                 </div>
               </div>
               {selectedVideo.aiSummary && (
                 <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-900 dark:bg-blue-950">
                   <p className="flex items-center gap-1 text-xs font-medium text-blue-700 dark:text-blue-400">
-                    <Sparkles className="h-3 w-3" /> AI 摘要
+                    <Sparkles className="h-3 w-3" /> {t("detail.aiSummary")}
                   </p>
                   <p className="mt-1 text-sm text-blue-900 dark:text-blue-200">{selectedVideo.aiSummary}</p>
                 </div>
@@ -1592,7 +1602,7 @@ export default function VideosPage() {
               <div className="rounded-lg border p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="flex items-center gap-2 text-sm font-medium">
-                    <Captions className="h-4 w-4" /> AI 字幕生成
+                    <Captions className="h-4 w-4" /> {t("subtitle.title")}
                   </h4>
                   <Button
                     size="sm"
@@ -1604,7 +1614,7 @@ export default function VideosPage() {
                         {
                           onSuccess: (res) => {
                             setSubtitleResult(res);
-                            toast.success(`字幕已生成（${res.segmentCount} 段）`);
+                            toast.success(t("toast.subtitleGenerated", { count: res.segmentCount }));
                           },
                           onError: (e) => toast.error(e.message),
                         },
@@ -1612,20 +1622,20 @@ export default function VideosPage() {
                     }}
                   >
                     {subtitleMutation.isPending ? (
-                      <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> Whisper 轉錄中...</>
+                      <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> {t("subtitle.transcribing")}</>
                     ) : (
-                      <><Sparkles className="mr-1 h-3 w-3" /> 生成字幕</>
+                      <><Sparkles className="mr-1 h-3 w-3" /> {t("subtitle.generateBtn")}</>
                     )}
                   </Button>
                 </div>
                 {subtitleMutation.isPending && (
-                  <p className="text-xs text-muted-foreground">Whisper 正在辨識語音 → GPT 校正斷句中，約需 30-60 秒...</p>
+                  <p className="text-xs text-muted-foreground">{t("subtitle.transcribingDesc")}</p>
                 )}
                 {subtitleResult && (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Badge variant="secondary">{subtitleResult.segmentCount} 段字幕</Badge>
-                      <span>已由 GPT 校正潤飾</span>
+                      <Badge variant="secondary">{t("subtitle.segmentCount", { count: subtitleResult.segmentCount })}</Badge>
+                      <span>{t("subtitle.polished")}</span>
                     </div>
                     <pre className="max-h-32 overflow-y-auto rounded-md bg-muted p-3 text-xs whitespace-pre-wrap">{subtitleResult.preview}</pre>
                     <div className="flex gap-2">
@@ -1634,20 +1644,20 @@ export default function VideosPage() {
                         download
                         className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
                       >
-                        <Download className="h-3 w-3" /> 下載 SRT
+                        <Download className="h-3 w-3" /> {t("subtitle.downloadSrt")}
                       </a>
                       <a
                         href={`${subtitleResult.vttUrl}`}
                         download
                         className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted"
                       >
-                        <Download className="h-3 w-3" /> 下載 VTT
+                        <Download className="h-3 w-3" /> {t("subtitle.downloadVtt")}
                       </a>
                     </div>
                   </div>
                 )}
                 {!subtitleResult && !subtitleMutation.isPending && (
-                  <p className="text-xs text-muted-foreground">使用 OpenAI Whisper 自動辨識影片語音，GPT 校正後生成 SRT/VTT 字幕檔</p>
+                  <p className="text-xs text-muted-foreground">{t("subtitle.desc")}</p>
                 )}
               </div>
 
@@ -1674,15 +1684,15 @@ export default function VideosPage() {
       <ConfirmDialog
         open={!!deleteId}
         onOpenChange={() => setDeleteId(null)}
-        title="刪除影片"
-        description="確定要刪除此影片嗎？此操作無法復原，所有相關片段也會一併刪除。"
-        confirmLabel="刪除"
+        title={t("deleteDialog.title")}
+        description={t("deleteDialog.description")}
+        confirmLabel={t("deleteDialog.confirm")}
         variant="destructive"
         loading={deleteVideo.isPending}
         onConfirm={() => {
           if (deleteId) {
             deleteVideo.mutate(deleteId, {
-              onSuccess: () => { toast.success("影片已刪除"); setDeleteId(null); },
+              onSuccess: () => { toast.success(t("toast.videoDeleted")); setDeleteId(null); },
               onError: (e) => toast.error(e.message),
             });
           }
@@ -1699,6 +1709,7 @@ export default function VideosPage() {
 }
 
 function ScriptGeneratorDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("videos");
   const [topic, setTopic] = useState("");
   const [style, setStyle] = useState("教學");
   const [targetLength, setTargetLength] = useState("10");
@@ -1709,7 +1720,7 @@ function ScriptGeneratorDialog({ open, onClose }: { open: boolean; onClose: () =
   const [copied, setCopied] = useState(false);
 
   const handleGenerate = async () => {
-    if (!topic.trim()) { toast.error("請輸入影片主題"); return; }
+    if (!topic.trim()) { toast.error(t("toast.enterTopic")); return; }
     setLoading(true);
     setScript(null);
     try {
@@ -1725,7 +1736,7 @@ function ScriptGeneratorDialog({ open, onClose }: { open: boolean; onClose: () =
       });
       setScript(res.script);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "生成失敗");
+      toast.error(e instanceof Error ? e.message : t("toast.generateFailed"));
     } finally {
       setLoading(false);
     }
@@ -1735,7 +1746,7 @@ function ScriptGeneratorDialog({ open, onClose }: { open: boolean; onClose: () =
     if (script) {
       navigator.clipboard.writeText(script);
       setCopied(true);
-      toast.success("腳本已複製");
+      toast.success(t("toast.scriptCopied"));
       setTimeout(() => setCopied(false), 2000);
     }
   };
@@ -1746,7 +1757,7 @@ function ScriptGeneratorDialog({ open, onClose }: { open: boolean; onClose: () =
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-orange-600" />
-            AI 影片腳本生成
+            {t("scriptDialog.title")}
           </DialogTitle>
         </DialogHeader>
 
@@ -1754,76 +1765,76 @@ function ScriptGeneratorDialog({ open, onClose }: { open: boolean; onClose: () =
           <div className="space-y-4">
             <div className="rounded-lg bg-orange-50 p-3 dark:bg-orange-950/30">
               <p className="text-sm text-orange-900 dark:text-orange-200">
-                輸入影片主題，AI 將生成完整的腳本大綱，包含 Hook、段落結構、CTA、拍攝建議和 SEO 關鍵字。
+                {t("scriptDialog.desc")}
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label>影片主題 *</Label>
+              <Label>{t("scriptDialog.topicLabel")}</Label>
               <Input
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
-                placeholder="例：如何用 AI 工具提升工作效率"
+                placeholder={t("scriptDialog.topicPlaceholder")}
                 onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>影片風格</Label>
+                <Label>{t("scriptDialog.styleLabel")}</Label>
                 <Select value={style} onValueChange={setStyle}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="教學">📚 教學型</SelectItem>
-                    <SelectItem value="Vlog">📹 Vlog</SelectItem>
-                    <SelectItem value="開箱評測">📦 開箱評測</SelectItem>
-                    <SelectItem value="故事敘事">📖 故事敘事</SelectItem>
-                    <SelectItem value="排行榜">🏆 排行榜 / Top N</SelectItem>
-                    <SelectItem value="挑戰">🎯 挑戰型</SelectItem>
+                    <SelectItem value="教學">{t("scriptDialog.styleTutorial")}</SelectItem>
+                    <SelectItem value="Vlog">{t("scriptDialog.styleVlog")}</SelectItem>
+                    <SelectItem value="開箱評測">{t("scriptDialog.styleUnboxing")}</SelectItem>
+                    <SelectItem value="故事敘事">{t("scriptDialog.styleStory")}</SelectItem>
+                    <SelectItem value="排行榜">{t("scriptDialog.styleRanking")}</SelectItem>
+                    <SelectItem value="挑戰">{t("scriptDialog.styleChallenge")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>目標時長（分鐘）</Label>
+                <Label>{t("scriptDialog.lengthLabel")}</Label>
                 <Select value={targetLength} onValueChange={setTargetLength}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">1 分鐘（短影音）</SelectItem>
-                    <SelectItem value="5">5 分鐘</SelectItem>
-                    <SelectItem value="10">10 分鐘</SelectItem>
-                    <SelectItem value="15">15 分鐘</SelectItem>
-                    <SelectItem value="20">20 分鐘</SelectItem>
-                    <SelectItem value="30">30 分鐘（長片）</SelectItem>
+                    <SelectItem value="1">{t("scriptDialog.length1")}</SelectItem>
+                    <SelectItem value="5">{t("scriptDialog.length5")}</SelectItem>
+                    <SelectItem value="10">{t("scriptDialog.length10")}</SelectItem>
+                    <SelectItem value="15">{t("scriptDialog.length15")}</SelectItem>
+                    <SelectItem value="20">{t("scriptDialog.length20")}</SelectItem>
+                    <SelectItem value="30">{t("scriptDialog.length30")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label>目標觀眾（選填）</Label>
+              <Label>{t("scriptDialog.audienceLabel")}</Label>
               <Input
                 value={audience}
                 onChange={(e) => setAudience(e.target.value)}
-                placeholder="例：18-35 歲科技愛好者"
+                placeholder={t("scriptDialog.audiencePlaceholder")}
               />
             </div>
 
             <div className="space-y-2">
-              <Label>補充說明（選填）</Label>
+              <Label>{t("scriptDialog.notesLabel")}</Label>
               <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="例：想要加入個人經驗分享、要有幽默感"
+                placeholder={t("scriptDialog.notesPlaceholder")}
                 rows={2}
               />
             </div>
 
             <DialogFooter>
-              <Button variant="outline" onClick={onClose}>取消</Button>
+              <Button variant="outline" onClick={onClose}>{t("common.cancel")}</Button>
               <Button
                 onClick={handleGenerate}
                 disabled={loading || !topic.trim()}
@@ -1832,12 +1843,12 @@ function ScriptGeneratorDialog({ open, onClose }: { open: boolean; onClose: () =
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    AI 生成中...
+                    {t("scriptDialog.generating")}
                   </>
                 ) : (
                   <>
                     <Sparkles className="mr-2 h-4 w-4" />
-                    生成腳本
+                    {t("scriptDialog.generateBtn")}
                   </>
                 )}
               </Button>
@@ -1847,16 +1858,16 @@ function ScriptGeneratorDialog({ open, onClose }: { open: boolean; onClose: () =
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <Badge variant="outline" className="text-orange-700">
-                主題：{topic} · {style} · {targetLength}分鐘
+                {t("scriptDialog.resultBadge", { topic, style, length: targetLength })}
               </Badge>
               <div className="flex gap-2">
                 <Button variant="ghost" size="sm" onClick={handleCopy}>
                   {copied ? <Check className="mr-1 h-3 w-3 text-green-600" /> : <Copy className="mr-1 h-3 w-3" />}
-                  {copied ? "已複製" : "複製"}
+                  {copied ? t("common.copied") : t("common.copy")}
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => setScript(null)}>
                   <Sparkles className="mr-1 h-3 w-3" />
-                  重新生成
+                  {t("common.regenerate")}
                 </Button>
               </div>
             </div>

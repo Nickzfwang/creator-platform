@@ -72,5 +72,385 @@
   },
   "metadata": {
     "description": "AI搭載クリエイター収益化プラットフォーム"
+  },
+  "videos": {
+    "common": {
+      "loading": "読み込み中...",
+      "generating": "生成中...",
+      "cancel": "キャンセル",
+      "save": "保存",
+      "edit": "編集",
+      "copy": "コピー",
+      "copied": "コピーしました",
+      "regenerate": "再生成",
+      "selectAll": "すべて選択",
+      "deselectAll": "選択解除"
+    },
+    "status": {
+      "uploading": "アップロード中",
+      "uploaded": "アップロード済み",
+      "processing": "AI 処理中",
+      "processed": "完了",
+      "failed": "失敗"
+    },
+    "page": {
+      "title": "動画管理",
+      "description": "動画をアップロードしてAIでハイライトクリップを自動編集",
+      "aiScript": "AI スクリプト",
+      "uploading": "アップロード中...",
+      "uploadVideo": "動画をアップロード",
+      "uploadingOverlay": "動画アップロード中...",
+      "uploadingOverlayDesc": "AIが分析してハイライトクリップを自動生成しています",
+      "emptyTitle": "動画がありません",
+      "emptyDescription": "最初の動画をアップロードすると、AIが自動でハイライトクリップを作成します",
+      "clipCount": "{count} クリップ"
+    },
+    "detail": {
+      "videoNotSupported": "お使いのブラウザは動画再生に対応していません",
+      "status": "ステータス",
+      "duration": "再生時間",
+      "createdAt": "作成日時",
+      "aiSummary": "AI サマリー"
+    },
+    "clips": {
+      "title": "AI クリップ",
+      "generating": "生成中...",
+      "generateBtn": "AI クリップ生成",
+      "generateAllShorts": "ショート一括生成",
+      "empty": "クリップがありません",
+      "emptyHint": "「AI クリップ生成」をクリックしてAIにハイライトを識別させましょう",
+      "statusReady": "準備完了",
+      "generateShortTitle": "縦型ショート動画を生成",
+      "shortGenerated": "ショート動画が生成されました",
+      "downloadShort": "ショートをダウンロード",
+      "copyCopy": "キャプションをコピー"
+    },
+    "subtitle": {
+      "title": "AI 字幕生成",
+      "transcribing": "Whisper 文字起こし中...",
+      "generateBtn": "字幕を生成",
+      "transcribingDesc": "Whisperが音声認識中 → GPTが文の校正中、約30〜60秒かかります...",
+      "segmentCount": "{count} セグメント",
+      "polished": "GPTにより校正済み",
+      "downloadSrt": "SRT をダウンロード",
+      "downloadVtt": "VTT をダウンロード",
+      "desc": "OpenAI Whisperで動画音声を自動認識し、GPT校正後にSRT/VTT字幕ファイルを生成します"
+    },
+    "postProduction": {
+      "title": "ポストプロダクション",
+      "fillers": "フィラー除去",
+      "chapters": "チャプターマーカー",
+      "scriptSummary": "スクリプト要約",
+      "multiPlatform": "マルチプラットフォーム対応",
+      "fillersDesc": "動画内の「えー、あの、その」などのフィラーワードを検出し、選択してワンクリックでカット",
+      "detecting": "検出中...",
+      "detectFillers": "フィラーを検出",
+      "fillerStats": "検出 {total} 個 / 選択 {selected} 個 / 推定節約 {savings}秒",
+      "cutting": "カット中...",
+      "cutBtn": "カット版を出力（{count} 個を除去）",
+      "cutDone": "カット完了",
+      "cutResult": "元: {original}s → カット後: {result}s（{saved}s節約）",
+      "chaptersDesc": "AIが動画構造を分析し、YouTubeチャプタータイムスタンプを自動生成",
+      "generateChapters": "チャプターを生成",
+      "copyYoutubeFormat": "YouTube形式をコピー",
+      "scriptDesc": "AIがトランスクリプトを分析し、構造化されたスクリプトアウトラインを生成",
+      "generateScript": "スクリプト要約を生成",
+      "copyMarkdown": "Markdownをコピー",
+      "exportMd": ".md をエクスポート"
+    },
+    "multiPlatform": {
+      "igSquare": "IG スクエア",
+      "desc": "クリップを選択してワンクリックでマルチプラットフォーム版を生成（字幕 + AIキャプション付き）",
+      "selectClip": "クリップを選択",
+      "selectClipPlaceholder": "クリップを選択してください",
+      "targetPlatforms": "ターゲットプラットフォーム",
+      "generatingLong": "生成中（1〜2分かかる場合があります）...",
+      "generateBtn": "{count} プラットフォーム版を生成"
+    },
+    "repurpose": {
+      "title": "AI リパーパスコンテンツ",
+      "queuing": "キューに追加中...",
+      "generateBtn": "リパーパスコンテンツを生成",
+      "desc": "AIが動画内容に基づいて15件のSNS投稿、ショート動画提案、メール通知を自動生成します",
+      "processing": "AIがリパーパスコンテンツを生成中...",
+      "processingDesc": "動画内容を分析してマルチプラットフォームSNS投稿、ショート動画提案、メール通知を生成中、約30〜60秒",
+      "failed": "リパーパスコンテンツの生成に失敗：",
+      "unknownError": "不明なエラー",
+      "itemCount": "{count} 件",
+      "tabPosts": "SNS投稿 ({count})",
+      "tabShorts": "ショート提案 ({count})",
+      "tabEmail": "メール ({count})",
+      "platform": "プラットフォーム",
+      "allPlatforms": "すべてのプラットフォーム",
+      "style": "スタイル",
+      "allStyles": "すべてのスタイル",
+      "styleKnowledge": "ナレッジ型",
+      "styleStory": "ストーリー型",
+      "styleInteractive": "インタラクティブ型",
+      "statusEdited": "編集済み",
+      "statusScheduled": "スケジュール済み",
+      "regen": "再生成",
+      "selectedCount": "{count} 件選択中",
+      "scheduling": "スケジュール中...",
+      "createSchedule": "スケジュールを作成",
+      "noShortSuggestions": "動画が短すぎるため、ショート提案はありません",
+      "reason": "推奨理由：",
+      "campaignCreated": "キャンペーンを作成しました",
+      "createCampaign": "キャンペーンを作成",
+      "editPost": "投稿を編集",
+      "resetOriginal": "元に戻す"
+    },
+    "repurposeDialog": {
+      "title": "ワンクリック コンテンツリパーパス",
+      "clip": "クリップ：",
+      "desc": "AIがこのクリップに基づいて全プラットフォーム向けのカスタマイズ投稿を生成します",
+      "generateAll": "AI 全プラットフォーム投稿を生成",
+      "generating": "AIが5つのプラットフォーム向けカスタムコンテンツを生成中..."
+    },
+    "deleteDialog": {
+      "title": "動画を削除",
+      "description": "この動画を削除してもよろしいですか？この操作は元に戻せません。関連するすべてのクリップも削除されます。",
+      "confirm": "削除"
+    },
+    "scriptDialog": {
+      "title": "AI 動画スクリプト生成",
+      "desc": "動画のトピックを入力すると、AIがHook、構成、CTA、撮影アドバイス、SEOキーワードを含む完全なスクリプトアウトラインを生成します。",
+      "topicLabel": "動画トピック *",
+      "topicPlaceholder": "例：AIツールで仕事の効率を上げる方法",
+      "styleLabel": "動画スタイル",
+      "styleTutorial": "📚 チュートリアル",
+      "styleVlog": "📹 Vlog",
+      "styleUnboxing": "📦 開封レビュー",
+      "styleStory": "📖 ストーリーテリング",
+      "styleRanking": "🏆 ランキング / Top N",
+      "styleChallenge": "🎯 チャレンジ",
+      "lengthLabel": "目標時間（分）",
+      "length1": "1分（ショート）",
+      "length5": "5分",
+      "length10": "10分",
+      "length15": "15分",
+      "length20": "20分",
+      "length30": "30分（ロングフォーム）",
+      "audienceLabel": "ターゲット視聴者（任意）",
+      "audiencePlaceholder": "例：18〜35歳のテック好き",
+      "notesLabel": "補足（任意）",
+      "notesPlaceholder": "例：個人の経験を入れたい、ユーモアのある感じで",
+      "generating": "AI 生成中...",
+      "generateBtn": "スクリプトを生成",
+      "resultBadge": "トピック：{topic} · {style} · {length}分"
+    },
+    "toast": {
+      "clipsGenerated": "AIクリップが生成されました",
+      "shortsGenerated": "{count} 本のショートが生成されました",
+      "shortGenerated": "ショート動画が生成されました！",
+      "captionCopied": "キャプションをコピーしました",
+      "copiedToClipboard": "クリップボードにコピーしました",
+      "fillersDetected": "{count} 個のフィラーを検出しました",
+      "cutComplete": "カット完了！{original}s → {result}s",
+      "chaptersGenerated": "{count} チャプターを生成しました",
+      "chaptersUpdated": "チャプターを更新しました",
+      "scriptGenerated": "{count} セクションを生成しました",
+      "markdownDownloaded": "Markdownファイルをダウンロードしました",
+      "multiPlatformDone": "生成完了：{success} 成功、{failed} 失敗",
+      "repurposeQueued": "コンテンツ生成がキューに追加されました",
+      "repurposeRequeued": "再生成がキューに追加されました",
+      "postsScheduled": "{count} 件の投稿をスケジュールしました",
+      "postsScheduleFailed": "{count} 件のスケジュールに失敗しました",
+      "saved": "保存しました",
+      "regenerated": "再生成しました",
+      "campaignCreated": "メールキャンペーンを作成しました",
+      "resetToOriginal": "AI元のバージョンに戻しました",
+      "enterTitle": "動画タイトルを入力してください",
+      "videoCreated": "動画を作成しました",
+      "uploadSuccess": "動画のアップロード成功、AI自動編集完了",
+      "uploadFailed": "アップロードに失敗しました",
+      "videoDeleted": "動画を削除しました",
+      "subtitleGenerated": "字幕が生成されました（{count} セグメント）",
+      "enterTopic": "動画トピックを入力してください",
+      "generateFailed": "生成に失敗しました",
+      "scriptCopied": "スクリプトをコピーしました"
+    }
+  },
+  "analytics": {
+    "pageTitle": "アナリティクス",
+    "pageDescription": "クロスプラットフォームのパフォーマンスと収益を追跡",
+    "period": {
+      "last7Days": "過去7日間",
+      "last30Days": "過去30日間",
+      "last90Days": "過去90日間",
+      "lastYear": "過去1年間"
+    },
+    "stats": {
+      "totalFollowers": "総フォロワー数",
+      "totalViews": "総視聴回数",
+      "totalEngagement": "総エンゲージメント",
+      "totalRevenue": "総収益"
+    },
+    "aiInsights": {
+      "title": "AI データインサイト",
+      "analyzing": "分析中...",
+      "reanalyze": "再分析",
+      "loadingMessage": "AIがデータを分析中...",
+      "analyzedAt": "分析日時：{time}",
+      "noData": "分析するデータがありません。まずSNSアカウントを連携してください。"
+    },
+    "tabs": {
+      "platform": "プラットフォーム分析",
+      "revenue": "収益分析",
+      "content": "人気コンテンツ"
+    },
+    "platform": {
+      "overview": "プラットフォーム概要",
+      "noData": "プラットフォームデータがありません",
+      "crossComparison": "クロスプラットフォーム比較"
+    },
+    "table": {
+      "platform": "プラットフォーム",
+      "followers": "フォロワー",
+      "views": "視聴",
+      "engagement": "エンゲージメント",
+      "account": "アカウント",
+      "engagementRate": "エンゲージメント率",
+      "title": "タイトル"
+    },
+    "revenue": {
+      "subscription": "サブスクリプション収益",
+      "membership": "メンバーシップ収益",
+      "affiliate": "アフィリエイト収益",
+      "trend": "収益トレンド"
+    },
+    "content": {
+      "noData": "コンテンツデータがありません",
+      "topContent": "人気コンテンツ"
+    }
+  },
+  "schedule": {
+    "pageTitle": "スケジュール管理",
+    "pageDescription": "クロスプラットフォームのSNS投稿を作成・スケジュール・管理",
+    "addPost": "投稿を追加",
+    "noContent": "コンテンツなし",
+    "status": {
+      "draft": "下書き",
+      "scheduled": "スケジュール済み",
+      "publishing": "公開中",
+      "published": "公開済み",
+      "failed": "失敗",
+      "cancelled": "キャンセル済み"
+    },
+    "tabs": {
+      "all": "すべて",
+      "draft": "下書き",
+      "scheduled": "スケジュール済み",
+      "published": "公開済み",
+      "failed": "失敗"
+    },
+    "empty": {
+      "title": "投稿がありません",
+      "description": "最初のSNS投稿を作成しましょう"
+    },
+    "actions": {
+      "edit": "編集",
+      "cancel": "キャンセル",
+      "update": "更新",
+      "create": "作成",
+      "processing": "処理中..."
+    },
+    "dialog": {
+      "createTitle": "投稿を追加",
+      "editTitle": "投稿を編集"
+    },
+    "form": {
+      "platform": "プラットフォーム",
+      "selectPlatform": "プラットフォームを選択",
+      "videoOptional": "動画（任意）",
+      "selectVideo": "動画を選択",
+      "clip": "クリップ",
+      "selectClip": "クリップを選択",
+      "selectVideoFirst": "先に動画を選択",
+      "content": "内容",
+      "aiGenerate": "AI 生成",
+      "aiGenerating": "生成中...",
+      "contentPlaceholder": "投稿内容",
+      "scheduledAtOptional": "スケジュール日時（任意）"
+    },
+    "deleteDialog": {
+      "title": "投稿を削除",
+      "description": "この投稿を削除してもよろしいですか？この操作は元に戻せません。",
+      "confirm": "削除"
+    },
+    "toast": {
+      "selectPlatform": "プラットフォームを選択してください",
+      "selectPlatformFirst": "先にプラットフォームを選択してください",
+      "postCreated": "投稿を作成しました",
+      "postUpdated": "投稿を更新しました",
+      "postDeleted": "投稿を削除しました",
+      "published": "公開しました",
+      "aiGenerated": "AIコンテンツが生成されました"
+    }
+  },
+  "settings": {
+    "pageTitle": "設定",
+    "pageDescription": "アカウント、SNS連携、API設定を管理",
+    "tabs": {
+      "profile": "プロフィール",
+      "social": "SNSアカウント",
+      "api": "API 設定"
+    },
+    "profile": {
+      "title": "プロフィール",
+      "description": "プロフィールとアカウント設定を管理",
+      "emailLabel": "メールアドレス",
+      "displayNameLabel": "表示名",
+      "updated": "更新しました",
+      "updating": "更新中...",
+      "save": "保存"
+    },
+    "social": {
+      "title": "SNSアカウント",
+      "description": "SNSプラットフォームのアカウントを連携",
+      "followerCount": "{count} フォロワー",
+      "disconnect": "連携解除",
+      "availablePlatforms": "連携可能なプラットフォーム",
+      "disconnectTitle": "連携解除",
+      "disconnectDescription": "このSNSアカウントの連携を解除してもよろしいですか？",
+      "disconnected": "連携を解除しました"
+    },
+    "apiKeys": {
+      "description": "APIアクセスキーを管理",
+      "addKey": "キーを追加",
+      "noKeys": "APIキーがありません",
+      "active": "有効",
+      "revoked": "失効",
+      "createTitle": "APIキーを追加",
+      "nameLabel": "名前",
+      "create": "作成",
+      "keyCreated": "APIキーを作成しました",
+      "keyCreatedHint": "このキーを今すぐコピーしてください。再度表示されません。",
+      "revokeTitle": "APIキーを失効",
+      "revokeDescription": "このキーを失効してもよろしいですか？このキーを使用しているアプリケーションはAPIにアクセスできなくなります。",
+      "revoke": "失効",
+      "keyRevoked": "キーを失効しました"
+    },
+    "rateLimit": {
+      "title": "APIレート制限",
+      "plan": "プラン",
+      "type": "タイプ",
+      "custom": "カスタム",
+      "default": "デフォルト",
+      "requestsPerMinute": "1分あたりのリクエスト",
+      "requestsPerDay": "1日あたりのリクエスト"
+    },
+    "oauth": {
+      "accountConnected": "{platform} アカウントの連携に成功しました",
+      "missingParams": "OAuthパラメータが不完全です",
+      "invalidState": "OAuth検証に失敗しました。もう一度お試しください",
+      "serverError": "サーバーエラーが発生しました。後ほどお試しください",
+      "connectFailed": "連携に失敗しました：{error}"
+    },
+    "common": {
+      "cancel": "キャンセル",
+      "confirm": "確認",
+      "copied": "コピーしました"
+    }
   }
 }
