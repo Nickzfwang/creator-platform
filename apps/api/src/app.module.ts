@@ -36,6 +36,7 @@ import { InteractionsModule } from './modules/interactions/interactions.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { BrevoModule } from './modules/brevo/brevo.module';
 import { StorageModule } from './modules/storage/storage.module';
+import { ExportModule } from './modules/export/export.module';
 
 @Module({
   imports: [
@@ -88,6 +89,7 @@ import { StorageModule } from './modules/storage/storage.module';
     InteractionsModule,
     NotificationModule,
     BrevoModule,
+    ExportModule,
   ],
 })
 export class AppModule {}
