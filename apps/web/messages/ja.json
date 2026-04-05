@@ -452,5 +452,509 @@
       "confirm": "確認",
       "copied": "コピーしました"
     }
+  },
+  "bot": {
+    "pageTitle": "Bot 設定",
+    "pageDescription": "AIアドバイザーBotとナレッジベースの作成・管理",
+    "tabBots": "Bot 一覧",
+    "tabKnowledge": "ナレッジベース",
+    "addBot": "Bot を追加",
+    "noBot": "Botがありません",
+    "noBotDesc": "最初のAIアドバイザーBotを作成しましょう",
+    "public": "公開",
+    "private": "非公開",
+    "testChat": "テストチャット",
+    "edit": "編集",
+    "editBot": "Bot を編集",
+    "deleteBot": "Bot を削除",
+    "deleteBotConfirm": "このBotを削除してもよろしいですか？すべての会話履歴が削除されます。",
+    "delete": "削除",
+    "botCreated": "Botを作成しました",
+    "botUpdated": "Botを更新しました",
+    "botDeleted": "Botを削除しました",
+    "nameRequired": "Bot名を入力してください",
+    "labelName": "名前",
+    "labelDescription": "説明",
+    "labelWelcomeMessage": "ウェルカムメッセージ",
+    "labelSystemPrompt": "システムプロンプト",
+    "labelPublicBot": "公開Bot",
+    "botNamePlaceholder": "Bot名",
+    "systemPromptPlaceholder": "Botの役割と振る舞いを定義...",
+    "optional": "任意",
+    "cancel": "キャンセル",
+    "create": "作成",
+    "update": "更新",
+    "chatEmptyHint": "メッセージを入力して会話を開始",
+    "thinking": "考え中...",
+    "chatInputPlaceholder": "メッセージを入力...（Shift+Enterで改行）",
+    "addKnowledgeBase": "ナレッジベースを追加",
+    "noKnowledgeBase": "ナレッジベースがありません",
+    "noKnowledgeBaseDesc": "ナレッジベースを作成してコンテンツをインポートし、Botの回答精度を向上させましょう",
+    "chunkCount": "{count} チャンク",
+    "ingestContent": "コンテンツをインポート",
+    "kbNamePlaceholder": "ナレッジベース名",
+    "labelSourceType": "ソースタイプ",
+    "sourceManual": "手動入力",
+    "sourceQA": "よくある質問",
+    "sourceDocument": "ドキュメント",
+    "sourceURL": "URL",
+    "kbCreated": "ナレッジベースを作成しました",
+    "labelContentText": "コンテンツテキスト",
+    "ingestPlaceholder": "インポートするテキストコンテンツを貼り付け...",
+    "ingest": "インポート",
+    "ingesting": "インポート中...",
+    "ingestSuccess": "コンテンツをインポートしました",
+    "deleteKnowledgeBase": "ナレッジベースを削除",
+    "deleteKnowledgeBaseConfirm": "このナレッジベースを削除してもよろしいですか？すべてのインポート済みコンテンツが削除されます。",
+    "kbDeleted": "ナレッジベースを削除しました"
+  },
+  "members": {
+    "pageTitle": "メンバー管理",
+    "pageDescription": "メンバーシッププランと購読者の管理",
+    "addTier": "プランを追加",
+    "edit": "編集",
+    "cancel": "キャンセル",
+    "update": "更新",
+    "create": "作成",
+    "perMonth": "/月",
+    "memberCount": "{count} 名のメンバー",
+    "maxMembers": "上限 {count}",
+    "stats": {
+      "totalMembers": "総メンバー数",
+      "activeTiers": "有効プラン",
+      "estimatedRevenue": "推定月収"
+    },
+    "tabs": {
+      "tiers": "メンバーシッププラン",
+      "members": "メンバー一覧"
+    },
+    "status": {
+      "active": "有効",
+      "inactive": "無効"
+    },
+    "empty": {
+      "tiersTitle": "メンバーシッププランがありません",
+      "tiersDescription": "メンバーシッププランを作成して、ファンのサブスクリプションを受け付けましょう",
+      "membersTitle": "メンバーがいません",
+      "membersDescription": "メンバーがプランに登録すると、ここに表示されます"
+    },
+    "dialog": {
+      "editTitle": "プランを編集",
+      "createTitle": "プランを追加"
+    },
+    "form": {
+      "name": "プラン名",
+      "namePlaceholder": "例：ベーシック会員",
+      "description": "説明",
+      "optional": "任意",
+      "monthlyPrice": "月額料金 (NT$)",
+      "maxMembers": "人数上限（任意）",
+      "unlimited": "無制限",
+      "benefits": "メンバー特典（1行に1つ）",
+      "benefitsPlaceholder": "限定動画\nプライベートコミュニティ\n月例ライブ配信",
+      "enableTier": "プランを有効化"
+    },
+    "delete": {
+      "title": "プランを削除",
+      "description": "このメンバーシッププランを削除してもよろしいですか？既存のメンバーには影響しません。",
+      "confirm": "削除"
+    },
+    "validation": {
+      "nameRequired": "プラン名を入力してください",
+      "priceInvalid": "有効な価格を入力してください"
+    },
+    "toast": {
+      "tierUpdated": "プランを更新しました",
+      "tierCreated": "プランを作成しました",
+      "tierDeleted": "プランを削除しました"
+    }
+  },
+  "interactions": {
+    "title": "AI ファンインタラクション管理",
+    "subtitle": "コメント分類、AI返信下書き、感情分析",
+    "tabComments": "コメント管理",
+    "tabStats": "インタラクション統計",
+    "allCategories": "すべてのカテゴリ",
+    "all": "すべて",
+    "categoryPositive": "ポジティブ",
+    "categoryNegative": "ネガティブ",
+    "categoryQuestion": "質問",
+    "categoryCollaboration": "コラボ",
+    "categorySpam": "スパム",
+    "categoryNeutral": "中立",
+    "searchPlaceholder": "コメントを検索...",
+    "importComments": "コメントをインポート",
+    "importHint": "1行に1コメント、形式：「著者名: コメント内容」またはコメントのみ",
+    "importPlaceholder": "太郎: この動画最高！\n花子: もっとチュートリアルを作ってくれますか？\n匿名のコメント",
+    "import": "インポート",
+    "importSuccess": "{count} 件のコメントをインポートしました",
+    "anonymous": "匿名",
+    "noComments": "コメントがありません",
+    "noCommentsHint": "「コメントをインポート」をクリックしてファンインタラクションの管理を始めましょう",
+    "highPriority": "高優先",
+    "replied": "返信済み",
+    "deleteComment": "コメントを削除",
+    "deleted": "削除しました",
+    "replyMarked": "返信済みとしてマーク",
+    "aiReplyDraft": "AI返信下書き",
+    "replyPlaceholder": "下書きを選択するか、手動で返信を入力...",
+    "confirm": "確認",
+    "last7Days": "過去7日間",
+    "last30Days": "過去30日間",
+    "totalComments": "総コメント数",
+    "repliedCount": "返信済み",
+    "replyRate": "返信率",
+    "avgSentiment": "平均感情",
+    "categoryBreakdown": "カテゴリ分布",
+    "countUnit": "{count} 件",
+    "sentimentTrend": "感情トレンド"
+  },
+  "brand": {
+    "pageTitle": "ブランド提携",
+    "pageDescription": "ブランドコラボの招待と提案を管理",
+    "addDeal": "提携を追加",
+    "stats": {
+      "activeDeals": "進行中の案件",
+      "completedDeals": "完了した案件",
+      "totalRevenue": "総収益"
+    },
+    "empty": {
+      "title": "ブランド提携がありません",
+      "description": "ブランド提携案件を追加し、提案から完了までの全プロセスを追跡"
+    },
+    "status": {
+      "DRAFT": "下書き",
+      "PROPOSAL_SENT": "提案済み",
+      "NEGOTIATING": "交渉中",
+      "CONFIRMED": "確定済み",
+      "IN_PROGRESS": "進行中",
+      "COMPLETED": "完了",
+      "CANCELLED": "キャンセル"
+    },
+    "dealType": {
+      "SPONSORED_POST": "スポンサード投稿",
+      "BRAND_AMBASSADOR": "ブランドアンバサダー",
+      "PRODUCT_REVIEW": "商品レビュー",
+      "AFFILIATE": "アフィリエイト",
+      "EVENT": "イベントコラボ",
+      "OTHER": "その他"
+    },
+    "createDialog": {
+      "title": "ブランド提携を追加"
+    },
+    "deleteDialog": {
+      "title": "ブランド提携を削除",
+      "description": "このブランド提携案件を削除してもよろしいですか？"
+    },
+    "form": {
+      "brandName": "ブランド名",
+      "dealType": "提携タイプ",
+      "selectType": "タイプを選択",
+      "budgetMin": "予算下限 (NT$)",
+      "budgetMax": "予算上限 (NT$)",
+      "notes": "備考"
+    },
+    "detail": {
+      "budgetRange": "予算範囲",
+      "aiProposal": "AI提案"
+    },
+    "action": {
+      "cancel": "キャンセル",
+      "create": "作成",
+      "delete": "削除",
+      "markProposalSent": "提案済みにする",
+      "aiGenerate": "AI提案を生成",
+      "generating": "生成中...",
+      "startNegotiation": "交渉を開始",
+      "confirmDeal": "提携を確定",
+      "startExecution": "実行を開始",
+      "markCompleted": "完了にする",
+      "cancelDeal": "提携をキャンセル"
+    },
+    "validation": {
+      "requiredFields": "ブランド名と提携タイプを入力してください"
+    },
+    "toast": {
+      "created": "ブランド提携を作成しました",
+      "statusUpdated": "ステータスを更新しました",
+      "proposalGenerated": "提案を生成しました",
+      "deleted": "削除しました"
+    }
+  },
+  "monetize": {
+    "title": "AI 収益化アドバイザー",
+    "subtitle": "すべての収益チャネルを統合し、健全性レポート、AIアドバイス、収益予測を提供",
+    "tabHealth": "収益概要",
+    "tabAdvice": "AIアドバイス",
+    "tabForecast": "収益予測",
+    "period30d": "過去30日間",
+    "period90d": "過去90日間",
+    "totalRevenue": "総収益",
+    "channel.membership": "メンバーシップ",
+    "channel.digitalProduct": "デジタル商品",
+    "channel.brandDeal": "ブランド提携",
+    "channel.affiliate": "アフィリエイト",
+    "channel.subscription": "プラットフォームサブスクリプション",
+    "membershipMrr": "MRR: {mrr} | メンバー: {members}",
+    "churnRate": "解約率: {rate}%",
+    "digitalProductSales": "販売数: {sales} | 平均注文額: {avgOrder}",
+    "topSelling": "人気商品: {name}",
+    "brandDealActive": "進行中: {deals} | 平均単価: {avgValue}",
+    "conversionRate": "成約率: {rate}%",
+    "affiliateClicks": "クリック: {clicks} | 転換率: {rate}%",
+    "topLink": "最良: {name}",
+    "adviceDescription": "AIがあなたの収益データを分析し、実行可能な収益化アドバイスを提供します",
+    "generateAdvice": "アドバイスを生成",
+    "adviceEmpty": "「アドバイスを生成」をクリックしてAI収益化アドバイスを取得",
+    "suggestions": "収益化アドバイス",
+    "impact.HIGH": "高インパクト",
+    "impact.MEDIUM": "中インパクト",
+    "impact.LOW": "低インパクト",
+    "category.PRICING": "価格最適化",
+    "category.GROWTH": "成長戦略",
+    "category.RETENTION": "リテンション向上",
+    "category.NEW_CHANNEL": "新チャネル",
+    "category.OPTIMIZATION": "効率最適化",
+    "estimatedImpact": "予想インパクト: {impact}",
+    "executionSteps": "実行ステップ:",
+    "pricingAdvice": "価格アドバイス",
+    "perMonth": "/月",
+    "people": "人",
+    "salesUnit": "件",
+    "recommendNewChannels": "おすすめの新チャネル",
+    "difficulty.EASY": "簡単",
+    "difficulty.MEDIUM": "普通",
+    "difficulty.HARD": "難しい",
+    "estimatedMonthlyRevenue": "推定 {amount}/月",
+    "prerequisites": "前提条件: {items}",
+    "insufficientData": "データ不足",
+    "nextMonth": "来月",
+    "twoMonthsLater": "2ヶ月後",
+    "threeMonthsLater": "3ヶ月後",
+    "forecastAssumptions": "予測の前提条件"
+  },
+  "store": {
+    "pageTitle": "デジタル商品ストア",
+    "pageDescription": "PDF、テンプレート、プリセット、電子書籍などのデジタル商品を販売",
+    "addProduct": "商品を追加",
+    "typeLabels": {
+      "pdf": "📄 PDF",
+      "template": "📐 テンプレート",
+      "preset": "🎨 プリセット",
+      "ebook": "📖 電子書籍",
+      "videoCourse": "🎬 動画コース",
+      "audio": "🎵 オーディオ",
+      "other": "📦 その他"
+    },
+    "stats": {
+      "productCount": "商品数",
+      "totalRevenue": "総売上",
+      "totalSales": "総販売数"
+    },
+    "status": {
+      "published": "公開中",
+      "unpublished": "非公開"
+    },
+    "aiCopy": "AIコピー",
+    "productStats": {
+      "sales": "{count} 販売",
+      "revenue": "NT${amount} 売上"
+    },
+    "action": {
+      "publish": "公開",
+      "unpublish": "非公開にする",
+      "aiRewrite": "AIリライト",
+      "cancel": "キャンセル",
+      "aiGenerating": "AI生成中...",
+      "createProduct": "商品を作成",
+      "delete": "削除"
+    },
+    "empty": {
+      "title": "デジタル商品がありません",
+      "description": "最初のデジタル商品を追加すると、AIが魅力的な商品説明を自動生成します"
+    },
+    "dialog": {
+      "createTitle": "デジタル商品を追加",
+      "deleteTitle": "商品を削除",
+      "deleteDescription": "この商品を削除してもよろしいですか？すべての注文記録も削除されます。"
+    },
+    "form": {
+      "name": "商品名",
+      "namePlaceholder": "例：Lightroom スタイル プリセットパック",
+      "type": "商品タイプ",
+      "price": "価格 (NT$)",
+      "description": "簡単な説明（任意、AIが完全なコピーを自動生成します）",
+      "descriptionPlaceholder": "商品の特徴を簡単に説明...",
+      "tags": "タグ（カンマ区切り）",
+      "tagsPlaceholder": "写真, Lightroom, プリセット"
+    },
+    "aiHint": "AIが商品情報に基づいてマーケティングコピーとSEOタグを自動生成します",
+    "validation": {
+      "nameRequired": "商品名を入力してください",
+      "priceRequired": "価格を設定してください"
+    },
+    "toast": {
+      "created": "商品を作成しました。AI説明文が生成されました",
+      "published": "公開しました",
+      "unpublished": "非公開にしました",
+      "aiRegenerated": "AIコピーを再生成しました",
+      "deleted": "商品を削除しました"
+    }
+  },
+  "email": {
+    "pageTitle": "AI メールマーケティング",
+    "pageDescription": "AIがメールシーケンスを自動生成し、購読者リストを管理",
+    "stats": {
+      "subscribers": "購読者",
+      "sent": "送信済み",
+      "avgOpenRate": "平均開封率",
+      "campaigns": "キャンペーン"
+    },
+    "tabs": {
+      "campaigns": "メールキャンペーン",
+      "subscribers": "購読者リスト"
+    },
+    "empty": {
+      "campaignsTitle": "メールキャンペーンがありません",
+      "campaignsDescription": "AIにメールマーケティングシーケンスを生成させましょう：ウェルカム → 育成 → セールス",
+      "campaignsAction": "AIシーケンス生成",
+      "subscribersTitle": "購読者がいません",
+      "subscribersDescription": "メールリストに購読者を追加しましょう"
+    },
+    "campaign": {
+      "emailCount": "{count} 通",
+      "typeSequence": "自動シーケンス",
+      "typeSingle": "単発",
+      "statusDraft": "下書き",
+      "statusSent": "送信済み",
+      "statusScheduled": "スケジュール済み",
+      "statusSending": "送信中",
+      "sentStats": "{sent} 送信 · {opened} 開封 · {clicked} クリック"
+    },
+    "subscriber": {
+      "name": "名前",
+      "source": "ソース",
+      "status": "ステータス",
+      "joinDate": "登録日",
+      "active": "アクティブ",
+      "unsubscribed": "解除"
+    },
+    "actions": {
+      "addSubscriber": "購読者を追加",
+      "aiGenerateSequence": "AIメールシーケンス生成",
+      "send": "送信",
+      "cancel": "キャンセル",
+      "add": "追加",
+      "adding": "追加中...",
+      "generateSequence": "シーケンスを生成",
+      "aiGenerating": "AI生成中..."
+    },
+    "dialog": {
+      "addSubscriberTitle": "購読者を追加",
+      "nameLabel": "名前（任意）",
+      "namePlaceholder": "ファンの名前",
+      "aiGenerateTitle": "AIメールシーケンス生成",
+      "purposeLabel": "マーケティング目的",
+      "purposePlaceholder": "例：新オンラインコースの宣伝、新メンバー歓迎、期間限定セール",
+      "productNameLabel": "商品名（任意）",
+      "productNamePlaceholder": "例：Lightroom プリセットパック",
+      "toneLabel": "トーン",
+      "emailCountLabel": "メール数",
+      "emailCount3": "3通（基本）",
+      "emailCount5": "5通（標準）",
+      "emailCount7": "7通（完全）",
+      "aiFunnelHint": "AIが自動化メールファネルを生成します：ウェルカム → 育成 → セールス"
+    },
+    "toneOptions": {
+      "friendlyProfessional": "親しみやすくプロフェッショナル",
+      "enthusiastic": "熱意あふれる",
+      "formalAuthoritative": "フォーマルで権威ある",
+      "casualHumorous": "カジュアルでユーモラス"
+    },
+    "preview": {
+      "emailIndex": "第 {index} 通",
+      "sendOnDay": "{day} 日目に送信"
+    },
+    "confirm": {
+      "sendTitle": "メールキャンペーンを送信",
+      "sendDescription": "このメールキャンペーンをすべての対象購読者に送信してもよろしいですか？送信後は取り消せません。",
+      "sendConfirmLabel": "送信を確認",
+      "deleteTitle": "メールキャンペーンを削除",
+      "deleteDescription": "このメールキャンペーンを削除してもよろしいですか？すべてのメールテンプレートも削除されます。",
+      "deleteConfirmLabel": "削除"
+    },
+    "toast": {
+      "subscriberAdded": "購読者を追加しました",
+      "aiSequenceGenerated": "AIが {count} 通のメールシーケンスを生成しました",
+      "sendQueued": "送信キューに追加：{subscriberCount} 名の購読者、{emailCount} 通のメール",
+      "deleted": "削除しました"
+    },
+    "validation": {
+      "emailRequired": "メールアドレスを入力してください",
+      "purposeRequired": "マーケティング目的を入力してください"
+    }
+  },
+  "landing": {
+    "pageTitle": "ランディングページ",
+    "pageDescription": "パーソナルブランドページを作成",
+    "themes": {
+      "modern": "モダン",
+      "minimal": "ミニマル",
+      "bold": "ボールド",
+      "creative": "クリエイティブ"
+    },
+    "niches": {
+      "tech": "テック",
+      "food": "グルメ",
+      "travel": "旅行",
+      "education": "教育",
+      "lifestyle": "ライフスタイル",
+      "entertainment": "エンタメ",
+      "business": "ビジネス",
+      "design": "デザイン",
+      "health": "健康",
+      "music": "音楽"
+    },
+    "toast": {
+      "generated": "ランディングページが生成されました！",
+      "updated": "更新しました",
+      "linkCopied": "リンクをコピーしました"
+    },
+    "emptyState": {
+      "description": "AIがあなたの創作分野に基づいて、コピー、配色、レイアウトを含むプロフェッショナルなランディングページを自動生成します",
+      "generateButton": "AIワンクリック生成"
+    },
+    "generateDialog": {
+      "title": "AI ランディングページ生成",
+      "nameLabel": "あなたの名前 / ブランド名",
+      "namePlaceholder": "例：Nick Creates",
+      "nicheLabel": "クリエイティブ分野",
+      "nichePlaceholder": "分野を選択",
+      "descriptionLabel": "補足説明（任意）",
+      "descriptionPlaceholder": "AIにあなたの情報をもっと伝えてください。例：AIツールレビューに特化、10万フォロワー...",
+      "cancel": "キャンセル",
+      "generating": "AI生成中...",
+      "startGenerate": "生成を開始"
+    },
+    "editor": {
+      "viewCount": "{slug} · {count} 回閲覧",
+      "copyLink": "リンクをコピー",
+      "preview": "プレビュー",
+      "unpublish": "非公開にする",
+      "publish": "🚀 ページを公開",
+      "statusPublished": "✅ 公開中",
+      "statusDraft": "📝 下書き",
+      "theme": "テーマ：{theme}",
+      "viewPublicPage": "公開ページを表示",
+      "headlineTitle": "ヘッドライン",
+      "mainHeadline": "メインヘッドライン",
+      "subHeadline": "サブヘッドライン",
+      "bioTitle": "自己紹介",
+      "themeColorTitle": "テーマカラー",
+      "ctaTitle": "CTAボタン",
+      "sectionsTitle": "ページセクション",
+      "unnamedSection": "無名セクション",
+      "previewTitle": "ページプレビュー"
+    }
   }
 }

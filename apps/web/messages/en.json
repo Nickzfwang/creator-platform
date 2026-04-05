@@ -452,5 +452,509 @@
       "confirm": "Confirm",
       "copied": "Copied"
     }
+  },
+  "bot": {
+    "pageTitle": "Bot Settings",
+    "pageDescription": "Create and manage AI advisor bots and knowledge bases",
+    "tabBots": "Bot List",
+    "tabKnowledge": "Knowledge Base",
+    "addBot": "Add Bot",
+    "noBot": "No Bots Yet",
+    "noBotDesc": "Create your first AI advisor bot",
+    "public": "Public",
+    "private": "Private",
+    "testChat": "Test Chat",
+    "edit": "Edit",
+    "editBot": "Edit Bot",
+    "deleteBot": "Delete Bot",
+    "deleteBotConfirm": "Are you sure you want to delete this bot? All conversation history will be deleted.",
+    "delete": "Delete",
+    "botCreated": "Bot created",
+    "botUpdated": "Bot updated",
+    "botDeleted": "Bot deleted",
+    "nameRequired": "Please enter a bot name",
+    "labelName": "Name",
+    "labelDescription": "Description",
+    "labelWelcomeMessage": "Welcome Message",
+    "labelSystemPrompt": "System Prompt",
+    "labelPublicBot": "Public Bot",
+    "botNamePlaceholder": "Bot name",
+    "systemPromptPlaceholder": "Define the bot's role and behavior...",
+    "optional": "Optional",
+    "cancel": "Cancel",
+    "create": "Create",
+    "update": "Update",
+    "chatEmptyHint": "Type a message to start the conversation",
+    "thinking": "Thinking...",
+    "chatInputPlaceholder": "Type a message... (Shift+Enter for new line)",
+    "addKnowledgeBase": "Add Knowledge Base",
+    "noKnowledgeBase": "No Knowledge Base Yet",
+    "noKnowledgeBaseDesc": "Create a knowledge base and import content to make bot responses more accurate",
+    "chunkCount": "{count} chunks",
+    "ingestContent": "Import Content",
+    "kbNamePlaceholder": "Knowledge base name",
+    "labelSourceType": "Source Type",
+    "sourceManual": "Manual Input",
+    "sourceQA": "FAQ",
+    "sourceDocument": "Document",
+    "sourceURL": "URL",
+    "kbCreated": "Knowledge base created",
+    "labelContentText": "Content Text",
+    "ingestPlaceholder": "Paste the text content to import...",
+    "ingest": "Import",
+    "ingesting": "Importing...",
+    "ingestSuccess": "Content imported",
+    "deleteKnowledgeBase": "Delete Knowledge Base",
+    "deleteKnowledgeBaseConfirm": "Are you sure you want to delete this knowledge base? All imported content will be deleted.",
+    "kbDeleted": "Knowledge base deleted"
+  },
+  "members": {
+    "pageTitle": "Membership Management",
+    "pageDescription": "Manage membership tiers and subscribers",
+    "addTier": "Add Tier",
+    "edit": "Edit",
+    "cancel": "Cancel",
+    "update": "Update",
+    "create": "Create",
+    "perMonth": "/mo",
+    "memberCount": "{count} members",
+    "maxMembers": "Max {count}",
+    "stats": {
+      "totalMembers": "Total Members",
+      "activeTiers": "Active Tiers",
+      "estimatedRevenue": "Estimated Monthly Revenue"
+    },
+    "tabs": {
+      "tiers": "Membership Tiers",
+      "members": "Member List"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "empty": {
+      "tiersTitle": "No Membership Tiers Yet",
+      "tiersDescription": "Create a membership tier to start accepting fan subscriptions",
+      "membersTitle": "No Members Yet",
+      "membersDescription": "Members will appear here after they subscribe to your tiers"
+    },
+    "dialog": {
+      "editTitle": "Edit Tier",
+      "createTitle": "Add Tier"
+    },
+    "form": {
+      "name": "Tier Name",
+      "namePlaceholder": "e.g., Basic Member",
+      "description": "Description",
+      "optional": "Optional",
+      "monthlyPrice": "Monthly Price (NT$)",
+      "maxMembers": "Member Limit (optional)",
+      "unlimited": "Unlimited",
+      "benefits": "Member Benefits (one per line)",
+      "benefitsPlaceholder": "Exclusive videos\nPrivate community\nMonthly livestream",
+      "enableTier": "Enable Tier"
+    },
+    "delete": {
+      "title": "Delete Tier",
+      "description": "Are you sure you want to delete this membership tier? Existing members will not be affected.",
+      "confirm": "Delete"
+    },
+    "validation": {
+      "nameRequired": "Please enter a tier name",
+      "priceInvalid": "Please enter a valid price"
+    },
+    "toast": {
+      "tierUpdated": "Tier updated",
+      "tierCreated": "Tier created",
+      "tierDeleted": "Tier deleted"
+    }
+  },
+  "interactions": {
+    "title": "AI Fan Interaction Management",
+    "subtitle": "Comment classification, AI-drafted replies, sentiment analysis",
+    "tabComments": "Comment Management",
+    "tabStats": "Interaction Statistics",
+    "allCategories": "All Categories",
+    "all": "All",
+    "categoryPositive": "Positive",
+    "categoryNegative": "Negative",
+    "categoryQuestion": "Question",
+    "categoryCollaboration": "Collaboration",
+    "categorySpam": "Spam",
+    "categoryNeutral": "Neutral",
+    "searchPlaceholder": "Search comments...",
+    "importComments": "Import Comments",
+    "importHint": "One comment per line, format: \"Author: Comment\" or plain comment text",
+    "importPlaceholder": "John: This video is amazing!\nJane: Can you make more tutorials?\nAnonymous comment text",
+    "import": "Import",
+    "importSuccess": "Imported {count} comments",
+    "anonymous": "Anonymous",
+    "noComments": "No comments yet",
+    "noCommentsHint": "Click \"Import Comments\" to start managing fan interactions",
+    "highPriority": "High Priority",
+    "replied": "Replied",
+    "deleteComment": "Delete Comment",
+    "deleted": "Deleted",
+    "replyMarked": "Marked as replied",
+    "aiReplyDraft": "AI Reply Draft",
+    "replyPlaceholder": "Select a draft or type a reply manually...",
+    "confirm": "Confirm",
+    "last7Days": "Last 7 Days",
+    "last30Days": "Last 30 Days",
+    "totalComments": "Total Comments",
+    "repliedCount": "Replied",
+    "replyRate": "Reply Rate",
+    "avgSentiment": "Avg Sentiment",
+    "categoryBreakdown": "Category Breakdown",
+    "countUnit": "{count} comments",
+    "sentimentTrend": "Sentiment Trend"
+  },
+  "brand": {
+    "pageTitle": "Brand Deals",
+    "pageDescription": "Manage brand collaboration invitations and proposals",
+    "addDeal": "Add Deal",
+    "stats": {
+      "activeDeals": "Active Deals",
+      "completedDeals": "Completed Deals",
+      "totalRevenue": "Total Revenue"
+    },
+    "empty": {
+      "title": "No Brand Deals Yet",
+      "description": "Add a brand deal to track the full process from proposal to completion"
+    },
+    "status": {
+      "DRAFT": "Draft",
+      "PROPOSAL_SENT": "Proposal Sent",
+      "NEGOTIATING": "Negotiating",
+      "CONFIRMED": "Confirmed",
+      "IN_PROGRESS": "In Progress",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled"
+    },
+    "dealType": {
+      "SPONSORED_POST": "Sponsored Post",
+      "BRAND_AMBASSADOR": "Brand Ambassador",
+      "PRODUCT_REVIEW": "Product Review",
+      "AFFILIATE": "Affiliate Marketing",
+      "EVENT": "Event Collaboration",
+      "OTHER": "Other"
+    },
+    "createDialog": {
+      "title": "Add Brand Deal"
+    },
+    "deleteDialog": {
+      "title": "Delete Brand Deal",
+      "description": "Are you sure you want to delete this brand deal?"
+    },
+    "form": {
+      "brandName": "Brand Name",
+      "dealType": "Deal Type",
+      "selectType": "Select type",
+      "budgetMin": "Budget Min (NT$)",
+      "budgetMax": "Budget Max (NT$)",
+      "notes": "Notes"
+    },
+    "detail": {
+      "budgetRange": "Budget Range",
+      "aiProposal": "AI Proposal"
+    },
+    "action": {
+      "cancel": "Cancel",
+      "create": "Create",
+      "delete": "Delete",
+      "markProposalSent": "Mark as Proposal Sent",
+      "aiGenerate": "AI Generate Proposal",
+      "generating": "Generating...",
+      "startNegotiation": "Start Negotiation",
+      "confirmDeal": "Confirm Deal",
+      "startExecution": "Start Execution",
+      "markCompleted": "Mark Completed",
+      "cancelDeal": "Cancel Deal"
+    },
+    "validation": {
+      "requiredFields": "Please fill in the brand name and deal type"
+    },
+    "toast": {
+      "created": "Brand deal created",
+      "statusUpdated": "Status updated",
+      "proposalGenerated": "Proposal generated",
+      "deleted": "Deleted"
+    }
+  },
+  "monetize": {
+    "title": "AI Monetization Advisor",
+    "subtitle": "Consolidate all revenue channels with health reports, AI advice, and revenue forecasts",
+    "tabHealth": "Revenue Overview",
+    "tabAdvice": "AI Advice",
+    "tabForecast": "Revenue Forecast",
+    "period30d": "Last 30 Days",
+    "period90d": "Last 90 Days",
+    "totalRevenue": "Total Revenue",
+    "channel.membership": "Membership",
+    "channel.digitalProduct": "Digital Products",
+    "channel.brandDeal": "Brand Deals",
+    "channel.affiliate": "Affiliate Marketing",
+    "channel.subscription": "Platform Subscription",
+    "membershipMrr": "MRR: {mrr} | Members: {members}",
+    "churnRate": "Churn Rate: {rate}%",
+    "digitalProductSales": "Sales: {sales} | Avg Order: {avgOrder}",
+    "topSelling": "Top Selling: {name}",
+    "brandDealActive": "Active: {deals} | Avg Value: {avgValue}",
+    "conversionRate": "Conversion Rate: {rate}%",
+    "affiliateClicks": "Clicks: {clicks} | Conversion: {rate}%",
+    "topLink": "Best: {name}",
+    "adviceDescription": "AI analyzes your revenue data and provides actionable monetization advice",
+    "generateAdvice": "Generate Advice",
+    "adviceEmpty": "Click \"Generate Advice\" to get AI monetization suggestions",
+    "suggestions": "Monetization Suggestions",
+    "impact.HIGH": "High Impact",
+    "impact.MEDIUM": "Medium Impact",
+    "impact.LOW": "Low Impact",
+    "category.PRICING": "Pricing Optimization",
+    "category.GROWTH": "Growth Strategy",
+    "category.RETENTION": "Retention Improvement",
+    "category.NEW_CHANNEL": "New Channel",
+    "category.OPTIMIZATION": "Efficiency Optimization",
+    "estimatedImpact": "Estimated Impact: {impact}",
+    "executionSteps": "Execution Steps:",
+    "pricingAdvice": "Pricing Advice",
+    "perMonth": "/mo",
+    "people": "people",
+    "salesUnit": "sales",
+    "recommendNewChannels": "Recommended New Channels",
+    "difficulty.EASY": "Easy",
+    "difficulty.MEDIUM": "Medium",
+    "difficulty.HARD": "Hard",
+    "estimatedMonthlyRevenue": "Est. {amount}/mo",
+    "prerequisites": "Prerequisites: {items}",
+    "insufficientData": "Insufficient Data",
+    "nextMonth": "Next Month",
+    "twoMonthsLater": "2 Months Later",
+    "threeMonthsLater": "3 Months Later",
+    "forecastAssumptions": "Forecast Assumptions"
+  },
+  "store": {
+    "pageTitle": "Digital Product Store",
+    "pageDescription": "Sell PDFs, templates, presets, ebooks, and other digital products",
+    "addProduct": "Add Product",
+    "typeLabels": {
+      "pdf": "📄 PDF",
+      "template": "📐 Template",
+      "preset": "🎨 Preset",
+      "ebook": "📖 Ebook",
+      "videoCourse": "🎬 Video Course",
+      "audio": "🎵 Audio",
+      "other": "📦 Other"
+    },
+    "stats": {
+      "productCount": "Products",
+      "totalRevenue": "Total Revenue",
+      "totalSales": "Total Sales"
+    },
+    "status": {
+      "published": "Published",
+      "unpublished": "Unpublished"
+    },
+    "aiCopy": "AI Copy",
+    "productStats": {
+      "sales": "{count} sales",
+      "revenue": "NT${amount} revenue"
+    },
+    "action": {
+      "publish": "Publish",
+      "unpublish": "Unpublish",
+      "aiRewrite": "AI Rewrite",
+      "cancel": "Cancel",
+      "aiGenerating": "AI generating...",
+      "createProduct": "Create Product",
+      "delete": "Delete"
+    },
+    "empty": {
+      "title": "No Digital Products Yet",
+      "description": "Add your first digital product and AI will auto-generate an engaging product description"
+    },
+    "dialog": {
+      "createTitle": "Add Digital Product",
+      "deleteTitle": "Delete Product",
+      "deleteDescription": "Are you sure you want to delete this product? All order records will also be deleted."
+    },
+    "form": {
+      "name": "Product Name",
+      "namePlaceholder": "e.g., Lightroom Style Preset Pack",
+      "type": "Product Type",
+      "price": "Price (NT$)",
+      "description": "Short Description (optional, AI will auto-generate full copy)",
+      "descriptionPlaceholder": "Briefly describe the product features...",
+      "tags": "Tags (comma separated)",
+      "tagsPlaceholder": "Photography, Lightroom, Preset"
+    },
+    "aiHint": "AI will auto-generate marketing copy and SEO tags based on product info",
+    "validation": {
+      "nameRequired": "Please enter a product name",
+      "priceRequired": "Please set a price"
+    },
+    "toast": {
+      "created": "Product created, AI description generated",
+      "published": "Published",
+      "unpublished": "Unpublished",
+      "aiRegenerated": "AI copy regenerated",
+      "deleted": "Product deleted"
+    }
+  },
+  "email": {
+    "pageTitle": "AI Email Marketing",
+    "pageDescription": "AI auto-generates email sequences and manages subscriber lists",
+    "stats": {
+      "subscribers": "Subscribers",
+      "sent": "Sent",
+      "avgOpenRate": "Avg Open Rate",
+      "campaigns": "Campaigns"
+    },
+    "tabs": {
+      "campaigns": "Email Campaigns",
+      "subscribers": "Subscriber List"
+    },
+    "empty": {
+      "campaignsTitle": "No Email Campaigns Yet",
+      "campaignsDescription": "Let AI generate a complete email marketing sequence: Welcome → Nurture → Sales",
+      "campaignsAction": "AI Generate Sequence",
+      "subscribersTitle": "No Subscribers Yet",
+      "subscribersDescription": "Add subscribers to your email list"
+    },
+    "campaign": {
+      "emailCount": "{count} emails",
+      "typeSequence": "Auto Sequence",
+      "typeSingle": "Single",
+      "statusDraft": "Draft",
+      "statusSent": "Sent",
+      "statusScheduled": "Scheduled",
+      "statusSending": "Sending",
+      "sentStats": "{sent} sent · {opened} opened · {clicked} clicked"
+    },
+    "subscriber": {
+      "name": "Name",
+      "source": "Source",
+      "status": "Status",
+      "joinDate": "Join Date",
+      "active": "Active",
+      "unsubscribed": "Unsubscribed"
+    },
+    "actions": {
+      "addSubscriber": "Add Subscriber",
+      "aiGenerateSequence": "AI Generate Email Sequence",
+      "send": "Send",
+      "cancel": "Cancel",
+      "add": "Add",
+      "adding": "Adding...",
+      "generateSequence": "Generate Sequence",
+      "aiGenerating": "AI generating..."
+    },
+    "dialog": {
+      "addSubscriberTitle": "Add Subscriber",
+      "nameLabel": "Name (optional)",
+      "namePlaceholder": "Fan name",
+      "aiGenerateTitle": "AI Generate Email Sequence",
+      "purposeLabel": "Marketing Purpose",
+      "purposePlaceholder": "e.g., Promote new online course, welcome new members, limited-time offer",
+      "productNameLabel": "Product Name (optional)",
+      "productNamePlaceholder": "e.g., Lightroom Preset Pack",
+      "toneLabel": "Tone",
+      "emailCountLabel": "Email Count",
+      "emailCount3": "3 emails (basic)",
+      "emailCount5": "5 emails (standard)",
+      "emailCount7": "7 emails (complete)",
+      "aiFunnelHint": "AI will generate a complete automated email funnel: Welcome → Nurture → Sales"
+    },
+    "toneOptions": {
+      "friendlyProfessional": "Friendly Professional",
+      "enthusiastic": "Enthusiastic",
+      "formalAuthoritative": "Formal Authoritative",
+      "casualHumorous": "Casual Humorous"
+    },
+    "preview": {
+      "emailIndex": "Email #{index}",
+      "sendOnDay": "Send on Day {day}"
+    },
+    "confirm": {
+      "sendTitle": "Send Email Campaign",
+      "sendDescription": "Are you sure you want to send this email campaign to all eligible subscribers? This cannot be undone.",
+      "sendConfirmLabel": "Confirm Send",
+      "deleteTitle": "Delete Email Campaign",
+      "deleteDescription": "Are you sure you want to delete this email campaign? All email templates will also be deleted.",
+      "deleteConfirmLabel": "Delete"
+    },
+    "toast": {
+      "subscriberAdded": "Subscriber added",
+      "aiSequenceGenerated": "AI generated {count} email sequence",
+      "sendQueued": "Queued for sending: {subscriberCount} subscribers, {emailCount} emails",
+      "deleted": "Deleted"
+    },
+    "validation": {
+      "emailRequired": "Please enter an email",
+      "purposeRequired": "Please enter a marketing purpose"
+    }
+  },
+  "landing": {
+    "pageTitle": "Landing Page",
+    "pageDescription": "Build your personal brand page",
+    "themes": {
+      "modern": "Modern",
+      "minimal": "Minimal",
+      "bold": "Bold",
+      "creative": "Creative"
+    },
+    "niches": {
+      "tech": "Tech",
+      "food": "Food",
+      "travel": "Travel",
+      "education": "Education",
+      "lifestyle": "Lifestyle",
+      "entertainment": "Entertainment",
+      "business": "Business",
+      "design": "Design",
+      "health": "Health",
+      "music": "Music"
+    },
+    "toast": {
+      "generated": "Landing Page generated!",
+      "updated": "Updated",
+      "linkCopied": "Link copied"
+    },
+    "emptyState": {
+      "description": "AI will auto-generate a professional Landing Page based on your niche, including copy, colors, and layout",
+      "generateButton": "AI Generate"
+    },
+    "generateDialog": {
+      "title": "AI Generate Landing Page",
+      "nameLabel": "Your Name / Brand Name",
+      "namePlaceholder": "e.g., Nick Creates",
+      "nicheLabel": "Creative Niche",
+      "nichePlaceholder": "Select a niche",
+      "descriptionLabel": "Additional Description (optional)",
+      "descriptionPlaceholder": "Tell AI more about you, e.g., focused on AI tool reviews, 100K followers...",
+      "cancel": "Cancel",
+      "generating": "AI generating...",
+      "startGenerate": "Start Generating"
+    },
+    "editor": {
+      "viewCount": "{slug} · {count} views",
+      "copyLink": "Copy Link",
+      "preview": "Preview",
+      "unpublish": "Unpublish",
+      "publish": "🚀 Publish Page",
+      "statusPublished": "✅ Published",
+      "statusDraft": "📝 Draft",
+      "theme": "Theme: {theme}",
+      "viewPublicPage": "View Public Page",
+      "headlineTitle": "Headline",
+      "mainHeadline": "Main Headline",
+      "subHeadline": "Sub Headline",
+      "bioTitle": "Bio",
+      "themeColorTitle": "Theme Color",
+      "ctaTitle": "Call to Action",
+      "sectionsTitle": "Page Sections",
+      "unnamedSection": "Unnamed Section",
+      "previewTitle": "Page Preview"
+    }
   }
 }

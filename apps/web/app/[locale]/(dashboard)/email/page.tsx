@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Mail, Users, Send, Sparkles, Loader2, Trash2, Eye, Plus, Zap } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -21,6 +22,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function EmailPage() {
+  const t = useTranslations("email");
   const { data: stats } = useEmailStats();
   const { data: subsData } = useSubscribers();
   const { data: campaigns } = useCampaigns();
@@ -34,7 +36,7 @@ export default function EmailPage() {
   const [subEmail, setSubEmail] = useState("");
   const [subName, setSubName] = useState("");
   const [genOpen, setGenOpen] = useState(false);
-  const [genForm, setGenForm] = useState({ purpose: "", productName: "", tone: "親切專業", emailCount: 3 });
+  const [genForm, setGenForm] = useState({ purpose: "", productName: "", tone: t("toneOptions.friendlyProfessional"), emailCount: 3 });
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [sendId, setSendId] = useState<string | null>(null);
   const [previewCampaign, setPreviewCampaign] = useState<string | null>(null);
@@ -43,21 +45,21 @@ export default function EmailPage() {
   const campaignDetail = useCampaign(previewCampaign ?? undefined);
 
   const handleAddSub = () => {
-    if (!subEmail.trim()) return toast.error("請輸入 Email");
+    if (!subEmail.trim()) return toast.error(t("validation.emailRequired"));
     addSubscriber.mutate(
       { email: subEmail, name: subName || undefined },
       {
-        onSuccess: () => { toast.success("已新增訂閱者"); setAddSubOpen(false); setSubEmail(""); setSubName(""); },
+        onSuccess: () => { toast.success(t("toast.subscriberAdded")); setAddSubOpen(false); setSubEmail(""); setSubName(""); },
         onError: (e) => toast.error(e.message),
       },
     );
   };
 
   const handleGenSequence = () => {
-    if (!genForm.purpose.trim()) return toast.error("請輸入行銷目的");
+    if (!genForm.purpose.trim()) return toast.error(t("validation.purposeRequired"));
     aiSequence.mutate(genForm, {
       onSuccess: (res) => {
-        toast.success(`AI 已生成 ${res.emails.length} 封郵件序列`);
+        toast.success(t("toast.aiSequenceGenerated", { count: res.emails.length }));
         setGenOpen(false);
         setPreviewCampaign(res.id);
       },
@@ -68,15 +70,15 @@ export default function EmailPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="AI Email 行銷"
-        description="AI 自動生成郵件序列，管理訂閱者名單"
+        title={t("pageTitle")}
+        description={t("pageDescription")}
         action={
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setAddSubOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" /> 新增訂閱者
+              <Plus className="mr-2 h-4 w-4" /> {t("actions.addSubscriber")}
             </Button>
             <Button onClick={() => setGenOpen(true)}>
-              <Sparkles className="mr-2 h-4 w-4" /> AI 生成郵件序列
+              <Sparkles className="mr-2 h-4 w-4" /> {t("actions.aiGenerateSequence")}
             </Button>
           </div>
         }
@@ -87,33 +89,33 @@ export default function EmailPage() {
         <Card><CardContent className="pt-5">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-blue-100 p-2 dark:bg-blue-900"><Users className="h-5 w-5 text-blue-600" /></div>
-            <div><p className="text-xs text-muted-foreground">訂閱者</p><p className="text-xl font-bold">{stats?.activeSubscribers ?? 0}</p></div>
+            <div><p className="text-xs text-muted-foreground">{t("stats.subscribers")}</p><p className="text-xl font-bold">{stats?.activeSubscribers ?? 0}</p></div>
           </div>
         </CardContent></Card>
         <Card><CardContent className="pt-5">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-green-100 p-2 dark:bg-green-900"><Send className="h-5 w-5 text-green-600" /></div>
-            <div><p className="text-xs text-muted-foreground">已發送</p><p className="text-xl font-bold">{stats?.totalSent ?? 0}</p></div>
+            <div><p className="text-xs text-muted-foreground">{t("stats.sent")}</p><p className="text-xl font-bold">{stats?.totalSent ?? 0}</p></div>
           </div>
         </CardContent></Card>
         <Card><CardContent className="pt-5">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-amber-100 p-2 dark:bg-amber-900"><Eye className="h-5 w-5 text-amber-600" /></div>
-            <div><p className="text-xs text-muted-foreground">平均開信率</p><p className="text-xl font-bold">{stats?.averageOpenRate ?? 0}%</p></div>
+            <div><p className="text-xs text-muted-foreground">{t("stats.avgOpenRate")}</p><p className="text-xl font-bold">{stats?.averageOpenRate ?? 0}%</p></div>
           </div>
         </CardContent></Card>
         <Card><CardContent className="pt-5">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-purple-100 p-2 dark:bg-purple-900"><Zap className="h-5 w-5 text-purple-600" /></div>
-            <div><p className="text-xs text-muted-foreground">行銷活動</p><p className="text-xl font-bold">{stats?.totalCampaigns ?? 0}</p></div>
+            <div><p className="text-xs text-muted-foreground">{t("stats.campaigns")}</p><p className="text-xl font-bold">{stats?.totalCampaigns ?? 0}</p></div>
           </div>
         </CardContent></Card>
       </div>
 
       <Tabs defaultValue="campaigns">
         <TabsList>
-          <TabsTrigger value="campaigns">郵件活動</TabsTrigger>
-          <TabsTrigger value="subscribers">訂閱者名單</TabsTrigger>
+          <TabsTrigger value="campaigns">{t("tabs.campaigns")}</TabsTrigger>
+          <TabsTrigger value="subscribers">{t("tabs.subscribers")}</TabsTrigger>
         </TabsList>
 
         {/* Campaigns Tab */}
@@ -121,9 +123,9 @@ export default function EmailPage() {
           {!campaigns?.length ? (
             <EmptyState
               icon={Mail}
-              title="尚無郵件活動"
-              description="讓 AI 幫你生成完整的郵件行銷序列：歡迎信 → 培養信 → 銷售信"
-              actionLabel="AI 生成序列"
+              title={t("empty.campaignsTitle")}
+              description={t("empty.campaignsDescription")}
+              actionLabel={t("empty.campaignsAction")}
               onAction={() => setGenOpen(true)}
             />
           ) : (
@@ -139,27 +141,27 @@ export default function EmailPage() {
                         <div>
                           <h3 className="text-sm font-semibold">{c.name}</h3>
                           <p className="text-xs text-muted-foreground">
-                            {c._count.emails} 封信 · {c.type === "SEQUENCE" ? "自動序列" : "單封"} · {new Date(c.createdAt).toLocaleDateString("zh-TW")}
+                            {t("campaign.emailCount", { count: c._count.emails })} · {c.type === "SEQUENCE" ? t("campaign.typeSequence") : t("campaign.typeSingle")} · {new Date(c.createdAt).toLocaleDateString("zh-TW")}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant={c.status === "SENT" ? "default" : c.status === "SCHEDULED" ? "secondary" : "outline"}>
-                          {c.status === "DRAFT" ? "草稿" : c.status === "SENT" ? "已發送" : "已排程"}
+                          {c.status === "DRAFT" ? t("campaign.statusDraft") : c.status === "SENT" ? t("campaign.statusSent") : t("campaign.statusScheduled")}
                         </Badge>
                         {c.status === "SENT" && (
                           <span className="text-xs text-muted-foreground">
-                            {c.sentCount} 寄 · {c.openCount} 開 · {c.clickCount} 點
+                            {t("campaign.sentStats", { sent: c.sentCount, opened: c.openCount, clicked: c.clickCount })}
                           </span>
                         )}
                         {c.status === "DRAFT" && (
                           <Button variant="default" size="sm" className="h-7 px-2 text-xs" onClick={(e) => { e.stopPropagation(); setSendId(c.id); }}>
-                            <Send className="mr-1 h-3 w-3" /> 寄送
+                            <Send className="mr-1 h-3 w-3" /> {t("actions.send")}
                           </Button>
                         )}
                         {c.status === "SENDING" && (
                           <Badge variant="secondary" className="text-xs">
-                            <Loader2 className="mr-1 h-3 w-3 animate-spin" /> 寄送中
+                            <Loader2 className="mr-1 h-3 w-3 animate-spin" /> {t("campaign.statusSending")}
                           </Badge>
                         )}
                         <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); setDeleteId(c.id); }}>
@@ -179,9 +181,9 @@ export default function EmailPage() {
           {!subsData?.subscribers?.length ? (
             <EmptyState
               icon={Users}
-              title="尚無訂閱者"
-              description="新增訂閱者到你的郵件名單"
-              actionLabel="新增訂閱者"
+              title={t("empty.subscribersTitle")}
+              description={t("empty.subscribersDescription")}
+              actionLabel={t("actions.addSubscriber")}
               onAction={() => setAddSubOpen(true)}
             />
           ) : (
@@ -190,10 +192,10 @@ export default function EmailPage() {
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="px-4 py-2 text-left font-medium">Email</th>
-                    <th className="px-4 py-2 text-left font-medium">姓名</th>
-                    <th className="px-4 py-2 text-left font-medium">來源</th>
-                    <th className="px-4 py-2 text-left font-medium">狀態</th>
-                    <th className="px-4 py-2 text-left font-medium">加入日期</th>
+                    <th className="px-4 py-2 text-left font-medium">{t("subscriber.name")}</th>
+                    <th className="px-4 py-2 text-left font-medium">{t("subscriber.source")}</th>
+                    <th className="px-4 py-2 text-left font-medium">{t("subscriber.status")}</th>
+                    <th className="px-4 py-2 text-left font-medium">{t("subscriber.joinDate")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -204,7 +206,7 @@ export default function EmailPage() {
                       <td className="px-4 py-2"><Badge variant="outline" className="text-xs">{sub.source || "manual"}</Badge></td>
                       <td className="px-4 py-2">
                         <Badge variant={sub.isActive ? "default" : "secondary"} className="text-xs">
-                          {sub.isActive ? "活躍" : "取消"}
+                          {sub.isActive ? t("subscriber.active") : t("subscriber.unsubscribed")}
                         </Badge>
                       </td>
                       <td className="px-4 py-2 text-xs text-muted-foreground">{new Date(sub.createdAt).toLocaleDateString("zh-TW")}</td>
@@ -220,21 +222,21 @@ export default function EmailPage() {
       {/* Add Subscriber Dialog */}
       <Dialog open={addSubOpen} onOpenChange={setAddSubOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>新增訂閱者</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("dialog.addSubscriberTitle")}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Email</Label>
               <Input value={subEmail} onChange={(e) => setSubEmail(e.target.value)} placeholder="fan@example.com" />
             </div>
             <div className="space-y-2">
-              <Label>姓名（選填）</Label>
-              <Input value={subName} onChange={(e) => setSubName(e.target.value)} placeholder="粉絲名字" />
+              <Label>{t("dialog.nameLabel")}</Label>
+              <Input value={subName} onChange={(e) => setSubName(e.target.value)} placeholder={t("dialog.namePlaceholder")} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAddSubOpen(false)}>取消</Button>
+            <Button variant="outline" onClick={() => setAddSubOpen(false)}>{t("actions.cancel")}</Button>
             <Button onClick={handleAddSub} disabled={addSubscriber.isPending}>
-              {addSubscriber.isPending ? "新增中..." : "新增"}
+              {addSubscriber.isPending ? t("actions.adding") : t("actions.add")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -243,51 +245,51 @@ export default function EmailPage() {
       {/* AI Generate Sequence Dialog */}
       <Dialog open={genOpen} onOpenChange={setGenOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5" /> AI 生成郵件序列</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5" /> {t("dialog.aiGenerateTitle")}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>行銷目的</Label>
-              <Input value={genForm.purpose} onChange={(e) => setGenForm({ ...genForm, purpose: e.target.value })} placeholder="例：推廣新線上課程、歡迎新會員、限時優惠" />
+              <Label>{t("dialog.purposeLabel")}</Label>
+              <Input value={genForm.purpose} onChange={(e) => setGenForm({ ...genForm, purpose: e.target.value })} placeholder={t("dialog.purposePlaceholder")} />
             </div>
             <div className="space-y-2">
-              <Label>商品名稱（選填）</Label>
-              <Input value={genForm.productName} onChange={(e) => setGenForm({ ...genForm, productName: e.target.value })} placeholder="例：Lightroom Preset 套組" />
+              <Label>{t("dialog.productNameLabel")}</Label>
+              <Input value={genForm.productName} onChange={(e) => setGenForm({ ...genForm, productName: e.target.value })} placeholder={t("dialog.productNamePlaceholder")} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>語氣</Label>
+                <Label>{t("dialog.toneLabel")}</Label>
                 <Select value={genForm.tone} onValueChange={(v) => setGenForm({ ...genForm, tone: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="親切專業">親切專業</SelectItem>
-                    <SelectItem value="熱情活潑">熱情活潑</SelectItem>
-                    <SelectItem value="正式權威">正式權威</SelectItem>
-                    <SelectItem value="輕鬆幽默">輕鬆幽默</SelectItem>
+                    <SelectItem value={t("toneOptions.friendlyProfessional")}>{t("toneOptions.friendlyProfessional")}</SelectItem>
+                    <SelectItem value={t("toneOptions.enthusiastic")}>{t("toneOptions.enthusiastic")}</SelectItem>
+                    <SelectItem value={t("toneOptions.formalAuthoritative")}>{t("toneOptions.formalAuthoritative")}</SelectItem>
+                    <SelectItem value={t("toneOptions.casualHumorous")}>{t("toneOptions.casualHumorous")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>郵件數量</Label>
+                <Label>{t("dialog.emailCountLabel")}</Label>
                 <Select value={String(genForm.emailCount)} onValueChange={(v) => setGenForm({ ...genForm, emailCount: Number(v) })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="3">3 封（基本）</SelectItem>
-                    <SelectItem value="5">5 封（標準）</SelectItem>
-                    <SelectItem value="7">7 封（完整）</SelectItem>
+                    <SelectItem value="3">{t("dialog.emailCount3")}</SelectItem>
+                    <SelectItem value="5">{t("dialog.emailCount5")}</SelectItem>
+                    <SelectItem value="7">{t("dialog.emailCount7")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div className="rounded-md bg-blue-50 p-3 dark:bg-blue-950">
               <p className="text-xs text-blue-700 dark:text-blue-300 flex items-center gap-1">
-                <Sparkles className="h-3 w-3" /> AI 將生成完整的自動化郵件漏斗：歡迎 → 培養 → 銷售
+                <Sparkles className="h-3 w-3" /> {t("dialog.aiFunnelHint")}
               </p>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setGenOpen(false)}>取消</Button>
+            <Button variant="outline" onClick={() => setGenOpen(false)}>{t("actions.cancel")}</Button>
             <Button onClick={handleGenSequence} disabled={aiSequence.isPending}>
-              {aiSequence.isPending ? <><Loader2 className="mr-1 h-4 w-4 animate-spin" /> AI 生成中...</> : "生成序列"}
+              {aiSequence.isPending ? <><Loader2 className="mr-1 h-4 w-4 animate-spin" /> {t("actions.aiGenerating")}</> : t("actions.generateSequence")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -307,9 +309,9 @@ export default function EmailPage() {
                 <div key={email.id} className="rounded-lg border p-4">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-xs">第 {i + 1} 封</Badge>
+                      <Badge variant="outline" className="text-xs">{t("preview.emailIndex", { index: i + 1 })}</Badge>
                       {email.delayDays > 0 && (
-                        <span className="text-xs text-muted-foreground">第 {email.delayDays} 天發送</span>
+                        <span className="text-xs text-muted-foreground">{t("preview.sendOnDay", { day: email.delayDays })}</span>
                       )}
                     </div>
                   </div>
@@ -329,15 +331,15 @@ export default function EmailPage() {
       <ConfirmDialog
         open={!!sendId}
         onOpenChange={() => setSendId(null)}
-        title="寄送郵件活動"
-        description="確定要寄送此郵件活動給所有符合條件的訂閱者嗎？寄出後無法撤回。"
-        confirmLabel="確認寄送"
+        title={t("confirm.sendTitle")}
+        description={t("confirm.sendDescription")}
+        confirmLabel={t("confirm.sendConfirmLabel")}
         loading={sendCampaign.isPending}
         onConfirm={() => {
           if (sendId) {
             sendCampaign.mutate(sendId, {
               onSuccess: (res) => {
-                toast.success(`已排入寄送佇列：${res.subscriberCount} 位訂閱者，${res.emailCount} 封郵件`);
+                toast.success(t("toast.sendQueued", { subscriberCount: res.subscriberCount, emailCount: res.emailCount }));
                 setSendId(null);
               },
               onError: (e) => toast.error(e.message),
@@ -350,15 +352,15 @@ export default function EmailPage() {
       <ConfirmDialog
         open={!!deleteId}
         onOpenChange={() => setDeleteId(null)}
-        title="刪除郵件活動"
-        description="確定要刪除此郵件活動嗎？所有郵件模板也會一併刪除。"
-        confirmLabel="刪除"
+        title={t("confirm.deleteTitle")}
+        description={t("confirm.deleteDescription")}
+        confirmLabel={t("confirm.deleteConfirmLabel")}
         variant="destructive"
         loading={deleteCampaign.isPending}
         onConfirm={() => {
           if (deleteId) {
             deleteCampaign.mutate(deleteId, {
-              onSuccess: () => { toast.success("已刪除"); setDeleteId(null); },
+              onSuccess: () => { toast.success(t("toast.deleted")); setDeleteId(null); },
               onError: (e) => toast.error(e.message),
             });
           }

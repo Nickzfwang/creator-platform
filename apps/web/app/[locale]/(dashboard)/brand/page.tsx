@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Plus, Trash2, Handshake, Sparkles, DollarSign, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -39,26 +40,22 @@ import {
 } from "@/components/ui/select";
 import type { BrandDeal } from "@/lib/types";
 
-const statusLabels: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  DRAFT: { label: "草稿", variant: "outline" },
-  PROPOSAL_SENT: { label: "已提案", variant: "secondary" },
-  NEGOTIATING: { label: "洽談中", variant: "default" },
-  CONFIRMED: { label: "已確認", variant: "default" },
-  IN_PROGRESS: { label: "進行中", variant: "default" },
-  COMPLETED: { label: "已完成", variant: "secondary" },
-  CANCELLED: { label: "已取消", variant: "destructive" },
+const STATUS_KEYS = ["DRAFT", "PROPOSAL_SENT", "NEGOTIATING", "CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELLED"] as const;
+
+const statusVariants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+  DRAFT: "outline",
+  PROPOSAL_SENT: "secondary",
+  NEGOTIATING: "default",
+  CONFIRMED: "default",
+  IN_PROGRESS: "default",
+  COMPLETED: "secondary",
+  CANCELLED: "destructive",
 };
 
-const dealTypes = [
-  { value: "SPONSORED_POST", label: "贊助貼文" },
-  { value: "BRAND_AMBASSADOR", label: "品牌大使" },
-  { value: "PRODUCT_REVIEW", label: "產品評測" },
-  { value: "AFFILIATE", label: "聯盟行銷" },
-  { value: "EVENT", label: "活動合作" },
-  { value: "OTHER", label: "其他" },
-];
+const DEAL_TYPE_KEYS = ["SPONSORED_POST", "BRAND_AMBASSADOR", "PRODUCT_REVIEW", "AFFILIATE", "EVENT", "OTHER"] as const;
 
 export default function BrandPage() {
+  const t = useTranslations("brand");
   const { data, isLoading } = useBrandDeals();
   const { data: pipeline, isLoading: pipelineLoading } = usePipelineStats();
   const createDeal = useCreateBrandDeal();
@@ -81,9 +78,19 @@ export default function BrandPage() {
     setBrandName(""); setDealType(""); setBudgetMin(""); setBudgetMax(""); setNotes("");
   };
 
+  const getDealTypeLabel = (value: string) =>
+    DEAL_TYPE_KEYS.includes(value as any)
+      ? t(`dealType.${value}`)
+      : value;
+
+  const getStatusLabel = (status: string) =>
+    STATUS_KEYS.includes(status as any)
+      ? t(`status.${status}`)
+      : status;
+
   const handleCreate = () => {
     if (!brandName.trim() || !dealType) {
-      toast.error("請填寫品牌名稱和合作類型");
+      toast.error(t("validation.requiredFields"));
       return;
     }
     createDeal.mutate(
@@ -96,7 +103,7 @@ export default function BrandPage() {
         notes: notes || undefined,
       },
       {
-        onSuccess: () => { toast.success("品牌合作已建立"); setCreateOpen(false); resetForm(); },
+        onSuccess: () => { toast.success(t("toast.created")); setCreateOpen(false); resetForm(); },
         onError: (e) => toast.error(e.message),
       },
     );
@@ -107,7 +114,7 @@ export default function BrandPage() {
       { id: deal.id, data: { status: newStatus } },
       {
         onSuccess: (updated) => {
-          toast.success("狀態已更新");
+          toast.success(t("toast.statusUpdated"));
           setDetailDeal(updated);
         },
         onError: (e) => toast.error(e.message),
@@ -119,7 +126,7 @@ export default function BrandPage() {
     generateProposal.mutate(
       { dealId, tone: "professional" },
       {
-        onSuccess: () => toast.success("提案已生成"),
+        onSuccess: () => toast.success(t("toast.proposalGenerated")),
         onError: (e) => toast.error(e.message),
       },
     );
@@ -130,12 +137,12 @@ export default function BrandPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="品牌合作"
-        description="管理品牌合作邀約和提案"
+        title={t("pageTitle")}
+        description={t("pageDescription")}
         action={
           <Button onClick={() => { resetForm(); setCreateOpen(true); }}>
             <Plus className="mr-2 h-4 w-4" />
-            新增合作
+            {t("addDeal")}
           </Button>
         }
       />
@@ -145,14 +152,14 @@ export default function BrandPage() {
         <CardsSkeleton count={3} />
       ) : (
         <div className="grid gap-4 md:grid-cols-3">
-          <StatCard label="進行中案件" value={activeDeals} icon={Handshake} />
+          <StatCard label={t("stats.activeDeals")} value={activeDeals} icon={Handshake} />
           <StatCard
-            label="已完成案件"
+            label={t("stats.completedDeals")}
             value={pipeline?.pipeline?.COMPLETED ?? 0}
             icon={TrendingUp}
           />
           <StatCard
-            label="總收入"
+            label={t("stats.totalRevenue")}
             value={`NT$${(pipeline?.totalRevenue ?? 0).toLocaleString()}`}
             icon={DollarSign}
           />
@@ -165,15 +172,15 @@ export default function BrandPage() {
       ) : !data?.data?.length ? (
         <EmptyState
           icon={Handshake}
-          title="尚無品牌合作"
-          description="新增品牌合作案件，追蹤從提案到結案的完整流程"
-          actionLabel="新增合作"
+          title={t("empty.title")}
+          description={t("empty.description")}
+          actionLabel={t("addDeal")}
           onAction={() => { resetForm(); setCreateOpen(true); }}
         />
       ) : (
         <div className="space-y-3">
           {data.data.map((deal) => {
-            const status = statusLabels[deal.status] ?? { label: deal.status, variant: "outline" as const };
+            const variant = statusVariants[deal.status] ?? "outline";
             return (
               <Card
                 key={deal.id}
@@ -184,10 +191,10 @@ export default function BrandPage() {
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <p className="font-medium">{deal.brandName}</p>
-                      <Badge variant={status.variant}>{status.label}</Badge>
+                      <Badge variant={variant}>{getStatusLabel(deal.status)}</Badge>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <span>{dealTypes.find((d) => d.value === deal.dealType)?.label ?? deal.dealType}</span>
+                      <span>{getDealTypeLabel(deal.dealType)}</span>
                       {deal.budgetRange && (
                         <span>
                           NT${deal.budgetRange.min.toLocaleString()} - {deal.budgetRange.max.toLocaleString()}
@@ -211,41 +218,41 @@ export default function BrandPage() {
       {/* Create Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>新增品牌合作</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("createDialog.title")}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>品牌名稱</Label>
-              <Input value={brandName} onChange={(e) => setBrandName(e.target.value)} placeholder="品牌名稱" />
+              <Label>{t("form.brandName")}</Label>
+              <Input value={brandName} onChange={(e) => setBrandName(e.target.value)} placeholder={t("form.brandName")} />
             </div>
             <div className="space-y-2">
-              <Label>合作類型</Label>
+              <Label>{t("form.dealType")}</Label>
               <Select value={dealType} onValueChange={setDealType}>
-                <SelectTrigger><SelectValue placeholder="選擇類型" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("form.selectType")} /></SelectTrigger>
                 <SelectContent>
-                  {dealTypes.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                  {DEAL_TYPE_KEYS.map((key) => (
+                    <SelectItem key={key} value={key}>{t(`dealType.${key}`)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>預算下限 (NT$)</Label>
+                <Label>{t("form.budgetMin")}</Label>
                 <Input type="number" value={budgetMin} onChange={(e) => setBudgetMin(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>預算上限 (NT$)</Label>
+                <Label>{t("form.budgetMax")}</Label>
                 <Input type="number" value={budgetMax} onChange={(e) => setBudgetMax(e.target.value)} />
               </div>
             </div>
             <div className="space-y-2">
-              <Label>備註</Label>
+              <Label>{t("form.notes")}</Label>
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>取消</Button>
-            <Button onClick={handleCreate} disabled={createDeal.isPending}>建立</Button>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>{t("action.cancel")}</Button>
+            <Button onClick={handleCreate} disabled={createDeal.isPending}>{t("action.create")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -256,20 +263,20 @@ export default function BrandPage() {
           <DialogHeader>
             <DialogTitle>{detailDeal?.brandName}</DialogTitle>
             <DialogDescription>
-              {dealTypes.find((d) => d.value === detailDeal?.dealType)?.label}
+              {detailDeal ? getDealTypeLabel(detailDeal.dealType) : ""}
             </DialogDescription>
           </DialogHeader>
           {detailDeal && (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <Badge variant={statusLabels[detailDeal.status]?.variant ?? "outline"}>
-                  {statusLabels[detailDeal.status]?.label ?? detailDeal.status}
+                <Badge variant={statusVariants[detailDeal.status] ?? "outline"}>
+                  {getStatusLabel(detailDeal.status)}
                 </Badge>
               </div>
 
               {detailDeal.budgetRange && (
                 <div>
-                  <p className="text-sm text-muted-foreground">預算範圍</p>
+                  <p className="text-sm text-muted-foreground">{t("detail.budgetRange")}</p>
                   <p className="font-medium">
                     NT${detailDeal.budgetRange.min.toLocaleString()} - {detailDeal.budgetRange.max.toLocaleString()}
                   </p>
@@ -278,14 +285,14 @@ export default function BrandPage() {
 
               {detailDeal.notes && (
                 <div>
-                  <p className="text-sm text-muted-foreground">備註</p>
+                  <p className="text-sm text-muted-foreground">{t("form.notes")}</p>
                   <p className="text-sm">{detailDeal.notes}</p>
                 </div>
               )}
 
               {detailDeal.aiProposal && (
                 <div>
-                  <p className="text-sm text-muted-foreground">AI 提案</p>
+                  <p className="text-sm text-muted-foreground">{t("detail.aiProposal")}</p>
                   <div className="mt-1 whitespace-pre-wrap rounded-md bg-muted p-3 text-sm">
                     {detailDeal.aiProposal}
                   </div>
@@ -296,7 +303,7 @@ export default function BrandPage() {
                 {detailDeal.status === "DRAFT" && (
                   <>
                     <Button size="sm" onClick={() => handleStatusChange(detailDeal, "PROPOSAL_SENT")}>
-                      標記為已提案
+                      {t("action.markProposalSent")}
                     </Button>
                     <Button
                       size="sm"
@@ -305,28 +312,28 @@ export default function BrandPage() {
                       disabled={generateProposal.isPending}
                     >
                       <Sparkles className="mr-1 h-3 w-3" />
-                      {generateProposal.isPending ? "生成中..." : "AI 生成提案"}
+                      {generateProposal.isPending ? t("action.generating") : t("action.aiGenerate")}
                     </Button>
                   </>
                 )}
                 {detailDeal.status === "PROPOSAL_SENT" && (
                   <Button size="sm" onClick={() => handleStatusChange(detailDeal, "NEGOTIATING")}>
-                    進入洽談
+                    {t("action.startNegotiation")}
                   </Button>
                 )}
                 {detailDeal.status === "NEGOTIATING" && (
                   <Button size="sm" onClick={() => handleStatusChange(detailDeal, "CONFIRMED")}>
-                    確認合作
+                    {t("action.confirmDeal")}
                   </Button>
                 )}
                 {detailDeal.status === "CONFIRMED" && (
                   <Button size="sm" onClick={() => handleStatusChange(detailDeal, "IN_PROGRESS")}>
-                    開始執行
+                    {t("action.startExecution")}
                   </Button>
                 )}
                 {detailDeal.status === "IN_PROGRESS" && (
                   <Button size="sm" onClick={() => handleStatusChange(detailDeal, "COMPLETED")}>
-                    標記完成
+                    {t("action.markCompleted")}
                   </Button>
                 )}
                 {!["COMPLETED", "CANCELLED"].includes(detailDeal.status) && (
@@ -336,7 +343,7 @@ export default function BrandPage() {
                       variant="outline"
                       onClick={() => handleStatusChange(detailDeal, "CANCELLED")}
                     >
-                      取消合作
+                      {t("action.cancelDeal")}
                     </Button>
                     <Button
                       size="sm"
@@ -357,15 +364,15 @@ export default function BrandPage() {
       <ConfirmDialog
         open={!!deleteId}
         onOpenChange={() => setDeleteId(null)}
-        title="刪除品牌合作"
-        description="確定要刪除此品牌合作案件嗎？"
-        confirmLabel="刪除"
+        title={t("deleteDialog.title")}
+        description={t("deleteDialog.description")}
+        confirmLabel={t("action.delete")}
         variant="destructive"
         loading={deleteDeal.isPending}
         onConfirm={() => {
           if (deleteId) {
             deleteDeal.mutate(deleteId, {
-              onSuccess: () => { toast.success("已刪除"); setDeleteId(null); },
+              onSuccess: () => { toast.success(t("toast.deleted")); setDeleteId(null); },
               onError: (e) => toast.error(e.message),
             });
           }

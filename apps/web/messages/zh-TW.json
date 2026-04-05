@@ -452,5 +452,509 @@
       "confirm": "確定",
       "copied": "已複製"
     }
+  },
+  "bot": {
+    "pageTitle": "Bot 設定",
+    "pageDescription": "建立和管理 AI 顧問 Bot 與知識庫",
+    "tabBots": "Bot 列表",
+    "tabKnowledge": "知識庫",
+    "addBot": "新增 Bot",
+    "noBot": "尚無 Bot",
+    "noBotDesc": "建立您的第一個 AI 顧問 Bot",
+    "public": "公開",
+    "private": "私有",
+    "testChat": "測試對話",
+    "edit": "編輯",
+    "editBot": "編輯 Bot",
+    "deleteBot": "刪除 Bot",
+    "deleteBotConfirm": "確定要刪除此 Bot 嗎？所有對話記錄都會被刪除。",
+    "delete": "刪除",
+    "botCreated": "Bot 已建立",
+    "botUpdated": "Bot 已更新",
+    "botDeleted": "Bot 已刪除",
+    "nameRequired": "請輸入 Bot 名稱",
+    "labelName": "名稱",
+    "labelDescription": "描述",
+    "labelWelcomeMessage": "歡迎訊息",
+    "labelSystemPrompt": "系統提示詞",
+    "labelPublicBot": "公開 Bot",
+    "botNamePlaceholder": "Bot 名稱",
+    "systemPromptPlaceholder": "定義 Bot 的角色和行為...",
+    "optional": "選填",
+    "cancel": "取消",
+    "create": "建立",
+    "update": "更新",
+    "chatEmptyHint": "輸入訊息開始對話",
+    "thinking": "思考中...",
+    "chatInputPlaceholder": "輸入訊息...（Shift+Enter 換行）",
+    "addKnowledgeBase": "新增知識庫",
+    "noKnowledgeBase": "尚無知識庫",
+    "noKnowledgeBaseDesc": "建立知識庫並匯入內容，讓 Bot 回答更準確",
+    "chunkCount": "{count} 片段",
+    "ingestContent": "匯入內容",
+    "kbNamePlaceholder": "知識庫名稱",
+    "labelSourceType": "來源類型",
+    "sourceManual": "手動輸入",
+    "sourceQA": "常見問答",
+    "sourceDocument": "文件",
+    "sourceURL": "網址",
+    "kbCreated": "知識庫已建立",
+    "labelContentText": "內容文字",
+    "ingestPlaceholder": "貼上要匯入的文字內容...",
+    "ingest": "匯入",
+    "ingesting": "匯入中...",
+    "ingestSuccess": "內容已匯入",
+    "deleteKnowledgeBase": "刪除知識庫",
+    "deleteKnowledgeBaseConfirm": "確定要刪除此知識庫嗎？所有匯入的內容都會被刪除。",
+    "kbDeleted": "知識庫已刪除"
+  },
+  "members": {
+    "pageTitle": "會員管理",
+    "pageDescription": "管理會員方案和訂閱者",
+    "addTier": "新增方案",
+    "edit": "編輯",
+    "cancel": "取消",
+    "update": "更新",
+    "create": "建立",
+    "perMonth": "/月",
+    "memberCount": "{count} 位會員",
+    "maxMembers": "上限 {count}",
+    "stats": {
+      "totalMembers": "總會員數",
+      "activeTiers": "啟用方案",
+      "estimatedRevenue": "預估月收入"
+    },
+    "tabs": {
+      "tiers": "會員方案",
+      "members": "會員列表"
+    },
+    "status": {
+      "active": "啟用",
+      "inactive": "停用"
+    },
+    "empty": {
+      "tiersTitle": "尚無會員方案",
+      "tiersDescription": "建立會員方案，開始接收粉絲訂閱",
+      "membersTitle": "尚無會員",
+      "membersDescription": "會員訂閱您的方案後會顯示在這裡"
+    },
+    "dialog": {
+      "editTitle": "編輯方案",
+      "createTitle": "新增方案"
+    },
+    "form": {
+      "name": "方案名稱",
+      "namePlaceholder": "例：基礎會員",
+      "description": "描述",
+      "optional": "選填",
+      "monthlyPrice": "月費 (NT$)",
+      "maxMembers": "人數上限（選填）",
+      "unlimited": "不限",
+      "benefits": "會員福利（每行一項）",
+      "benefitsPlaceholder": "專屬影片\n私密社群\n每月直播",
+      "enableTier": "啟用方案"
+    },
+    "delete": {
+      "title": "刪除方案",
+      "description": "確定要刪除此會員方案嗎？現有會員不會受影響。",
+      "confirm": "刪除"
+    },
+    "validation": {
+      "nameRequired": "請輸入方案名稱",
+      "priceInvalid": "請輸入有效價格"
+    },
+    "toast": {
+      "tierUpdated": "方案已更新",
+      "tierCreated": "方案已建立",
+      "tierDeleted": "方案已刪除"
+    }
+  },
+  "interactions": {
+    "title": "AI 粉絲互動管理",
+    "subtitle": "留言分類、AI 代擬回覆、情緒分析",
+    "tabComments": "留言管理",
+    "tabStats": "互動統計",
+    "allCategories": "全部分類",
+    "all": "全部",
+    "categoryPositive": "正面",
+    "categoryNegative": "負面",
+    "categoryQuestion": "問題",
+    "categoryCollaboration": "合作",
+    "categorySpam": "垃圾",
+    "categoryNeutral": "中性",
+    "searchPlaceholder": "搜尋留言...",
+    "importComments": "匯入留言",
+    "importHint": "每行一則留言，格式：「作者名: 留言內容」或純留言內容",
+    "importPlaceholder": "小明: 這支影片太棒了！\n阿華: 請問可以出更多教學嗎？\n匿名留言內容",
+    "import": "匯入",
+    "importSuccess": "已匯入 {count} 則留言",
+    "anonymous": "匿名",
+    "noComments": "還沒有留言",
+    "noCommentsHint": "點擊「匯入留言」開始管理粉絲互動",
+    "highPriority": "高優先",
+    "replied": "已回覆",
+    "deleteComment": "刪除留言",
+    "deleted": "已刪除",
+    "replyMarked": "已標記為已回覆",
+    "aiReplyDraft": "AI 回覆草稿",
+    "replyPlaceholder": "選擇草稿或手動輸入回覆...",
+    "confirm": "確認",
+    "last7Days": "近 7 天",
+    "last30Days": "近 30 天",
+    "totalComments": "總留言數",
+    "repliedCount": "已回覆",
+    "replyRate": "回覆率",
+    "avgSentiment": "平均情緒",
+    "categoryBreakdown": "分類分佈",
+    "countUnit": "{count} 則",
+    "sentimentTrend": "情緒趨勢"
+  },
+  "brand": {
+    "pageTitle": "品牌合作",
+    "pageDescription": "管理品牌合作邀約和提案",
+    "addDeal": "新增合作",
+    "stats": {
+      "activeDeals": "進行中案件",
+      "completedDeals": "已完成案件",
+      "totalRevenue": "總收入"
+    },
+    "empty": {
+      "title": "尚無品牌合作",
+      "description": "新增品牌合作案件，追蹤從提案到結案的完整流程"
+    },
+    "status": {
+      "DRAFT": "草稿",
+      "PROPOSAL_SENT": "已提案",
+      "NEGOTIATING": "洽談中",
+      "CONFIRMED": "已確認",
+      "IN_PROGRESS": "進行中",
+      "COMPLETED": "已完成",
+      "CANCELLED": "已取消"
+    },
+    "dealType": {
+      "SPONSORED_POST": "贊助貼文",
+      "BRAND_AMBASSADOR": "品牌大使",
+      "PRODUCT_REVIEW": "產品評測",
+      "AFFILIATE": "聯盟行銷",
+      "EVENT": "活動合作",
+      "OTHER": "其他"
+    },
+    "createDialog": {
+      "title": "新增品牌合作"
+    },
+    "deleteDialog": {
+      "title": "刪除品牌合作",
+      "description": "確定要刪除此品牌合作案件嗎？"
+    },
+    "form": {
+      "brandName": "品牌名稱",
+      "dealType": "合作類型",
+      "selectType": "選擇類型",
+      "budgetMin": "預算下限 (NT$)",
+      "budgetMax": "預算上限 (NT$)",
+      "notes": "備註"
+    },
+    "detail": {
+      "budgetRange": "預算範圍",
+      "aiProposal": "AI 提案"
+    },
+    "action": {
+      "cancel": "取消",
+      "create": "建立",
+      "delete": "刪除",
+      "markProposalSent": "標記為已提案",
+      "aiGenerate": "AI 生成提案",
+      "generating": "生成中...",
+      "startNegotiation": "進入洽談",
+      "confirmDeal": "確認合作",
+      "startExecution": "開始執行",
+      "markCompleted": "標記完成",
+      "cancelDeal": "取消合作"
+    },
+    "validation": {
+      "requiredFields": "請填寫品牌名稱和合作類型"
+    },
+    "toast": {
+      "created": "品牌合作已建立",
+      "statusUpdated": "狀態已更新",
+      "proposalGenerated": "提案已生成",
+      "deleted": "已刪除"
+    }
+  },
+  "monetize": {
+    "title": "AI 變現顧問",
+    "subtitle": "整合所有收入管道，提供健診報告、AI 建議和收入預測",
+    "tabHealth": "收入總覽",
+    "tabAdvice": "AI 建議",
+    "tabForecast": "收入預測",
+    "period30d": "近 30 天",
+    "period90d": "近 90 天",
+    "totalRevenue": "總收入",
+    "channel.membership": "會員訂閱",
+    "channel.digitalProduct": "數位商品",
+    "channel.brandDeal": "品牌合作",
+    "channel.affiliate": "聯盟行銷",
+    "channel.subscription": "平台訂閱",
+    "membershipMrr": "MRR: {mrr} | 會員: {members}",
+    "churnRate": "流失率: {rate}%",
+    "digitalProductSales": "銷量: {sales} | 客單價: {avgOrder}",
+    "topSelling": "熱銷: {name}",
+    "brandDealActive": "進行中: {deals} | 均價: {avgValue}",
+    "conversionRate": "成交率: {rate}%",
+    "affiliateClicks": "點擊: {clicks} | 轉換: {rate}%",
+    "topLink": "最佳: {name}",
+    "adviceDescription": "AI 分析你的收入數據，給出可執行的變現建議",
+    "generateAdvice": "生成建議",
+    "adviceEmpty": "點擊「生成建議」獲取 AI 變現建議",
+    "suggestions": "變現建議",
+    "impact.HIGH": "高影響",
+    "impact.MEDIUM": "中影響",
+    "impact.LOW": "低影響",
+    "category.PRICING": "定價優化",
+    "category.GROWTH": "成長策略",
+    "category.RETENTION": "留存提升",
+    "category.NEW_CHANNEL": "新管道",
+    "category.OPTIMIZATION": "效率優化",
+    "estimatedImpact": "預期影響: {impact}",
+    "executionSteps": "執行步驟:",
+    "pricingAdvice": "定價建議",
+    "perMonth": "/月",
+    "people": "人",
+    "salesUnit": "銷",
+    "recommendNewChannels": "推薦新增管道",
+    "difficulty.EASY": "簡單",
+    "difficulty.MEDIUM": "中等",
+    "difficulty.HARD": "困難",
+    "estimatedMonthlyRevenue": "預估 {amount}/月",
+    "prerequisites": "前置條件: {items}",
+    "insufficientData": "數據不足",
+    "nextMonth": "下個月",
+    "twoMonthsLater": "2 個月後",
+    "threeMonthsLater": "3 個月後",
+    "forecastAssumptions": "預測假設"
+  },
+  "store": {
+    "pageTitle": "數位商品商店",
+    "pageDescription": "販售 PDF、模板、Preset、電子書等數位商品",
+    "addProduct": "新增商品",
+    "typeLabels": {
+      "pdf": "📄 PDF",
+      "template": "📐 模板",
+      "preset": "🎨 Preset",
+      "ebook": "📖 電子書",
+      "videoCourse": "🎬 影片課程",
+      "audio": "🎵 音檔",
+      "other": "📦 其他"
+    },
+    "stats": {
+      "productCount": "商品數",
+      "totalRevenue": "總營收",
+      "totalSales": "總銷量"
+    },
+    "status": {
+      "published": "上架中",
+      "unpublished": "未上架"
+    },
+    "aiCopy": "AI 文案",
+    "productStats": {
+      "sales": "{count} 銷量",
+      "revenue": "NT${amount} 營收"
+    },
+    "action": {
+      "publish": "上架",
+      "unpublish": "下架",
+      "aiRewrite": "AI 重寫",
+      "cancel": "取消",
+      "aiGenerating": "AI 生成中...",
+      "createProduct": "建立商品",
+      "delete": "刪除"
+    },
+    "empty": {
+      "title": "尚無數位商品",
+      "description": "新增您的第一個數位商品，AI 會自動生成吸引人的商品描述"
+    },
+    "dialog": {
+      "createTitle": "新增數位商品",
+      "deleteTitle": "刪除商品",
+      "deleteDescription": "確定要刪除此商品嗎？所有訂單記錄也會一併刪除。"
+    },
+    "form": {
+      "name": "商品名稱",
+      "namePlaceholder": "例：Lightroom 風格 Preset 套組",
+      "type": "商品類型",
+      "price": "價格（NT$）",
+      "description": "簡短描述（選填，AI 會自動生成完整文案）",
+      "descriptionPlaceholder": "簡單描述商品特色...",
+      "tags": "標籤（逗號分隔）",
+      "tagsPlaceholder": "攝影, Lightroom, Preset"
+    },
+    "aiHint": "AI 會根據商品資訊自動生成行銷文案和 SEO 標籤",
+    "validation": {
+      "nameRequired": "請輸入商品名稱",
+      "priceRequired": "請設定價格"
+    },
+    "toast": {
+      "created": "商品已建立，AI 已生成描述",
+      "published": "已上架",
+      "unpublished": "已下架",
+      "aiRegenerated": "AI 已重新生成文案",
+      "deleted": "商品已刪除"
+    }
+  },
+  "email": {
+    "pageTitle": "AI Email 行銷",
+    "pageDescription": "AI 自動生成郵件序列，管理訂閱者名單",
+    "stats": {
+      "subscribers": "訂閱者",
+      "sent": "已發送",
+      "avgOpenRate": "平均開信率",
+      "campaigns": "行銷活動"
+    },
+    "tabs": {
+      "campaigns": "郵件活動",
+      "subscribers": "訂閱者名單"
+    },
+    "empty": {
+      "campaignsTitle": "尚無郵件活動",
+      "campaignsDescription": "讓 AI 幫你生成完整的郵件行銷序列：歡迎信 → 培養信 → 銷售信",
+      "campaignsAction": "AI 生成序列",
+      "subscribersTitle": "尚無訂閱者",
+      "subscribersDescription": "新增訂閱者到你的郵件名單"
+    },
+    "campaign": {
+      "emailCount": "{count} 封信",
+      "typeSequence": "自動序列",
+      "typeSingle": "單封",
+      "statusDraft": "草稿",
+      "statusSent": "已發送",
+      "statusScheduled": "已排程",
+      "statusSending": "寄送中",
+      "sentStats": "{sent} 寄 · {opened} 開 · {clicked} 點"
+    },
+    "subscriber": {
+      "name": "姓名",
+      "source": "來源",
+      "status": "狀態",
+      "joinDate": "加入日期",
+      "active": "活躍",
+      "unsubscribed": "取消"
+    },
+    "actions": {
+      "addSubscriber": "新增訂閱者",
+      "aiGenerateSequence": "AI 生成郵件序列",
+      "send": "寄送",
+      "cancel": "取消",
+      "add": "新增",
+      "adding": "新增中...",
+      "generateSequence": "生成序列",
+      "aiGenerating": "AI 生成中..."
+    },
+    "dialog": {
+      "addSubscriberTitle": "新增訂閱者",
+      "nameLabel": "姓名（選填）",
+      "namePlaceholder": "粉絲名字",
+      "aiGenerateTitle": "AI 生成郵件序列",
+      "purposeLabel": "行銷目的",
+      "purposePlaceholder": "例：推廣新線上課程、歡迎新會員、限時優惠",
+      "productNameLabel": "商品名稱（選填）",
+      "productNamePlaceholder": "例：Lightroom Preset 套組",
+      "toneLabel": "語氣",
+      "emailCountLabel": "郵件數量",
+      "emailCount3": "3 封（基本）",
+      "emailCount5": "5 封（標準）",
+      "emailCount7": "7 封（完整）",
+      "aiFunnelHint": "AI 將生成完整的自動化郵件漏斗：歡迎 → 培養 → 銷售"
+    },
+    "toneOptions": {
+      "friendlyProfessional": "親切專業",
+      "enthusiastic": "熱情活潑",
+      "formalAuthoritative": "正式權威",
+      "casualHumorous": "輕鬆幽默"
+    },
+    "preview": {
+      "emailIndex": "第 {index} 封",
+      "sendOnDay": "第 {day} 天發送"
+    },
+    "confirm": {
+      "sendTitle": "寄送郵件活動",
+      "sendDescription": "確定要寄送此郵件活動給所有符合條件的訂閱者嗎？寄出後無法撤回。",
+      "sendConfirmLabel": "確認寄送",
+      "deleteTitle": "刪除郵件活動",
+      "deleteDescription": "確定要刪除此郵件活動嗎？所有郵件模板也會一併刪除。",
+      "deleteConfirmLabel": "刪除"
+    },
+    "toast": {
+      "subscriberAdded": "已新增訂閱者",
+      "aiSequenceGenerated": "AI 已生成 {count} 封郵件序列",
+      "sendQueued": "已排入寄送佇列：{subscriberCount} 位訂閱者，{emailCount} 封郵件",
+      "deleted": "已刪除"
+    },
+    "validation": {
+      "emailRequired": "請輸入 Email",
+      "purposeRequired": "請輸入行銷目的"
+    }
+  },
+  "landing": {
+    "pageTitle": "Landing Page",
+    "pageDescription": "建立你的個人品牌頁面",
+    "themes": {
+      "modern": "現代",
+      "minimal": "極簡",
+      "bold": "大膽",
+      "creative": "創意"
+    },
+    "niches": {
+      "tech": "科技",
+      "food": "美食",
+      "travel": "旅遊",
+      "education": "教育",
+      "lifestyle": "生活",
+      "entertainment": "娛樂",
+      "business": "商業",
+      "design": "設計",
+      "health": "健康",
+      "music": "音樂"
+    },
+    "toast": {
+      "generated": "Landing Page 已生成！",
+      "updated": "已更新",
+      "linkCopied": "連結已複製"
+    },
+    "emptyState": {
+      "description": "AI 會根據你的創作領域自動生成專業的 Landing Page，包含文案、配色和版面配置",
+      "generateButton": "AI 一鍵生成"
+    },
+    "generateDialog": {
+      "title": "AI 生成 Landing Page",
+      "nameLabel": "你的名字 / 品牌名稱",
+      "namePlaceholder": "例如：Nick Creates",
+      "nicheLabel": "創作領域",
+      "nichePlaceholder": "選擇領域",
+      "descriptionLabel": "補充描述（選填）",
+      "descriptionPlaceholder": "告訴 AI 更多關於你的資訊，例如：專注於 AI 工具評測、擁有 10 萬粉絲...",
+      "cancel": "取消",
+      "generating": "AI 生成中...",
+      "startGenerate": "開始生成"
+    },
+    "editor": {
+      "viewCount": "{slug} · {count} 次瀏覽",
+      "copyLink": "複製連結",
+      "preview": "預覽",
+      "unpublish": "取消發布",
+      "publish": "🚀 發布頁面",
+      "statusPublished": "✅ 已發布",
+      "statusDraft": "📝 草稿",
+      "theme": "主題：{theme}",
+      "viewPublicPage": "查看公開頁面",
+      "headlineTitle": "標語",
+      "mainHeadline": "主標題",
+      "subHeadline": "副標題",
+      "bioTitle": "個人簡介",
+      "themeColorTitle": "主題配色",
+      "ctaTitle": "行動按鈕",
+      "sectionsTitle": "頁面區塊",
+      "unnamedSection": "未命名區塊",
+      "previewTitle": "頁面預覽"
+    }
   }
 }

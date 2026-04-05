@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Plus, Trash2, ShoppingBag, Sparkles, Eye, EyeOff, Package, DollarSign, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, useAiRegenerateProduct, type DigitalProduct } from "@/hooks/use-products";
@@ -17,17 +18,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 
-const typeLabels: Record<string, string> = {
-  PDF: "📄 PDF",
-  TEMPLATE: "📐 模板",
-  PRESET: "🎨 Preset",
-  EBOOK: "📖 電子書",
-  VIDEO_COURSE: "🎬 影片課程",
-  AUDIO: "🎵 音檔",
-  OTHER: "📦 其他",
-};
-
 export default function StorePage() {
+  const t = useTranslations("store");
+
+  const typeLabels: Record<string, string> = {
+    PDF: t("typeLabels.pdf"),
+    TEMPLATE: t("typeLabels.template"),
+    PRESET: t("typeLabels.preset"),
+    EBOOK: t("typeLabels.ebook"),
+    VIDEO_COURSE: t("typeLabels.videoCourse"),
+    AUDIO: t("typeLabels.audio"),
+    OTHER: t("typeLabels.other"),
+  };
+
   const { data: products, isLoading } = useProducts();
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
@@ -39,8 +42,8 @@ export default function StorePage() {
   const [form, setForm] = useState({ name: "", description: "", productType: "PDF", price: 0, tags: "" });
 
   const handleCreate = () => {
-    if (!form.name.trim()) return toast.error("請輸入商品名稱");
-    if (form.price <= 0) return toast.error("請設定價格");
+    if (!form.name.trim()) return toast.error(t("validation.nameRequired"));
+    if (form.price <= 0) return toast.error(t("validation.priceRequired"));
 
     createProduct.mutate(
       {
@@ -48,11 +51,11 @@ export default function StorePage() {
         description: form.description || undefined,
         productType: form.productType,
         price: form.price,
-        tags: form.tags ? form.tags.split(",").map((t) => t.trim()) : [],
+        tags: form.tags ? form.tags.split(",").map((tag) => tag.trim()) : [],
       },
       {
         onSuccess: () => {
-          toast.success("商品已建立，AI 已生成描述");
+          toast.success(t("toast.created"));
           setCreateOpen(false);
           setForm({ name: "", description: "", productType: "PDF", price: 0, tags: "" });
         },
@@ -65,7 +68,7 @@ export default function StorePage() {
     updateProduct.mutate(
       { id: product.id, data: { isPublished: !product.isPublished } },
       {
-        onSuccess: () => toast.success(product.isPublished ? "已下架" : "已上架"),
+        onSuccess: () => toast.success(product.isPublished ? t("toast.unpublished") : t("toast.published")),
         onError: (e) => toast.error(e.message),
       },
     );
@@ -77,11 +80,11 @@ export default function StorePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="數位商品商店"
-        description="販售 PDF、模板、Preset、電子書等數位商品"
+        title={t("pageTitle")}
+        description={t("pageDescription")}
         action={
           <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" /> 新增商品
+            <Plus className="mr-2 h-4 w-4" /> {t("addProduct")}
           </Button>
         }
       />
@@ -93,7 +96,7 @@ export default function StorePage() {
             <div className="flex items-center gap-3">
               <div className="rounded-lg bg-blue-100 p-2 dark:bg-blue-900"><Package className="h-5 w-5 text-blue-600" /></div>
               <div>
-                <p className="text-xs text-muted-foreground">商品數</p>
+                <p className="text-xs text-muted-foreground">{t("stats.productCount")}</p>
                 <p className="text-xl font-bold">{products?.length ?? 0}</p>
               </div>
             </div>
@@ -104,7 +107,7 @@ export default function StorePage() {
             <div className="flex items-center gap-3">
               <div className="rounded-lg bg-green-100 p-2 dark:bg-green-900"><DollarSign className="h-5 w-5 text-green-600" /></div>
               <div>
-                <p className="text-xs text-muted-foreground">總營收</p>
+                <p className="text-xs text-muted-foreground">{t("stats.totalRevenue")}</p>
                 <p className="text-xl font-bold">NT${totalRevenue.toLocaleString()}</p>
               </div>
             </div>
@@ -115,7 +118,7 @@ export default function StorePage() {
             <div className="flex items-center gap-3">
               <div className="rounded-lg bg-purple-100 p-2 dark:bg-purple-900"><ShoppingBag className="h-5 w-5 text-purple-600" /></div>
               <div>
-                <p className="text-xs text-muted-foreground">總銷量</p>
+                <p className="text-xs text-muted-foreground">{t("stats.totalSales")}</p>
                 <p className="text-xl font-bold">{totalSales}</p>
               </div>
             </div>
@@ -133,9 +136,9 @@ export default function StorePage() {
       ) : !products?.length ? (
         <EmptyState
           icon={ShoppingBag}
-          title="尚無數位商品"
-          description="新增您的第一個數位商品，AI 會自動生成吸引人的商品描述"
-          actionLabel="新增商品"
+          title={t("empty.title")}
+          description={t("empty.description")}
+          actionLabel={t("addProduct")}
           onAction={() => setCreateOpen(true)}
         />
       ) : (
@@ -156,7 +159,7 @@ export default function StorePage() {
                     )}
                   </div>
                   <Badge variant={product.isPublished ? "default" : "secondary"}>
-                    {product.isPublished ? "上架中" : "未上架"}
+                    {product.isPublished ? t("status.published") : t("status.unpublished")}
                   </Badge>
                 </div>
 
@@ -164,7 +167,7 @@ export default function StorePage() {
                 {product.aiDescription && (
                   <div className="mt-2 rounded-md bg-purple-50 p-2 dark:bg-purple-950/30">
                     <p className="flex items-center gap-1 text-xs font-medium text-purple-700 dark:text-purple-400 mb-1">
-                      <Sparkles className="h-3 w-3" /> AI 文案
+                      <Sparkles className="h-3 w-3" /> {t("aiCopy")}
                     </p>
                     <p className="text-xs text-purple-900 dark:text-purple-200 line-clamp-3">{product.aiDescription}</p>
                   </div>
@@ -181,8 +184,8 @@ export default function StorePage() {
 
                 {/* Stats */}
                 <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{product.salesCount} 銷量</span>
-                  <span>NT${product.totalRevenue.toLocaleString()} 營收</span>
+                  <span>{t("productStats.sales", { count: product.salesCount })}</span>
+                  <span>{t("productStats.revenue", { amount: product.totalRevenue.toLocaleString() })}</span>
                 </div>
 
                 {/* Actions */}
@@ -194,7 +197,7 @@ export default function StorePage() {
                     onClick={() => togglePublish(product)}
                   >
                     {product.isPublished ? <EyeOff className="mr-1 h-3 w-3" /> : <Eye className="mr-1 h-3 w-3" />}
-                    {product.isPublished ? "下架" : "上架"}
+                    {product.isPublished ? t("action.unpublish") : t("action.publish")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -202,12 +205,12 @@ export default function StorePage() {
                     className="h-7 text-xs"
                     disabled={aiRegenerate.isPending}
                     onClick={() => aiRegenerate.mutate(product.id, {
-                      onSuccess: () => toast.success("AI 已重新生成文案"),
+                      onSuccess: () => toast.success(t("toast.aiRegenerated")),
                       onError: (e) => toast.error(e.message),
                     })}
                   >
                     {aiRegenerate.isPending ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-1 h-3 w-3" />}
-                    AI 重寫
+                    {t("action.aiRewrite")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -227,14 +230,14 @@ export default function StorePage() {
       {/* Create Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>新增數位商品</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("dialog.createTitle")}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>商品名稱</Label>
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="例：Lightroom 風格 Preset 套組" />
+              <Label>{t("form.name")}</Label>
+              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("form.namePlaceholder")} />
             </div>
             <div className="space-y-2">
-              <Label>商品類型</Label>
+              <Label>{t("form.type")}</Label>
               <Select value={form.productType} onValueChange={(v) => setForm({ ...form, productType: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -245,27 +248,27 @@ export default function StorePage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>價格（NT$）</Label>
+              <Label>{t("form.price")}</Label>
               <Input type="number" value={form.price || ""} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} placeholder="299" />
             </div>
             <div className="space-y-2">
-              <Label>簡短描述（選填，AI 會自動生成完整文案）</Label>
-              <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="簡單描述商品特色..." rows={2} />
+              <Label>{t("form.description")}</Label>
+              <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder={t("form.descriptionPlaceholder")} rows={2} />
             </div>
             <div className="space-y-2">
-              <Label>標籤（逗號分隔）</Label>
-              <Input value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} placeholder="攝影, Lightroom, Preset" />
+              <Label>{t("form.tags")}</Label>
+              <Input value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} placeholder={t("form.tagsPlaceholder")} />
             </div>
             <div className="rounded-md bg-blue-50 p-3 dark:bg-blue-950">
               <p className="text-xs text-blue-700 dark:text-blue-300 flex items-center gap-1">
-                <Sparkles className="h-3 w-3" /> AI 會根據商品資訊自動生成行銷文案和 SEO 標籤
+                <Sparkles className="h-3 w-3" /> {t("aiHint")}
               </p>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>取消</Button>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>{t("action.cancel")}</Button>
             <Button onClick={handleCreate} disabled={createProduct.isPending}>
-              {createProduct.isPending ? <><Loader2 className="mr-1 h-4 w-4 animate-spin" /> AI 生成中...</> : "建立商品"}
+              {createProduct.isPending ? <><Loader2 className="mr-1 h-4 w-4 animate-spin" /> {t("action.aiGenerating")}</> : t("action.createProduct")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -275,15 +278,15 @@ export default function StorePage() {
       <ConfirmDialog
         open={!!deleteId}
         onOpenChange={() => setDeleteId(null)}
-        title="刪除商品"
-        description="確定要刪除此商品嗎？所有訂單記錄也會一併刪除。"
-        confirmLabel="刪除"
+        title={t("dialog.deleteTitle")}
+        description={t("dialog.deleteDescription")}
+        confirmLabel={t("action.delete")}
         variant="destructive"
         loading={deleteProduct.isPending}
         onConfirm={() => {
           if (deleteId) {
             deleteProduct.mutate(deleteId, {
-              onSuccess: () => { toast.success("商品已刪除"); setDeleteId(null); },
+              onSuccess: () => { toast.success(t("toast.deleted")); setDeleteId(null); },
               onError: (e) => toast.error(e.message),
             });
           }

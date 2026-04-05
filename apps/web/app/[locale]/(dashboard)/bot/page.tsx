@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Plus, Trash2, Bot as BotIcon, MessageSquare, Database, Send, Globe, Lock, FileText, Link, Video, Edit3, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -38,6 +39,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // ─── Chat Panel ───
 function ChatPanel({ botId }: { botId: string }) {
+  const t = useTranslations("bot");
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
   const [convId, setConvId] = useState<string | undefined>();
@@ -66,7 +68,7 @@ function ChatPanel({ botId }: { botId: string }) {
       <div className="flex-1 space-y-3 overflow-y-auto p-4">
         {messages.length === 0 && (
           <p className="text-center text-sm text-muted-foreground">
-            輸入訊息開始對話
+            {t("chatEmptyHint")}
           </p>
         )}
         {messages.map((msg, i) => (
@@ -88,7 +90,7 @@ function ChatPanel({ botId }: { botId: string }) {
         {chat.isPending && (
           <div className="flex justify-start">
             <div className="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
-              思考中...
+              {t("thinking")}
             </div>
           </div>
         )}
@@ -97,7 +99,7 @@ function ChatPanel({ botId }: { botId: string }) {
         <Textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder="輸入訊息...（Shift+Enter 換行）"
+          placeholder={t("chatInputPlaceholder")}
           className="min-h-[40px] max-h-[120px] resize-none"
           rows={1}
           onKeyDown={(e) => {
@@ -118,6 +120,7 @@ function ChatPanel({ botId }: { botId: string }) {
 
 // ─── Knowledge Base Tab ───
 function KnowledgeBaseTab() {
+  const t = useTranslations("bot");
   const { data: kbs, isLoading } = useKnowledgeBases();
   const createKb = useCreateKnowledgeBase();
   const deleteKb = useDeleteKnowledgeBase();
@@ -137,16 +140,16 @@ function KnowledgeBaseTab() {
       <div className="flex justify-end">
         <Button onClick={() => setCreateOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          新增知識庫
+          {t("addKnowledgeBase")}
         </Button>
       </div>
 
       {!kbs?.data?.length ? (
         <EmptyState
           icon={Database}
-          title="尚無知識庫"
-          description="建立知識庫並匯入內容，讓 Bot 回答更準確"
-          actionLabel="新增知識庫"
+          title={t("noKnowledgeBase")}
+          description={t("noKnowledgeBaseDesc")}
+          actionLabel={t("addKnowledgeBase")}
           onAction={() => setCreateOpen(true)}
         />
       ) : (
@@ -156,7 +159,7 @@ function KnowledgeBaseTab() {
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base">{kb.name}</CardTitle>
-                  <Badge variant="secondary">{kb.chunkCount} 片段</Badge>
+                  <Badge variant="secondary">{t("chunkCount", { count: kb.chunkCount })}</Badge>
                 </div>
               </CardHeader>
               <CardContent>
@@ -165,7 +168,7 @@ function KnowledgeBaseTab() {
                 )}
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" onClick={() => setIngestId(kb.id)}>
-                    匯入內容
+                    {t("ingestContent")}
                   </Button>
                   <Button size="sm" variant="ghost" onClick={() => setDeleteId(kb.id)}>
                     <Trash2 className="h-4 w-4 text-destructive" />
@@ -180,24 +183,24 @@ function KnowledgeBaseTab() {
       {/* Create KB */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>新增知識庫</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("addKnowledgeBase")}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>名稱</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="知識庫名稱" />
+              <Label>{t("labelName")}</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("kbNamePlaceholder")} />
             </div>
             <div className="space-y-2">
-              <Label>描述</Label>
-              <Input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="選填" />
+              <Label>{t("labelDescription")}</Label>
+              <Input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder={t("optional")} />
             </div>
             <div className="space-y-2">
-              <Label>來源類型</Label>
+              <Label>{t("labelSourceType")}</Label>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { value: "MANUAL", label: "手動輸入", icon: Edit3 },
-                  { value: "QA_PAIRS", label: "常見問答", icon: HelpCircle },
-                  { value: "DOCUMENT", label: "文件", icon: FileText },
-                  { value: "URL", label: "網址", icon: Link },
+                  { value: "MANUAL", label: t("sourceManual"), icon: Edit3 },
+                  { value: "QA_PAIRS", label: t("sourceQA"), icon: HelpCircle },
+                  { value: "DOCUMENT", label: t("sourceDocument"), icon: FileText },
+                  { value: "URL", label: t("sourceURL"), icon: Link },
                 ].map((opt) => (
                   <button
                     key={opt.value}
@@ -217,20 +220,20 @@ function KnowledgeBaseTab() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>取消</Button>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>{t("cancel")}</Button>
             <Button
               onClick={() => {
                 createKb.mutate(
                   { name, description: desc || undefined, sourceType },
                   {
-                    onSuccess: () => { toast.success("知識庫已建立"); setCreateOpen(false); setName(""); setDesc(""); setSourceType("MANUAL"); },
+                    onSuccess: () => { toast.success(t("kbCreated")); setCreateOpen(false); setName(""); setDesc(""); setSourceType("MANUAL"); },
                     onError: (e) => toast.error(e.message),
                   },
                 );
               }}
               disabled={createKb.isPending}
             >
-              建立
+              {t("create")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -239,25 +242,25 @@ function KnowledgeBaseTab() {
       {/* Ingest */}
       <Dialog open={!!ingestId} onOpenChange={() => setIngestId(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>匯入內容</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("ingestContent")}</DialogTitle></DialogHeader>
           <div className="space-y-2">
-            <Label>內容文字</Label>
+            <Label>{t("labelContentText")}</Label>
             <Textarea
               value={ingestContent}
               onChange={(e) => setIngestContent(e.target.value)}
-              placeholder="貼上要匯入的文字內容..."
+              placeholder={t("ingestPlaceholder")}
               rows={8}
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIngestId(null)}>取消</Button>
+            <Button variant="outline" onClick={() => setIngestId(null)}>{t("cancel")}</Button>
             <Button
               onClick={() => {
                 if (ingestId) {
                   ingest.mutate(
                     { id: ingestId, content: ingestContent },
                     {
-                      onSuccess: () => { toast.success("內容已匯入"); setIngestId(null); setIngestContent(""); },
+                      onSuccess: () => { toast.success(t("ingestSuccess")); setIngestId(null); setIngestContent(""); },
                       onError: (e) => toast.error(e.message),
                     },
                   );
@@ -265,7 +268,7 @@ function KnowledgeBaseTab() {
               }}
               disabled={ingest.isPending}
             >
-              {ingest.isPending ? "匯入中..." : "匯入"}
+              {ingest.isPending ? t("ingesting") : t("ingest")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -275,15 +278,15 @@ function KnowledgeBaseTab() {
       <ConfirmDialog
         open={!!deleteId}
         onOpenChange={() => setDeleteId(null)}
-        title="刪除知識庫"
-        description="確定要刪除此知識庫嗎？所有匯入的內容都會被刪除。"
-        confirmLabel="刪除"
+        title={t("deleteKnowledgeBase")}
+        description={t("deleteKnowledgeBaseConfirm")}
+        confirmLabel={t("delete")}
         variant="destructive"
         loading={deleteKb.isPending}
         onConfirm={() => {
           if (deleteId) {
             deleteKb.mutate(deleteId, {
-              onSuccess: () => { toast.success("知識庫已刪除"); setDeleteId(null); },
+              onSuccess: () => { toast.success(t("kbDeleted")); setDeleteId(null); },
               onError: (e) => toast.error(e.message),
             });
           }
@@ -295,6 +298,7 @@ function KnowledgeBaseTab() {
 
 // ─── Main Page ───
 export default function BotPage() {
+  const t = useTranslations("bot");
   const { data: botsData, isLoading } = useBots();
   const createBot = useCreateBot();
   const updateBot = useUpdateBot();
@@ -314,7 +318,7 @@ export default function BotPage() {
   const resetForm = () => { setName(""); setWelcomeMessage(""); setSystemPrompt(""); setIsPublic(false); };
 
   const handleCreateOrUpdate = () => {
-    if (!name.trim()) { toast.error("請輸入 Bot 名稱"); return; }
+    if (!name.trim()) { toast.error(t("nameRequired")); return; }
     const payload = {
       name,
       welcomeMessage: welcomeMessage || undefined,
@@ -326,13 +330,13 @@ export default function BotPage() {
       updateBot.mutate(
         { id: editBot.id, data: payload },
         {
-          onSuccess: () => { toast.success("Bot 已更新"); setEditBot(null); resetForm(); },
+          onSuccess: () => { toast.success(t("botUpdated")); setEditBot(null); resetForm(); },
           onError: (e) => toast.error(e.message),
         },
       );
     } else {
       createBot.mutate(payload, {
-        onSuccess: () => { toast.success("Bot 已建立"); setCreateOpen(false); resetForm(); },
+        onSuccess: () => { toast.success(t("botCreated")); setCreateOpen(false); resetForm(); },
         onError: (e) => toast.error(e.message),
       });
     }
@@ -341,19 +345,19 @@ export default function BotPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Bot 設定"
-        description="建立和管理 AI 顧問 Bot 與知識庫"
+        title={t("pageTitle")}
+        description={t("pageDescription")}
       />
 
       <Tabs defaultValue="bots">
         <TabsList>
           <TabsTrigger value="bots">
             <MessageSquare className="mr-1 h-4 w-4" />
-            Bot 列表
+            {t("tabBots")}
           </TabsTrigger>
           <TabsTrigger value="knowledge">
             <Database className="mr-1 h-4 w-4" />
-            知識庫
+            {t("tabKnowledge")}
           </TabsTrigger>
         </TabsList>
 
@@ -361,7 +365,7 @@ export default function BotPage() {
           <div className="flex justify-end">
             <Button onClick={() => { resetForm(); setCreateOpen(true); }}>
               <Plus className="mr-2 h-4 w-4" />
-              新增 Bot
+              {t("addBot")}
             </Button>
           </div>
 
@@ -370,9 +374,9 @@ export default function BotPage() {
           ) : !botsData?.data?.length ? (
             <EmptyState
               icon={BotIcon}
-              title="尚無 Bot"
-              description="建立您的第一個 AI 顧問 Bot"
-              actionLabel="新增 Bot"
+              title={t("noBot")}
+              description={t("noBotDesc")}
+              actionLabel={t("addBot")}
               onAction={() => { resetForm(); setCreateOpen(true); }}
             />
           ) : (
@@ -383,7 +387,7 @@ export default function BotPage() {
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-base">{bot.name}</CardTitle>
                       <Badge variant={bot.isPublic ? "default" : "secondary"}>
-                        {bot.isPublic ? <><Globe className="mr-1 h-3 w-3" />公開</> : <><Lock className="mr-1 h-3 w-3" />私有</>}
+                        {bot.isPublic ? <><Globe className="mr-1 h-3 w-3" />{t("public")}</> : <><Lock className="mr-1 h-3 w-3" />{t("private")}</>}
                       </Badge>
                     </div>
                   </CardHeader>
@@ -394,7 +398,7 @@ export default function BotPage() {
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" onClick={() => setChatBotId(bot.id)}>
                         <MessageSquare className="mr-1 h-3 w-3" />
-                        測試對話
+                        {t("testChat")}
                       </Button>
                       <Button
                         size="sm"
@@ -407,7 +411,7 @@ export default function BotPage() {
                           setIsPublic(bot.isPublic);
                         }}
                       >
-                        編輯
+                        {t("edit")}
                       </Button>
                       <Button size="sm" variant="ghost" onClick={() => setDeleteId(bot.id)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
@@ -434,37 +438,37 @@ export default function BotPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editBot ? "編輯 Bot" : "新增 Bot"}</DialogTitle>
+            <DialogTitle>{editBot ? t("editBot") : t("addBot")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>名稱</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Bot 名稱" />
+              <Label>{t("labelName")}</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("botNamePlaceholder")} />
             </div>
             <div className="space-y-2">
-              <Label>歡迎訊息</Label>
-              <Input value={welcomeMessage} onChange={(e) => setWelcomeMessage(e.target.value)} placeholder="選填" />
+              <Label>{t("labelWelcomeMessage")}</Label>
+              <Input value={welcomeMessage} onChange={(e) => setWelcomeMessage(e.target.value)} placeholder={t("optional")} />
             </div>
             <div className="space-y-2">
-              <Label>系統提示詞</Label>
+              <Label>{t("labelSystemPrompt")}</Label>
               <Textarea
                 value={systemPrompt}
                 onChange={(e) => setSystemPrompt(e.target.value)}
-                placeholder="定義 Bot 的角色和行為..."
+                placeholder={t("systemPromptPlaceholder")}
                 rows={4}
               />
             </div>
             <div className="flex items-center justify-between">
-              <Label>公開 Bot</Label>
+              <Label>{t("labelPublicBot")}</Label>
               <Switch checked={isPublic} onCheckedChange={setIsPublic} />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setCreateOpen(false); setEditBot(null); resetForm(); }}>
-              取消
+              {t("cancel")}
             </Button>
             <Button onClick={handleCreateOrUpdate} disabled={createBot.isPending || updateBot.isPending}>
-              {editBot ? "更新" : "建立"}
+              {editBot ? t("update") : t("create")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -473,7 +477,7 @@ export default function BotPage() {
       {/* Chat Dialog */}
       <Dialog open={!!chatBotId} onOpenChange={() => setChatBotId(null)}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>測試對話</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("testChat")}</DialogTitle></DialogHeader>
           {chatBotId && <ChatPanel botId={chatBotId} />}
         </DialogContent>
       </Dialog>
@@ -482,15 +486,15 @@ export default function BotPage() {
       <ConfirmDialog
         open={!!deleteId}
         onOpenChange={() => setDeleteId(null)}
-        title="刪除 Bot"
-        description="確定要刪除此 Bot 嗎？所有對話記錄都會被刪除。"
-        confirmLabel="刪除"
+        title={t("deleteBot")}
+        description={t("deleteBotConfirm")}
+        confirmLabel={t("delete")}
         variant="destructive"
         loading={deleteBot.isPending}
         onConfirm={() => {
           if (deleteId) {
             deleteBot.mutate(deleteId, {
-              onSuccess: () => { toast.success("Bot 已刪除"); setDeleteId(null); },
+              onSuccess: () => { toast.success(t("botDeleted")); setDeleteId(null); },
               onError: (e) => toast.error(e.message),
             });
           }

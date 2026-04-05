@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   DollarSign,
   TrendingUp,
@@ -33,32 +34,10 @@ const channelIcons: Record<string, typeof DollarSign> = {
   subscription: DollarSign,
 };
 
-const channelLabels: Record<string, string> = {
-  membership: "會員訂閱",
-  digitalProduct: "數位商品",
-  brandDeal: "品牌合作",
-  affiliate: "聯盟行銷",
-  subscription: "平台訂閱",
-};
-
 const impactColors: Record<string, string> = {
   HIGH: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
   MEDIUM: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
   LOW: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-};
-
-const categoryLabels: Record<string, string> = {
-  PRICING: "定價優化",
-  GROWTH: "成長策略",
-  RETENTION: "留存提升",
-  NEW_CHANNEL: "新管道",
-  OPTIMIZATION: "效率優化",
-};
-
-const difficultyLabels: Record<string, string> = {
-  EASY: "簡單",
-  MEDIUM: "中等",
-  HARD: "困難",
 };
 
 function formatCurrency(value: number): string {
@@ -69,6 +48,7 @@ function formatCurrency(value: number): string {
 // ─── Health Panel ───
 
 function HealthPanel() {
+  const t = useTranslations("monetize");
   const [period, setPeriod] = useState("30d");
   const { data, isLoading } = useHealth(period);
 
@@ -93,7 +73,7 @@ function HealthPanel() {
       <div className="flex gap-2">
         {["30d", "90d"].map((p) => (
           <Button key={p} variant={period === p ? "default" : "outline"} size="sm" onClick={() => setPeriod(p)}>
-            {p === "30d" ? "近 30 天" : "近 90 天"}
+            {p === "30d" ? t("period30d") : t("period90d")}
           </Button>
         ))}
       </div>
@@ -103,7 +83,7 @@ function HealthPanel() {
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">總收入</p>
+              <p className="text-sm text-muted-foreground">{t("totalRevenue")}</p>
               <p className="text-3xl font-bold">{formatCurrency(data.totalRevenue)}</p>
             </div>
             <div className={`flex items-center gap-1 ${growthColor}`}>
@@ -126,7 +106,7 @@ function HealthPanel() {
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-sm font-medium flex items-center gap-2">
                       <Icon className="h-4 w-4" />
-                      {channelLabels[key]}
+                      {t(`channel.${key}`)}
                     </CardTitle>
                     <Badge variant="outline" className="text-xs">{ch.percentage}%</Badge>
                   </div>
@@ -136,26 +116,26 @@ function HealthPanel() {
                   <div className="mt-2 space-y-1 text-xs text-muted-foreground">
                     {key === "membership" && (
                       <>
-                        <p>MRR: {formatCurrency(ch.mrr)} | 會員: {ch.activeMembers}</p>
-                        <p>流失率: {ch.churnRate}%</p>
+                        <p>{t("membershipMrr", { mrr: formatCurrency(ch.mrr), members: ch.activeMembers })}</p>
+                        <p>{t("churnRate", { rate: ch.churnRate })}</p>
                       </>
                     )}
                     {key === "digitalProduct" && (
                       <>
-                        <p>銷量: {ch.totalSales} | 客單價: {formatCurrency(ch.avgOrderValue)}</p>
-                        {ch.topProduct && <p>熱銷: {ch.topProduct.name}</p>}
+                        <p>{t("digitalProductSales", { sales: ch.totalSales, avgOrder: formatCurrency(ch.avgOrderValue) })}</p>
+                        {ch.topProduct && <p>{t("topSelling", { name: ch.topProduct.name })}</p>}
                       </>
                     )}
                     {key === "brandDeal" && (
                       <>
-                        <p>進行中: {ch.activeDeals} | 均價: {formatCurrency(ch.avgDealValue)}</p>
-                        <p>成交率: {ch.conversionRate}%</p>
+                        <p>{t("brandDealActive", { deals: ch.activeDeals, avgValue: formatCurrency(ch.avgDealValue) })}</p>
+                        <p>{t("conversionRate", { rate: ch.conversionRate })}</p>
                       </>
                     )}
                     {key === "affiliate" && (
                       <>
-                        <p>點擊: {ch.totalClicks} | 轉換: {ch.conversionRate}%</p>
-                        {ch.topLink && <p>最佳: {ch.topLink.name}</p>}
+                        <p>{t("affiliateClicks", { clicks: ch.totalClicks, rate: ch.conversionRate })}</p>
+                        {ch.topLink && <p>{t("topLink", { name: ch.topLink.name })}</p>}
                       </>
                     )}
                   </div>
@@ -171,15 +151,16 @@ function HealthPanel() {
 // ─── Advice Panel ───
 
 function AdvicePanel() {
+  const t = useTranslations("monetize");
   const { data, isLoading, refetch, isFetching } = useAdvice();
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">AI 分析你的收入數據，給出可執行的變現建議</p>
+        <p className="text-sm text-muted-foreground">{t("adviceDescription")}</p>
         <Button onClick={() => refetch()} disabled={isFetching}>
           {isFetching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-          生成建議
+          {t("generateAdvice")}
         </Button>
       </div>
 
@@ -191,7 +172,7 @@ function AdvicePanel() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Lightbulb className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">點擊「生成建議」獲取 AI 變現建議</p>
+            <p className="text-muted-foreground">{t("adviceEmpty")}</p>
           </CardContent>
         </Card>
       ) : (
@@ -199,24 +180,24 @@ function AdvicePanel() {
           {/* Suggestions */}
           {data.suggestions.length > 0 && (
             <div className="space-y-3">
-              <h3 className="font-medium">變現建議</h3>
+              <h3 className="font-medium">{t("suggestions")}</h3>
               {data.suggestions.map((s) => (
                 <Card key={s.id}>
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-sm">{s.title}</CardTitle>
                       <div className="flex gap-2">
-                        <Badge className={impactColors[s.impact] || ""}>{s.impact === "HIGH" ? "高影響" : s.impact === "MEDIUM" ? "中影響" : "低影響"}</Badge>
-                        <Badge variant="outline">{categoryLabels[s.category] || s.category}</Badge>
+                        <Badge className={impactColors[s.impact] || ""}>{t(`impact.${s.impact}`)}</Badge>
+                        <Badge variant="outline">{t(`category.${s.category}`)}</Badge>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground mb-2">{s.description}</p>
-                    <p className="text-xs font-medium mb-1">預期影響: {s.estimatedImpact}</p>
+                    <p className="text-xs font-medium mb-1">{t("estimatedImpact", { impact: s.estimatedImpact })}</p>
                     {s.steps.length > 0 && (
                       <div className="mt-2">
-                        <p className="text-xs font-medium mb-1">執行步驟:</p>
+                        <p className="text-xs font-medium mb-1">{t("executionSteps")}</p>
                         <ol className="text-xs text-muted-foreground space-y-0.5 list-decimal list-inside">
                           {s.steps.map((step, i) => <li key={i}>{step}</li>)}
                         </ol>
@@ -231,24 +212,24 @@ function AdvicePanel() {
           {/* Pricing Advice */}
           {Object.keys(data.pricingAdvice).length > 0 && (
             <div className="space-y-3">
-              <h3 className="font-medium">定價建議</h3>
+              <h3 className="font-medium">{t("pricingAdvice")}</h3>
               {Object.entries(data.pricingAdvice).map(([key, advice]: [string, any]) => (
                 <Card key={key}>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">{channelLabels[key] || key}</CardTitle>
+                    <CardTitle className="text-sm">{t(`channel.${key}`)}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     {advice.currentTiers && (
                       <div className="mb-2 text-xs">
-                        {advice.currentTiers.map((t: any, i: number) => (
-                          <span key={i} className="mr-3">{t.name}: ${t.price}/月 ({t.members} 人)</span>
+                        {advice.currentTiers.map((tier: any, i: number) => (
+                          <span key={i} className="mr-3">{tier.name}: ${tier.price}{t("perMonth")} ({tier.members} {t("people")})</span>
                         ))}
                       </div>
                     )}
                     {advice.products && (
                       <div className="mb-2 text-xs">
                         {advice.products.map((p: any, i: number) => (
-                          <span key={i} className="mr-3">{p.name}: ${p.price} ({p.sales} 銷)</span>
+                          <span key={i} className="mr-3">{p.name}: ${p.price} ({p.sales} {t("salesUnit")})</span>
                         ))}
                       </div>
                     )}
@@ -264,23 +245,23 @@ function AdvicePanel() {
           {/* Unused Channels */}
           {data.unusedChannels.length > 0 && (
             <div className="space-y-3">
-              <h3 className="font-medium">推薦新增管道</h3>
+              <h3 className="font-medium">{t("recommendNewChannels")}</h3>
               {data.unusedChannels.map((ch, i) => (
                 <Card key={i}>
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between mb-2">
                       <p className="font-medium text-sm">{ch.channel}</p>
                       <div className="flex gap-2">
-                        <Badge variant="outline">{difficultyLabels[ch.setupDifficulty] || ch.setupDifficulty}</Badge>
+                        <Badge variant="outline">{t(`difficulty.${ch.setupDifficulty}`)}</Badge>
                         <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                          預估 {ch.estimatedMonthlyRevenue}/月
+                          {t("estimatedMonthlyRevenue", { amount: ch.estimatedMonthlyRevenue })}
                         </Badge>
                       </div>
                     </div>
                     <p className="text-sm text-muted-foreground">{ch.reason}</p>
                     {ch.prerequisites.length > 0 && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        前置條件: {ch.prerequisites.join(", ")}
+                        {t("prerequisites", { items: ch.prerequisites.join(", ") })}
                       </p>
                     )}
                   </CardContent>
@@ -297,6 +278,7 @@ function AdvicePanel() {
 // ─── Forecast Panel ───
 
 function ForecastPanel() {
+  const t = useTranslations("monetize");
   const { data, isLoading } = useForecast();
 
   if (isLoading) {
@@ -310,7 +292,7 @@ function ForecastPanel() {
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <BarChart3 className="h-12 w-12 text-muted-foreground mb-4" />
-          <p className="text-muted-foreground">數據不足</p>
+          <p className="text-muted-foreground">{t("insufficientData")}</p>
           <p className="text-sm text-muted-foreground">{data.assumptions[0]}</p>
         </CardContent>
       </Card>
@@ -318,9 +300,9 @@ function ForecastPanel() {
   }
 
   const months = [
-    { label: "下個月", data: data.forecast!.month1 },
-    { label: "2 個月後", data: data.forecast!.month2 },
-    { label: "3 個月後", data: data.forecast!.month3 },
+    { label: t("nextMonth"), data: data.forecast!.month1 },
+    { label: t("twoMonthsLater"), data: data.forecast!.month2 },
+    { label: t("threeMonthsLater"), data: data.forecast!.month3 },
   ];
 
   return (
@@ -357,7 +339,7 @@ function ForecastPanel() {
       {data.assumptions.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">預測假設</CardTitle>
+            <CardTitle className="text-sm">{t("forecastAssumptions")}</CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
@@ -373,12 +355,14 @@ function ForecastPanel() {
 // ─── Main Page ───
 
 export default function MonetizePage() {
+  const t = useTranslations("monetize");
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">AI 變現顧問</h1>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
         <p className="text-muted-foreground">
-          整合所有收入管道，提供健診報告、AI 建議和收入預測
+          {t("subtitle")}
         </p>
       </div>
 
@@ -386,15 +370,15 @@ export default function MonetizePage() {
         <TabsList>
           <TabsTrigger value="health" className="gap-2">
             <DollarSign className="h-4 w-4" />
-            收入總覽
+            {t("tabHealth")}
           </TabsTrigger>
           <TabsTrigger value="advice" className="gap-2">
             <Lightbulb className="h-4 w-4" />
-            AI 建議
+            {t("tabAdvice")}
           </TabsTrigger>
           <TabsTrigger value="forecast" className="gap-2">
             <TrendingUp className="h-4 w-4" />
-            收入預測
+            {t("tabForecast")}
           </TabsTrigger>
         </TabsList>
 

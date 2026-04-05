@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Plus, Trash2, Users, Crown, Edit } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -34,6 +35,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { MembershipTier } from "@/lib/types";
 
 export default function MembersPage() {
+  const t = useTranslations("members");
   const { data: tiers, isLoading: tiersLoading } = useTiers();
   const { data: membersData, isLoading: membersLoading } = useMembers();
   const createTier = useCreateTier();
@@ -67,8 +69,8 @@ export default function MembersPage() {
   };
 
   const handleSave = () => {
-    if (!name.trim()) { toast.error("請輸入方案名稱"); return; }
-    if (!priceMonthly || isNaN(Number(priceMonthly))) { toast.error("請輸入有效價格"); return; }
+    if (!name.trim()) { toast.error(t("validation.nameRequired")); return; }
+    if (!priceMonthly || isNaN(Number(priceMonthly))) { toast.error(t("validation.priceInvalid")); return; }
 
     const payload = {
       name,
@@ -83,13 +85,13 @@ export default function MembersPage() {
       updateTier.mutate(
         { id: editTier.id, data: payload },
         {
-          onSuccess: () => { toast.success("方案已更新"); setEditTier(null); resetForm(); },
+          onSuccess: () => { toast.success(t("toast.tierUpdated")); setEditTier(null); resetForm(); },
           onError: (e) => toast.error(e.message),
         },
       );
     } else {
       createTier.mutate(payload, {
-        onSuccess: () => { toast.success("方案已建立"); setCreateOpen(false); resetForm(); },
+        onSuccess: () => { toast.success(t("toast.tierCreated")); setCreateOpen(false); resetForm(); },
         onError: (e) => toast.error(e.message),
       });
     }
@@ -102,12 +104,12 @@ export default function MembersPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="會員管理"
-        description="管理會員方案和訂閱者"
+        title={t("pageTitle")}
+        description={t("pageDescription")}
         action={
           <Button onClick={() => { resetForm(); setCreateOpen(true); }}>
             <Plus className="mr-2 h-4 w-4" />
-            新增方案
+            {t("addTier")}
           </Button>
         }
       />
@@ -117,10 +119,10 @@ export default function MembersPage() {
         <CardsSkeleton count={3} />
       ) : (
         <div className="grid gap-4 md:grid-cols-3">
-          <StatCard label="總會員數" value={totalMembers} icon={Users} />
-          <StatCard label="啟用方案" value={activeTiers} icon={Crown} />
+          <StatCard label={t("stats.totalMembers")} value={totalMembers} icon={Users} />
+          <StatCard label={t("stats.activeTiers")} value={activeTiers} icon={Crown} />
           <StatCard
-            label="預估月收入"
+            label={t("stats.estimatedRevenue")}
             value={`NT$${estimatedRevenue.toLocaleString()}`}
           />
         </div>
@@ -128,8 +130,8 @@ export default function MembersPage() {
 
       <Tabs defaultValue="tiers">
         <TabsList>
-          <TabsTrigger value="tiers">會員方案</TabsTrigger>
-          <TabsTrigger value="members">會員列表</TabsTrigger>
+          <TabsTrigger value="tiers">{t("tabs.tiers")}</TabsTrigger>
+          <TabsTrigger value="members">{t("tabs.members")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="tiers" className="mt-4">
@@ -138,9 +140,9 @@ export default function MembersPage() {
           ) : !tiers?.length ? (
             <EmptyState
               icon={Crown}
-              title="尚無會員方案"
-              description="建立會員方案，開始接收粉絲訂閱"
-              actionLabel="新增方案"
+              title={t("empty.tiersTitle")}
+              description={t("empty.tiersDescription")}
+              actionLabel={t("addTier")}
               onAction={() => { resetForm(); setCreateOpen(true); }}
             />
           ) : (
@@ -151,14 +153,14 @@ export default function MembersPage() {
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-base">{tier.name}</CardTitle>
                       <Badge variant={tier.isActive ? "default" : "secondary"}>
-                        {tier.isActive ? "啟用" : "停用"}
+                        {tier.isActive ? t("status.active") : t("status.inactive")}
                       </Badge>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <p className="text-2xl font-bold">
                       NT${tier.priceMonthly.toLocaleString()}
-                      <span className="text-sm font-normal text-muted-foreground">/月</span>
+                      <span className="text-sm font-normal text-muted-foreground">{t("perMonth")}</span>
                     </p>
                     {tier.description && (
                       <p className="mt-2 text-sm text-muted-foreground">{tier.description}</p>
@@ -171,13 +173,13 @@ export default function MembersPage() {
                       </ul>
                     )}
                     <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{tier.memberCount} 位會員</span>
-                      {tier.maxMembers && <span>上限 {tier.maxMembers}</span>}
+                      <span>{t("memberCount", { count: tier.memberCount })}</span>
+                      {tier.maxMembers && <span>{t("maxMembers", { count: tier.maxMembers })}</span>}
                     </div>
                     <div className="mt-3 flex gap-2">
                       <Button size="sm" variant="outline" onClick={() => openEdit(tier)}>
                         <Edit className="mr-1 h-3 w-3" />
-                        編輯
+                        {t("edit")}
                       </Button>
                       <Button size="sm" variant="ghost" onClick={() => setDeleteId(tier.id)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
@@ -196,8 +198,8 @@ export default function MembersPage() {
           ) : !membersData?.data?.length ? (
             <EmptyState
               icon={Users}
-              title="尚無會員"
-              description="會員訂閱您的方案後會顯示在這裡"
+              title={t("empty.membersTitle")}
+              description={t("empty.membersDescription")}
             />
           ) : (
             <div className="space-y-3">
@@ -233,49 +235,49 @@ export default function MembersPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editTier ? "編輯方案" : "新增方案"}</DialogTitle>
+            <DialogTitle>{editTier ? t("dialog.editTitle") : t("dialog.createTitle")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>方案名稱</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="例：基礎會員" />
+              <Label>{t("form.name")}</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("form.namePlaceholder")} />
             </div>
             <div className="space-y-2">
-              <Label>描述</Label>
-              <Input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="選填" />
+              <Label>{t("form.description")}</Label>
+              <Input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder={t("form.optional")} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>月費 (NT$)</Label>
+                <Label>{t("form.monthlyPrice")}</Label>
                 <Input type="number" value={priceMonthly} onChange={(e) => setPriceMonthly(e.target.value)} placeholder="99" />
               </div>
               <div className="space-y-2">
-                <Label>人數上限（選填）</Label>
-                <Input type="number" value={maxMembers} onChange={(e) => setMaxMembers(e.target.value)} placeholder="不限" />
+                <Label>{t("form.maxMembers")}</Label>
+                <Input type="number" value={maxMembers} onChange={(e) => setMaxMembers(e.target.value)} placeholder={t("form.unlimited")} />
               </div>
             </div>
             <div className="space-y-2">
-              <Label>會員福利（每行一項）</Label>
+              <Label>{t("form.benefits")}</Label>
               <Textarea
                 value={benefits}
                 onChange={(e) => setBenefits(e.target.value)}
-                placeholder="專屬影片&#10;私密社群&#10;每月直播"
+                placeholder={t("form.benefitsPlaceholder")}
                 rows={4}
               />
             </div>
             {editTier && (
               <div className="flex items-center justify-between">
-                <Label>啟用方案</Label>
+                <Label>{t("form.enableTier")}</Label>
                 <Switch checked={isActive} onCheckedChange={setIsActive} />
               </div>
             )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setCreateOpen(false); setEditTier(null); resetForm(); }}>
-              取消
+              {t("cancel")}
             </Button>
             <Button onClick={handleSave} disabled={createTier.isPending || updateTier.isPending}>
-              {editTier ? "更新" : "建立"}
+              {editTier ? t("update") : t("create")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -285,15 +287,15 @@ export default function MembersPage() {
       <ConfirmDialog
         open={!!deleteId}
         onOpenChange={() => setDeleteId(null)}
-        title="刪除方案"
-        description="確定要刪除此會員方案嗎？現有會員不會受影響。"
-        confirmLabel="刪除"
+        title={t("delete.title")}
+        description={t("delete.description")}
+        confirmLabel={t("delete.confirm")}
         variant="destructive"
         loading={deleteTier.isPending}
         onConfirm={() => {
           if (deleteId) {
             deleteTier.mutate(deleteId, {
-              onSuccess: () => { toast.success("方案已刪除"); setDeleteId(null); },
+              onSuccess: () => { toast.success(t("toast.tierDeleted")); setDeleteId(null); },
               onError: (e) => toast.error(e.message),
             });
           }

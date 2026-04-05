@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -39,16 +40,8 @@ interface LandingPage {
   createdAt: string;
 }
 
-const THEMES = [
-  { value: "modern", label: "現代" },
-  { value: "minimal", label: "極簡" },
-  { value: "bold", label: "大膽" },
-  { value: "creative", label: "創意" },
-];
-
-const NICHES = ["科技", "美食", "旅遊", "教育", "生活", "娛樂", "商業", "設計", "健康", "音樂"];
-
 export default function LandingPageEditor() {
+  const t = useTranslations("landing");
   const [generateOpen, setGenerateOpen] = useState(false);
   const [creatorName, setCreatorName] = useState("");
   const [niche, setNiche] = useState("");
@@ -56,6 +49,19 @@ export default function LandingPageEditor() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const queryClient = useQueryClient();
+
+  const THEMES = [
+    { value: "modern", label: t("themes.modern") },
+    { value: "minimal", label: t("themes.minimal") },
+    { value: "bold", label: t("themes.bold") },
+    { value: "creative", label: t("themes.creative") },
+  ];
+
+  const NICHES = [
+    t("niches.tech"), t("niches.food"), t("niches.travel"), t("niches.education"),
+    t("niches.lifestyle"), t("niches.entertainment"), t("niches.business"),
+    t("niches.design"), t("niches.health"), t("niches.music"),
+  ];
 
   const { data: page, isLoading } = useQuery({
     queryKey: ["landing-page"],
@@ -71,7 +77,7 @@ export default function LandingPageEditor() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["landing-page"] });
       setGenerateOpen(false);
-      toast.success("Landing Page 已生成！");
+      toast.success(t("toast.generated"));
     },
     onError: (e) => toast.error(e.message),
   });
@@ -84,7 +90,7 @@ export default function LandingPageEditor() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["landing-page"] });
-      toast.success("已更新");
+      toast.success(t("toast.updated"));
     },
     onError: (e) => toast.error(e.message),
   });
@@ -94,7 +100,7 @@ export default function LandingPageEditor() {
   const copyLink = () => {
     navigator.clipboard.writeText(publicUrl);
     setCopied(true);
-    toast.success("連結已複製");
+    toast.success(t("toast.linkCopied"));
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -110,17 +116,17 @@ export default function LandingPageEditor() {
   if (!page) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Landing Page" description="建立你的個人品牌頁面" />
+        <PageHeader title={t("pageTitle")} description={t("pageDescription")} />
 
         <div className="rounded-lg border border-dashed p-12 text-center">
           <Globe className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
-          <h3 className="text-xl font-semibold mb-2">建立你的個人品牌頁面</h3>
+          <h3 className="text-xl font-semibold mb-2">{t("pageDescription")}</h3>
           <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6">
-            AI 會根據你的創作領域自動生成專業的 Landing Page，包含文案、配色和版面配置
+            {t("emptyState.description")}
           </p>
           <Button size="lg" onClick={() => setGenerateOpen(true)}>
             <Sparkles className="mr-2 h-5 w-5" />
-            AI 一鍵生成
+            {t("emptyState.generateButton")}
           </Button>
         </div>
 
@@ -129,18 +135,18 @@ export default function LandingPageEditor() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5" /> AI 生成 Landing Page
+                <Sparkles className="h-5 w-5" /> {t("generateDialog.title")}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>你的名字 / 品牌名稱</Label>
-                <Input value={creatorName} onChange={(e) => setCreatorName(e.target.value)} placeholder="例如：Nick Creates" />
+                <Label>{t("generateDialog.nameLabel")}</Label>
+                <Input value={creatorName} onChange={(e) => setCreatorName(e.target.value)} placeholder={t("generateDialog.namePlaceholder")} />
               </div>
               <div className="space-y-2">
-                <Label>創作領域</Label>
+                <Label>{t("generateDialog.nicheLabel")}</Label>
                 <Select value={niche} onValueChange={setNiche}>
-                  <SelectTrigger><SelectValue placeholder="選擇領域" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("generateDialog.nichePlaceholder")} /></SelectTrigger>
                   <SelectContent>
                     {NICHES.map((n) => (
                       <SelectItem key={n} value={n}>{n}</SelectItem>
@@ -149,25 +155,25 @@ export default function LandingPageEditor() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>補充描述（選填）</Label>
+                <Label>{t("generateDialog.descriptionLabel")}</Label>
                 <Textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="告訴 AI 更多關於你的資訊，例如：專注於 AI 工具評測、擁有 10 萬粉絲..."
+                  placeholder={t("generateDialog.descriptionPlaceholder")}
                   rows={3}
                 />
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setGenerateOpen(false)}>取消</Button>
+              <Button variant="outline" onClick={() => setGenerateOpen(false)}>{t("generateDialog.cancel")}</Button>
               <Button
                 onClick={() => generateMutation.mutate({ creatorName, niche, description })}
                 disabled={!creatorName || !niche || generateMutation.isPending}
               >
                 {generateMutation.isPending ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> AI 生成中...</>
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t("generateDialog.generating")}</>
                 ) : (
-                  <><Sparkles className="mr-2 h-4 w-4" /> 開始生成</>
+                  <><Sparkles className="mr-2 h-4 w-4" /> {t("generateDialog.startGenerate")}</>
                 )}
               </Button>
             </DialogFooter>
@@ -181,23 +187,23 @@ export default function LandingPageEditor() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Landing Page"
-        description={`${page.slug} · ${page.viewCount} 次瀏覽`}
+        title={t("pageTitle")}
+        description={t("editor.viewCount", { slug: page.slug, count: page.viewCount })}
         action={
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={copyLink}>
               {copied ? <Check className="mr-1 h-4 w-4" /> : <Copy className="mr-1 h-4 w-4" />}
-              複製連結
+              {t("editor.copyLink")}
             </Button>
             <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)}>
-              <Eye className="mr-1 h-4 w-4" /> 預覽
+              <Eye className="mr-1 h-4 w-4" /> {t("editor.preview")}
             </Button>
             <Button
               size="sm"
               variant={page.isPublished ? "outline" : "default"}
               onClick={() => updateMutation.mutate({ isPublished: !page.isPublished })}
             >
-              {page.isPublished ? "取消發布" : "🚀 發布頁面"}
+              {page.isPublished ? t("editor.unpublish") : t("editor.publish")}
             </Button>
           </div>
         }
@@ -206,14 +212,14 @@ export default function LandingPageEditor() {
       {/* Status */}
       <div className="flex items-center gap-3">
         <Badge variant={page.isPublished ? "default" : "secondary"}>
-          {page.isPublished ? "✅ 已發布" : "📝 草稿"}
+          {page.isPublished ? t("editor.statusPublished") : t("editor.statusDraft")}
         </Badge>
         <span className="text-sm text-muted-foreground">
-          主題：{THEMES.find(t => t.value === page.theme)?.label ?? page.theme}
+          {t("editor.theme", { theme: THEMES.find(th => th.value === page.theme)?.label ?? page.theme })}
         </span>
         {page.isPublished && (
           <a href={publicUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex items-center gap-1">
-            查看公開頁面 <ExternalLink className="h-3 w-3" />
+            {t("editor.viewPublicPage")} <ExternalLink className="h-3 w-3" />
           </a>
         )}
       </div>
@@ -224,12 +230,12 @@ export default function LandingPageEditor() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Type className="h-4 w-4" /> 標語
+              <Type className="h-4 w-4" /> {t("editor.headlineTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
-              <Label className="text-xs text-muted-foreground">主標題</Label>
+              <Label className="text-xs text-muted-foreground">{t("editor.mainHeadline")}</Label>
               <Input
                 defaultValue={page.headline ?? ""}
                 onBlur={(e) => {
@@ -238,7 +244,7 @@ export default function LandingPageEditor() {
               />
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground">副標題</Label>
+              <Label className="text-xs text-muted-foreground">{t("editor.subHeadline")}</Label>
               <Input
                 defaultValue={page.subheadline ?? ""}
                 onBlur={(e) => {
@@ -253,7 +259,7 @@ export default function LandingPageEditor() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Pencil className="h-4 w-4" /> 個人簡介
+              <Pencil className="h-4 w-4" /> {t("editor.bioTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -271,15 +277,15 @@ export default function LandingPageEditor() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Palette className="h-4 w-4" /> 主題配色
+              <Palette className="h-4 w-4" /> {t("editor.themeColorTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <Select defaultValue={page.theme} onValueChange={(v) => updateMutation.mutate({ theme: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {THEMES.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                {THEMES.map((th) => (
+                  <SelectItem key={th.value} value={th.value}>{th.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -300,7 +306,7 @@ export default function LandingPageEditor() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
-              <MousePointer className="h-4 w-4" /> 行動按鈕
+              <MousePointer className="h-4 w-4" /> {t("editor.ctaTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -322,7 +328,7 @@ export default function LandingPageEditor() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Layout className="h-4 w-4" /> 頁面區塊
+            <Layout className="h-4 w-4" /> {t("editor.sectionsTitle")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -332,7 +338,7 @@ export default function LandingPageEditor() {
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-xs uppercase">{section.type}</Badge>
-                    <span className="text-sm font-medium">{section.title || '未命名區塊'}</span>
+                    <span className="text-sm font-medium">{section.title || t("editor.unnamedSection")}</span>
                   </div>
                 </div>
                 {section.content && (
@@ -348,7 +354,7 @@ export default function LandingPageEditor() {
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>頁面預覽</DialogTitle>
+            <DialogTitle>{t("editor.previewTitle")}</DialogTitle>
           </DialogHeader>
           <div
             className="rounded-lg border overflow-hidden"

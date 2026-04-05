@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   MessageSquare,
   BarChart3,
@@ -57,13 +58,13 @@ const categoryColors: Record<string, string> = {
   NEUTRAL: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
 };
 
-const categoryLabels: Record<string, string> = {
-  POSITIVE: "正面",
-  NEGATIVE: "負面",
-  QUESTION: "問題",
-  COLLABORATION: "合作",
-  SPAM: "垃圾",
-  NEUTRAL: "中性",
+const CATEGORY_KEYS: Record<string, string> = {
+  POSITIVE: "categoryPositive",
+  NEGATIVE: "categoryNegative",
+  QUESTION: "categoryQuestion",
+  COLLABORATION: "categoryCollaboration",
+  SPAM: "categorySpam",
+  NEUTRAL: "categoryNeutral",
 };
 
 const priorityColors: Record<string, string> = {
@@ -81,6 +82,7 @@ function SentimentIcon({ sentiment }: { sentiment: number }) {
 // ─── Comments Panel ───
 
 function CommentsPanel() {
+  const t = useTranslations("interactions");
   const [filter, setFilter] = useState<string>("");
   const [search, setSearch] = useState("");
   const { data, isLoading } = useComments({
@@ -111,12 +113,12 @@ function CommentsPanel() {
           content: line.slice(colonIdx + 1).trim(),
         };
       }
-      return { authorName: "匿名", content: line.trim() };
+      return { authorName: t("anonymous"), content: line.trim() };
     });
 
     importMut.mutate(parsed, {
       onSuccess: (res) => {
-        toast.success(`已匯入 ${res.imported} 則留言`);
+        toast.success(t("importSuccess", { count: res.imported }));
         setShowImport(false);
         setImportText("");
       },
@@ -145,7 +147,7 @@ function CommentsPanel() {
       { id: commentId, dto: { finalReply: content, isReplied: true } },
       {
         onSuccess: () => {
-          toast.success("已標記為已回覆");
+          toast.success(t("replyMarked"));
           setReplyingId(null);
           setReplies([]);
           setEditReply("");
@@ -161,17 +163,17 @@ function CommentsPanel() {
         <div className="flex gap-2 flex-1">
           <Select value={filter || "ALL"} onValueChange={(v) => setFilter(v === "ALL" ? "" : v)}>
             <SelectTrigger className="w-32">
-              <SelectValue placeholder="全部分類" />
+              <SelectValue placeholder={t("allCategories")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">全部</SelectItem>
-              {Object.entries(categoryLabels).map(([k, v]) => (
-                <SelectItem key={k} value={k}>{v}</SelectItem>
+              <SelectItem value="ALL">{t("all")}</SelectItem>
+              {Object.entries(CATEGORY_KEYS).map(([k, tKey]) => (
+                <SelectItem key={k} value={k}>{t(tKey)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
           <Input
-            placeholder="搜尋留言..."
+            placeholder={t("searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="max-w-xs"
@@ -181,26 +183,26 @@ function CommentsPanel() {
           <DialogTrigger asChild>
             <Button size="sm">
               <Plus className="mr-1 h-3 w-3" />
-              匯入留言
+              {t("importComments")}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>匯入留言</DialogTitle>
+              <DialogTitle>{t("importComments")}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-2">
               <p className="text-sm text-muted-foreground">
-                每行一則留言，格式：「作者名: 留言內容」或純留言內容
+                {t("importHint")}
               </p>
               <Textarea
                 rows={8}
-                placeholder={"小明: 這支影片太棒了！\n阿華: 請問可以出更多教學嗎？\n匿名留言內容"}
+                placeholder={t("importPlaceholder")}
                 value={importText}
                 onChange={(e) => setImportText(e.target.value)}
               />
               <Button onClick={handleImport} disabled={importMut.isPending} className="w-full">
                 {importMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                匯入
+                {t("import")}
               </Button>
             </div>
           </DialogContent>
@@ -215,8 +217,8 @@ function CommentsPanel() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">還沒有留言</p>
-            <p className="text-sm text-muted-foreground">點擊「匯入留言」開始管理粉絲互動</p>
+            <p className="text-muted-foreground">{t("noComments")}</p>
+            <p className="text-sm text-muted-foreground">{t("noCommentsHint")}</p>
           </CardContent>
         </Card>
       ) : (
@@ -232,12 +234,12 @@ function CommentsPanel() {
                         <Badge variant="outline" className="text-xs">{c.platform}</Badge>
                       )}
                       <Badge className={categoryColors[c.category]}>
-                        {categoryLabels[c.category] || c.category}
+                        {CATEGORY_KEYS[c.category] ? t(CATEGORY_KEYS[c.category]) : c.category}
                       </Badge>
                       {c.priority === "HIGH" && (
                         <Badge className={priorityColors.HIGH}>
                           <AlertTriangle className="h-3 w-3 mr-1" />
-                          高優先
+                          {t("highPriority")}
                         </Badge>
                       )}
                       <SentimentIcon sentiment={c.sentiment} />
@@ -245,7 +247,7 @@ function CommentsPanel() {
                     <p className="text-sm">{c.content}</p>
                     {c.isReplied && c.finalReply && (
                       <div className="mt-2 pl-3 border-l-2 border-primary/30">
-                        <p className="text-xs text-muted-foreground">已回覆:</p>
+                        <p className="text-xs text-muted-foreground">{t("replied")}:</p>
                         <p className="text-sm text-muted-foreground">{c.finalReply}</p>
                       </div>
                     )}
@@ -269,10 +271,10 @@ function CommentsPanel() {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
-                      aria-label="刪除留言"
+                      aria-label={t("deleteComment")}
                       onClick={() =>
                         deleteMut.mutate(c.id, {
-                          onSuccess: () => toast.success("已刪除"),
+                          onSuccess: () => toast.success(t("deleted")),
                           onError: (err: Error) => toast.error(err.message),
                         })
                       }
@@ -285,7 +287,7 @@ function CommentsPanel() {
                 {/* Reply panel */}
                 {replyingId === c.id && replies.length > 0 && (
                   <div className="mt-3 pt-3 border-t space-y-2">
-                    <p className="text-xs font-medium">AI 回覆草稿:</p>
+                    <p className="text-xs font-medium">{t("aiReplyDraft")}:</p>
                     {replies.map((r, i) => (
                       <div
                         key={i}
@@ -301,7 +303,7 @@ function CommentsPanel() {
                         rows={2}
                         value={editReply}
                         onChange={(e) => setEditReply(e.target.value)}
-                        placeholder="選擇草稿或手動輸入回覆..."
+                        placeholder={t("replyPlaceholder")}
                         className="flex-1"
                       />
                       <Button
@@ -310,7 +312,7 @@ function CommentsPanel() {
                         onClick={() => handleSendReply(c.id, editReply)}
                       >
                         <Check className="h-3 w-3 mr-1" />
-                        確認
+                        {t("confirm")}
                       </Button>
                     </div>
                   </div>
@@ -327,6 +329,7 @@ function CommentsPanel() {
 // ─── Stats Panel ───
 
 function StatsPanel() {
+  const t = useTranslations("interactions");
   const [period, setPeriod] = useState("30d");
   const { data, isLoading } = useInteractionStats(period);
 
@@ -345,7 +348,7 @@ function StatsPanel() {
       <div className="flex gap-2">
         {["7d", "30d"].map((p) => (
           <Button key={p} variant={period === p ? "default" : "outline"} size="sm" onClick={() => setPeriod(p)}>
-            {p === "7d" ? "近 7 天" : "近 30 天"}
+            {p === "7d" ? t("last7Days") : t("last30Days")}
           </Button>
         ))}
       </div>
@@ -354,19 +357,19 @@ function StatsPanel() {
         <Card>
           <CardContent className="pt-6">
             <p className="text-2xl font-bold">{data.totalComments}</p>
-            <p className="text-xs text-muted-foreground">總留言數</p>
+            <p className="text-xs text-muted-foreground">{t("totalComments")}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <p className="text-2xl font-bold">{data.repliedCount}</p>
-            <p className="text-xs text-muted-foreground">已回覆</p>
+            <p className="text-xs text-muted-foreground">{t("repliedCount")}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <p className="text-2xl font-bold">{data.replyRate}%</p>
-            <p className="text-xs text-muted-foreground">回覆率</p>
+            <p className="text-xs text-muted-foreground">{t("replyRate")}</p>
           </CardContent>
         </Card>
         <Card>
@@ -375,7 +378,7 @@ function StatsPanel() {
               <p className="text-2xl font-bold">{data.avgSentiment.toFixed(2)}</p>
               <SentimentIcon sentiment={data.avgSentiment} />
             </div>
-            <p className="text-xs text-muted-foreground">平均情緒</p>
+            <p className="text-xs text-muted-foreground">{t("avgSentiment")}</p>
           </CardContent>
         </Card>
       </div>
@@ -383,7 +386,7 @@ function StatsPanel() {
       {data.categoryBreakdown.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">分類分佈</CardTitle>
+            <CardTitle className="text-sm">{t("categoryBreakdown")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -391,9 +394,9 @@ function StatsPanel() {
                 <div key={cb.category} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Badge className={categoryColors[cb.category]}>
-                      {categoryLabels[cb.category] || cb.category}
+                      {CATEGORY_KEYS[cb.category] ? t(CATEGORY_KEYS[cb.category]) : cb.category}
                     </Badge>
-                    <span className="text-sm">{cb.count} 則</span>
+                    <span className="text-sm">{t("countUnit", { count: cb.count })}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="h-2 w-24 rounded-full bg-gray-200 dark:bg-gray-700">
@@ -414,7 +417,7 @@ function StatsPanel() {
       {data.sentimentTrend.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">情緒趨勢</CardTitle>
+            <CardTitle className="text-sm">{t("sentimentTrend")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-end gap-1 h-24">
@@ -443,12 +446,14 @@ function StatsPanel() {
 // ─── Main Page ───
 
 export default function InteractionsPage() {
+  const t = useTranslations("interactions");
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">AI 粉絲互動管理</h1>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
         <p className="text-muted-foreground">
-          留言分類、AI 代擬回覆、情緒分析
+          {t("subtitle")}
         </p>
       </div>
 
@@ -456,11 +461,11 @@ export default function InteractionsPage() {
         <TabsList>
           <TabsTrigger value="comments" className="gap-2">
             <MessageSquare className="h-4 w-4" />
-            留言管理
+            {t("tabComments")}
           </TabsTrigger>
           <TabsTrigger value="stats" className="gap-2">
             <BarChart3 className="h-4 w-4" />
-            互動統計
+            {t("tabStats")}
           </TabsTrigger>
         </TabsList>
 

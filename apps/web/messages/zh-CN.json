@@ -452,5 +452,509 @@
       "confirm": "确定",
       "copied": "已复制"
     }
+  },
+  "bot": {
+    "pageTitle": "Bot 设置",
+    "pageDescription": "创建和管理 AI 顾问 Bot 与知识库",
+    "tabBots": "Bot 列表",
+    "tabKnowledge": "知识库",
+    "addBot": "新增 Bot",
+    "noBot": "暂无 Bot",
+    "noBotDesc": "创建您的第一个 AI 顾问 Bot",
+    "public": "公开",
+    "private": "私有",
+    "testChat": "测试对话",
+    "edit": "编辑",
+    "editBot": "编辑 Bot",
+    "deleteBot": "删除 Bot",
+    "deleteBotConfirm": "确定要删除此 Bot 吗？所有对话记录都会被删除。",
+    "delete": "删除",
+    "botCreated": "Bot 已创建",
+    "botUpdated": "Bot 已更新",
+    "botDeleted": "Bot 已删除",
+    "nameRequired": "请输入 Bot 名称",
+    "labelName": "名称",
+    "labelDescription": "描述",
+    "labelWelcomeMessage": "欢迎消息",
+    "labelSystemPrompt": "系统提示词",
+    "labelPublicBot": "公开 Bot",
+    "botNamePlaceholder": "Bot 名称",
+    "systemPromptPlaceholder": "定义 Bot 的角色和行为...",
+    "optional": "选填",
+    "cancel": "取消",
+    "create": "创建",
+    "update": "更新",
+    "chatEmptyHint": "输入消息开始对话",
+    "thinking": "思考中...",
+    "chatInputPlaceholder": "输入消息...（Shift+Enter 换行）",
+    "addKnowledgeBase": "新增知识库",
+    "noKnowledgeBase": "暂无知识库",
+    "noKnowledgeBaseDesc": "创建知识库并导入内容，让 Bot 回答更准确",
+    "chunkCount": "{count} 片段",
+    "ingestContent": "导入内容",
+    "kbNamePlaceholder": "知识库名称",
+    "labelSourceType": "来源类型",
+    "sourceManual": "手动输入",
+    "sourceQA": "常见问答",
+    "sourceDocument": "文件",
+    "sourceURL": "网址",
+    "kbCreated": "知识库已创建",
+    "labelContentText": "内容文字",
+    "ingestPlaceholder": "粘贴要导入的文字内容...",
+    "ingest": "导入",
+    "ingesting": "导入中...",
+    "ingestSuccess": "内容已导入",
+    "deleteKnowledgeBase": "删除知识库",
+    "deleteKnowledgeBaseConfirm": "确定要删除此知识库吗？所有导入的内容都会被删除。",
+    "kbDeleted": "知识库已删除"
+  },
+  "members": {
+    "pageTitle": "会员管理",
+    "pageDescription": "管理会员方案和订阅者",
+    "addTier": "新增方案",
+    "edit": "编辑",
+    "cancel": "取消",
+    "update": "更新",
+    "create": "创建",
+    "perMonth": "/月",
+    "memberCount": "{count} 位会员",
+    "maxMembers": "上限 {count}",
+    "stats": {
+      "totalMembers": "总会员数",
+      "activeTiers": "启用方案",
+      "estimatedRevenue": "预估月收入"
+    },
+    "tabs": {
+      "tiers": "会员方案",
+      "members": "会员列表"
+    },
+    "status": {
+      "active": "启用",
+      "inactive": "停用"
+    },
+    "empty": {
+      "tiersTitle": "暂无会员方案",
+      "tiersDescription": "创建会员方案，开始接收粉丝订阅",
+      "membersTitle": "暂无会员",
+      "membersDescription": "会员订阅您的方案后会显示在这里"
+    },
+    "dialog": {
+      "editTitle": "编辑方案",
+      "createTitle": "新增方案"
+    },
+    "form": {
+      "name": "方案名称",
+      "namePlaceholder": "例：基础会员",
+      "description": "描述",
+      "optional": "选填",
+      "monthlyPrice": "月费 (NT$)",
+      "maxMembers": "人数上限（选填）",
+      "unlimited": "不限",
+      "benefits": "会员福利（每行一项）",
+      "benefitsPlaceholder": "专属视频\n私密社群\n每月直播",
+      "enableTier": "启用方案"
+    },
+    "delete": {
+      "title": "删除方案",
+      "description": "确定要删除此会员方案吗？现有会员不会受影响。",
+      "confirm": "删除"
+    },
+    "validation": {
+      "nameRequired": "请输入方案名称",
+      "priceInvalid": "请输入有效价格"
+    },
+    "toast": {
+      "tierUpdated": "方案已更新",
+      "tierCreated": "方案已创建",
+      "tierDeleted": "方案已删除"
+    }
+  },
+  "interactions": {
+    "title": "AI 粉丝互动管理",
+    "subtitle": "评论分类、AI 代拟回复、情绪分析",
+    "tabComments": "评论管理",
+    "tabStats": "互动统计",
+    "allCategories": "全部分类",
+    "all": "全部",
+    "categoryPositive": "正面",
+    "categoryNegative": "负面",
+    "categoryQuestion": "问题",
+    "categoryCollaboration": "合作",
+    "categorySpam": "垃圾",
+    "categoryNeutral": "中性",
+    "searchPlaceholder": "搜索评论...",
+    "importComments": "导入评论",
+    "importHint": "每行一则评论，格式：「作者名: 评论内容」或纯评论内容",
+    "importPlaceholder": "小明: 这个视频太棒了！\n阿华: 请问可以出更多教程吗？\n匿名评论内容",
+    "import": "导入",
+    "importSuccess": "已导入 {count} 则评论",
+    "anonymous": "匿名",
+    "noComments": "还没有评论",
+    "noCommentsHint": "点击「导入评论」开始管理粉丝互动",
+    "highPriority": "高优先",
+    "replied": "已回复",
+    "deleteComment": "删除评论",
+    "deleted": "已删除",
+    "replyMarked": "已标记为已回复",
+    "aiReplyDraft": "AI 回复草稿",
+    "replyPlaceholder": "选择草稿或手动输入回复...",
+    "confirm": "确认",
+    "last7Days": "近 7 天",
+    "last30Days": "近 30 天",
+    "totalComments": "总评论数",
+    "repliedCount": "已回复",
+    "replyRate": "回复率",
+    "avgSentiment": "平均情绪",
+    "categoryBreakdown": "分类分布",
+    "countUnit": "{count} 则",
+    "sentimentTrend": "情绪趋势"
+  },
+  "brand": {
+    "pageTitle": "品牌合作",
+    "pageDescription": "管理品牌合作邀约和提案",
+    "addDeal": "新增合作",
+    "stats": {
+      "activeDeals": "进行中案件",
+      "completedDeals": "已完成案件",
+      "totalRevenue": "总收入"
+    },
+    "empty": {
+      "title": "暂无品牌合作",
+      "description": "新增品牌合作案件，追踪从提案到结案的完整流程"
+    },
+    "status": {
+      "DRAFT": "草稿",
+      "PROPOSAL_SENT": "已提案",
+      "NEGOTIATING": "洽谈中",
+      "CONFIRMED": "已确认",
+      "IN_PROGRESS": "进行中",
+      "COMPLETED": "已完成",
+      "CANCELLED": "已取消"
+    },
+    "dealType": {
+      "SPONSORED_POST": "赞助帖文",
+      "BRAND_AMBASSADOR": "品牌大使",
+      "PRODUCT_REVIEW": "产品评测",
+      "AFFILIATE": "联盟营销",
+      "EVENT": "活动合作",
+      "OTHER": "其他"
+    },
+    "createDialog": {
+      "title": "新增品牌合作"
+    },
+    "deleteDialog": {
+      "title": "删除品牌合作",
+      "description": "确定要删除此品牌合作案件吗？"
+    },
+    "form": {
+      "brandName": "品牌名称",
+      "dealType": "合作类型",
+      "selectType": "选择类型",
+      "budgetMin": "预算下限 (NT$)",
+      "budgetMax": "预算上限 (NT$)",
+      "notes": "备注"
+    },
+    "detail": {
+      "budgetRange": "预算范围",
+      "aiProposal": "AI 提案"
+    },
+    "action": {
+      "cancel": "取消",
+      "create": "创建",
+      "delete": "删除",
+      "markProposalSent": "标记为已提案",
+      "aiGenerate": "AI 生成提案",
+      "generating": "生成中...",
+      "startNegotiation": "进入洽谈",
+      "confirmDeal": "确认合作",
+      "startExecution": "开始执行",
+      "markCompleted": "标记完成",
+      "cancelDeal": "取消合作"
+    },
+    "validation": {
+      "requiredFields": "请填写品牌名称和合作类型"
+    },
+    "toast": {
+      "created": "品牌合作已创建",
+      "statusUpdated": "状态已更新",
+      "proposalGenerated": "提案已生成",
+      "deleted": "已删除"
+    }
+  },
+  "monetize": {
+    "title": "AI 变现顾问",
+    "subtitle": "整合所有收入渠道，提供健诊报告、AI 建议和收入预测",
+    "tabHealth": "收入总览",
+    "tabAdvice": "AI 建议",
+    "tabForecast": "收入预测",
+    "period30d": "近 30 天",
+    "period90d": "近 90 天",
+    "totalRevenue": "总收入",
+    "channel.membership": "会员订阅",
+    "channel.digitalProduct": "数字商品",
+    "channel.brandDeal": "品牌合作",
+    "channel.affiliate": "联盟营销",
+    "channel.subscription": "平台订阅",
+    "membershipMrr": "MRR: {mrr} | 会员: {members}",
+    "churnRate": "流失率: {rate}%",
+    "digitalProductSales": "销量: {sales} | 客单价: {avgOrder}",
+    "topSelling": "热销: {name}",
+    "brandDealActive": "进行中: {deals} | 均价: {avgValue}",
+    "conversionRate": "成交率: {rate}%",
+    "affiliateClicks": "点击: {clicks} | 转换: {rate}%",
+    "topLink": "最佳: {name}",
+    "adviceDescription": "AI 分析你的收入数据，给出可执行的变现建议",
+    "generateAdvice": "生成建议",
+    "adviceEmpty": "点击「生成建议」获取 AI 变现建议",
+    "suggestions": "变现建议",
+    "impact.HIGH": "高影响",
+    "impact.MEDIUM": "中影响",
+    "impact.LOW": "低影响",
+    "category.PRICING": "定价优化",
+    "category.GROWTH": "增长策略",
+    "category.RETENTION": "留存提升",
+    "category.NEW_CHANNEL": "新渠道",
+    "category.OPTIMIZATION": "效率优化",
+    "estimatedImpact": "预期影响: {impact}",
+    "executionSteps": "执行步骤:",
+    "pricingAdvice": "定价建议",
+    "perMonth": "/月",
+    "people": "人",
+    "salesUnit": "销",
+    "recommendNewChannels": "推荐新增渠道",
+    "difficulty.EASY": "简单",
+    "difficulty.MEDIUM": "中等",
+    "difficulty.HARD": "困难",
+    "estimatedMonthlyRevenue": "预估 {amount}/月",
+    "prerequisites": "前置条件: {items}",
+    "insufficientData": "数据不足",
+    "nextMonth": "下个月",
+    "twoMonthsLater": "2 个月后",
+    "threeMonthsLater": "3 个月后",
+    "forecastAssumptions": "预测假设"
+  },
+  "store": {
+    "pageTitle": "数字商品商店",
+    "pageDescription": "销售 PDF、模板、Preset、电子书等数字商品",
+    "addProduct": "新增商品",
+    "typeLabels": {
+      "pdf": "📄 PDF",
+      "template": "📐 模板",
+      "preset": "🎨 Preset",
+      "ebook": "📖 电子书",
+      "videoCourse": "🎬 视频课程",
+      "audio": "🎵 音频",
+      "other": "📦 其他"
+    },
+    "stats": {
+      "productCount": "商品数",
+      "totalRevenue": "总营收",
+      "totalSales": "总销量"
+    },
+    "status": {
+      "published": "已上架",
+      "unpublished": "未上架"
+    },
+    "aiCopy": "AI 文案",
+    "productStats": {
+      "sales": "{count} 销量",
+      "revenue": "NT${amount} 营收"
+    },
+    "action": {
+      "publish": "上架",
+      "unpublish": "下架",
+      "aiRewrite": "AI 重写",
+      "cancel": "取消",
+      "aiGenerating": "AI 生成中...",
+      "createProduct": "创建商品",
+      "delete": "删除"
+    },
+    "empty": {
+      "title": "暂无数字商品",
+      "description": "新增您的第一个数字商品，AI 会自动生成吸引人的商品描述"
+    },
+    "dialog": {
+      "createTitle": "新增数字商品",
+      "deleteTitle": "删除商品",
+      "deleteDescription": "确定要删除此商品吗？所有订单记录也会一并删除。"
+    },
+    "form": {
+      "name": "商品名称",
+      "namePlaceholder": "例：Lightroom 风格 Preset 套组",
+      "type": "商品类型",
+      "price": "价格（NT$）",
+      "description": "简短描述（选填，AI 会自动生成完整文案）",
+      "descriptionPlaceholder": "简单描述商品特色...",
+      "tags": "标签（逗号分隔）",
+      "tagsPlaceholder": "摄影, Lightroom, Preset"
+    },
+    "aiHint": "AI 会根据商品信息自动生成营销文案和 SEO 标签",
+    "validation": {
+      "nameRequired": "请输入商品名称",
+      "priceRequired": "请设定价格"
+    },
+    "toast": {
+      "created": "商品已创建，AI 已生成描述",
+      "published": "已上架",
+      "unpublished": "已下架",
+      "aiRegenerated": "AI 已重新生成文案",
+      "deleted": "商品已删除"
+    }
+  },
+  "email": {
+    "pageTitle": "AI Email 营销",
+    "pageDescription": "AI 自动生成邮件序列，管理订阅者名单",
+    "stats": {
+      "subscribers": "订阅者",
+      "sent": "已发送",
+      "avgOpenRate": "平均打开率",
+      "campaigns": "营销活动"
+    },
+    "tabs": {
+      "campaigns": "邮件活动",
+      "subscribers": "订阅者名单"
+    },
+    "empty": {
+      "campaignsTitle": "暂无邮件活动",
+      "campaignsDescription": "让 AI 帮你生成完整的邮件营销序列：欢迎信 → 培养信 → 销售信",
+      "campaignsAction": "AI 生成序列",
+      "subscribersTitle": "暂无订阅者",
+      "subscribersDescription": "新增订阅者到你的邮件名单"
+    },
+    "campaign": {
+      "emailCount": "{count} 封信",
+      "typeSequence": "自动序列",
+      "typeSingle": "单封",
+      "statusDraft": "草稿",
+      "statusSent": "已发送",
+      "statusScheduled": "已排程",
+      "statusSending": "发送中",
+      "sentStats": "{sent} 发 · {opened} 开 · {clicked} 点"
+    },
+    "subscriber": {
+      "name": "姓名",
+      "source": "来源",
+      "status": "状态",
+      "joinDate": "加入日期",
+      "active": "活跃",
+      "unsubscribed": "取消"
+    },
+    "actions": {
+      "addSubscriber": "新增订阅者",
+      "aiGenerateSequence": "AI 生成邮件序列",
+      "send": "发送",
+      "cancel": "取消",
+      "add": "新增",
+      "adding": "新增中...",
+      "generateSequence": "生成序列",
+      "aiGenerating": "AI 生成中..."
+    },
+    "dialog": {
+      "addSubscriberTitle": "新增订阅者",
+      "nameLabel": "姓名（选填）",
+      "namePlaceholder": "粉丝名字",
+      "aiGenerateTitle": "AI 生成邮件序列",
+      "purposeLabel": "营销目的",
+      "purposePlaceholder": "例：推广新线上课程、欢迎新会员、限时优惠",
+      "productNameLabel": "商品名称（选填）",
+      "productNamePlaceholder": "例：Lightroom Preset 套组",
+      "toneLabel": "语气",
+      "emailCountLabel": "邮件数量",
+      "emailCount3": "3 封（基本）",
+      "emailCount5": "5 封（标准）",
+      "emailCount7": "7 封（完整）",
+      "aiFunnelHint": "AI 将生成完整的自动化邮件漏斗：欢迎 → 培养 → 销售"
+    },
+    "toneOptions": {
+      "friendlyProfessional": "亲切专业",
+      "enthusiastic": "热情活泼",
+      "formalAuthoritative": "正式权威",
+      "casualHumorous": "轻松幽默"
+    },
+    "preview": {
+      "emailIndex": "第 {index} 封",
+      "sendOnDay": "第 {day} 天发送"
+    },
+    "confirm": {
+      "sendTitle": "发送邮件活动",
+      "sendDescription": "确定要发送此邮件活动给所有符合条件的订阅者吗？发出后无法撤回。",
+      "sendConfirmLabel": "确认发送",
+      "deleteTitle": "删除邮件活动",
+      "deleteDescription": "确定要删除此邮件活动吗？所有邮件模板也会一并删除。",
+      "deleteConfirmLabel": "删除"
+    },
+    "toast": {
+      "subscriberAdded": "已新增订阅者",
+      "aiSequenceGenerated": "AI 已生成 {count} 封邮件序列",
+      "sendQueued": "已排入发送队列：{subscriberCount} 位订阅者，{emailCount} 封邮件",
+      "deleted": "已删除"
+    },
+    "validation": {
+      "emailRequired": "请输入 Email",
+      "purposeRequired": "请输入营销目的"
+    }
+  },
+  "landing": {
+    "pageTitle": "Landing Page",
+    "pageDescription": "创建你的个人品牌页面",
+    "themes": {
+      "modern": "现代",
+      "minimal": "极简",
+      "bold": "大胆",
+      "creative": "创意"
+    },
+    "niches": {
+      "tech": "科技",
+      "food": "美食",
+      "travel": "旅游",
+      "education": "教育",
+      "lifestyle": "生活",
+      "entertainment": "娱乐",
+      "business": "商业",
+      "design": "设计",
+      "health": "健康",
+      "music": "音乐"
+    },
+    "toast": {
+      "generated": "Landing Page 已生成！",
+      "updated": "已更新",
+      "linkCopied": "链接已复制"
+    },
+    "emptyState": {
+      "description": "AI 会根据你的创作领域自动生成专业的 Landing Page，包含文案、配色和版面配置",
+      "generateButton": "AI 一键生成"
+    },
+    "generateDialog": {
+      "title": "AI 生成 Landing Page",
+      "nameLabel": "你的名字 / 品牌名称",
+      "namePlaceholder": "例如：Nick Creates",
+      "nicheLabel": "创作领域",
+      "nichePlaceholder": "选择领域",
+      "descriptionLabel": "补充描述（选填）",
+      "descriptionPlaceholder": "告诉 AI 更多关于你的信息，例如：专注于 AI 工具评测、拥有 10 万粉丝...",
+      "cancel": "取消",
+      "generating": "AI 生成中...",
+      "startGenerate": "开始生成"
+    },
+    "editor": {
+      "viewCount": "{slug} · {count} 次浏览",
+      "copyLink": "复制链接",
+      "preview": "预览",
+      "unpublish": "取消发布",
+      "publish": "🚀 发布页面",
+      "statusPublished": "✅ 已发布",
+      "statusDraft": "📝 草稿",
+      "theme": "主题：{theme}",
+      "viewPublicPage": "查看公开页面",
+      "headlineTitle": "标语",
+      "mainHeadline": "主标题",
+      "subHeadline": "副标题",
+      "bioTitle": "个人简介",
+      "themeColorTitle": "主题配色",
+      "ctaTitle": "行动按钮",
+      "sectionsTitle": "页面区块",
+      "unnamedSection": "未命名区块",
+      "previewTitle": "页面预览"
+    }
   }
 }

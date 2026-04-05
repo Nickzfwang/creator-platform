@@ -452,5 +452,509 @@
       "confirm": "확인",
       "copied": "복사됨"
     }
+  },
+  "bot": {
+    "pageTitle": "Bot 설정",
+    "pageDescription": "AI 어드바이저 Bot과 지식 베이스 생성 및 관리",
+    "tabBots": "Bot 목록",
+    "tabKnowledge": "지식 베이스",
+    "addBot": "Bot 추가",
+    "noBot": "Bot이 없습니다",
+    "noBotDesc": "첫 번째 AI 어드바이저 Bot을 만들어 보세요",
+    "public": "공개",
+    "private": "비공개",
+    "testChat": "테스트 채팅",
+    "edit": "편집",
+    "editBot": "Bot 편집",
+    "deleteBot": "Bot 삭제",
+    "deleteBotConfirm": "이 Bot을 삭제하시겠습니까? 모든 대화 기록이 삭제됩니다.",
+    "delete": "삭제",
+    "botCreated": "Bot이 생성되었습니다",
+    "botUpdated": "Bot이 업데이트되었습니다",
+    "botDeleted": "Bot이 삭제되었습니다",
+    "nameRequired": "Bot 이름을 입력하세요",
+    "labelName": "이름",
+    "labelDescription": "설명",
+    "labelWelcomeMessage": "환영 메시지",
+    "labelSystemPrompt": "시스템 프롬프트",
+    "labelPublicBot": "공개 Bot",
+    "botNamePlaceholder": "Bot 이름",
+    "systemPromptPlaceholder": "Bot의 역할과 동작을 정의...",
+    "optional": "선택사항",
+    "cancel": "취소",
+    "create": "생성",
+    "update": "업데이트",
+    "chatEmptyHint": "메시지를 입력하여 대화를 시작하세요",
+    "thinking": "생각 중...",
+    "chatInputPlaceholder": "메시지 입력... (Shift+Enter로 줄바꿈)",
+    "addKnowledgeBase": "지식 베이스 추가",
+    "noKnowledgeBase": "지식 베이스가 없습니다",
+    "noKnowledgeBaseDesc": "지식 베이스를 만들고 콘텐츠를 가져와 Bot 응답의 정확도를 높이세요",
+    "chunkCount": "{count} 청크",
+    "ingestContent": "콘텐츠 가져오기",
+    "kbNamePlaceholder": "지식 베이스 이름",
+    "labelSourceType": "소스 유형",
+    "sourceManual": "수동 입력",
+    "sourceQA": "자주 묻는 질문",
+    "sourceDocument": "문서",
+    "sourceURL": "URL",
+    "kbCreated": "지식 베이스가 생성되었습니다",
+    "labelContentText": "콘텐츠 텍스트",
+    "ingestPlaceholder": "가져올 텍스트 콘텐츠를 붙여넣기...",
+    "ingest": "가져오기",
+    "ingesting": "가져오는 중...",
+    "ingestSuccess": "콘텐츠를 가져왔습니다",
+    "deleteKnowledgeBase": "지식 베이스 삭제",
+    "deleteKnowledgeBaseConfirm": "이 지식 베이스를 삭제하시겠습니까? 가져온 모든 콘텐츠가 삭제됩니다.",
+    "kbDeleted": "지식 베이스가 삭제되었습니다"
+  },
+  "members": {
+    "pageTitle": "회원 관리",
+    "pageDescription": "멤버십 플랜과 구독자 관리",
+    "addTier": "플랜 추가",
+    "edit": "편집",
+    "cancel": "취소",
+    "update": "업데이트",
+    "create": "생성",
+    "perMonth": "/월",
+    "memberCount": "{count}명의 회원",
+    "maxMembers": "상한 {count}",
+    "stats": {
+      "totalMembers": "총 회원 수",
+      "activeTiers": "활성 플랜",
+      "estimatedRevenue": "예상 월 수익"
+    },
+    "tabs": {
+      "tiers": "멤버십 플랜",
+      "members": "회원 목록"
+    },
+    "status": {
+      "active": "활성",
+      "inactive": "비활성"
+    },
+    "empty": {
+      "tiersTitle": "멤버십 플랜이 없습니다",
+      "tiersDescription": "멤버십 플랜을 만들어 팬 구독을 시작하세요",
+      "membersTitle": "회원이 없습니다",
+      "membersDescription": "회원이 플랜을 구독하면 여기에 표시됩니다"
+    },
+    "dialog": {
+      "editTitle": "플랜 편집",
+      "createTitle": "플랜 추가"
+    },
+    "form": {
+      "name": "플랜 이름",
+      "namePlaceholder": "예: 기본 회원",
+      "description": "설명",
+      "optional": "선택사항",
+      "monthlyPrice": "월 요금 (NT$)",
+      "maxMembers": "인원 상한 (선택사항)",
+      "unlimited": "무제한",
+      "benefits": "회원 혜택 (한 줄에 하나)",
+      "benefitsPlaceholder": "전용 영상\n프라이빗 커뮤니티\n월간 라이브 방송",
+      "enableTier": "플랜 활성화"
+    },
+    "delete": {
+      "title": "플랜 삭제",
+      "description": "이 멤버십 플랜을 삭제하시겠습니까? 기존 회원에게는 영향이 없습니다.",
+      "confirm": "삭제"
+    },
+    "validation": {
+      "nameRequired": "플랜 이름을 입력하세요",
+      "priceInvalid": "유효한 가격을 입력하세요"
+    },
+    "toast": {
+      "tierUpdated": "플랜이 업데이트되었습니다",
+      "tierCreated": "플랜이 생성되었습니다",
+      "tierDeleted": "플랜이 삭제되었습니다"
+    }
+  },
+  "interactions": {
+    "title": "AI 팬 인터랙션 관리",
+    "subtitle": "댓글 분류, AI 답변 초안, 감정 분석",
+    "tabComments": "댓글 관리",
+    "tabStats": "인터랙션 통계",
+    "allCategories": "모든 카테고리",
+    "all": "전체",
+    "categoryPositive": "긍정",
+    "categoryNegative": "부정",
+    "categoryQuestion": "질문",
+    "categoryCollaboration": "협업",
+    "categorySpam": "스팸",
+    "categoryNeutral": "중립",
+    "searchPlaceholder": "댓글 검색...",
+    "importComments": "댓글 가져오기",
+    "importHint": "한 줄에 하나의 댓글, 형식: \"작성자: 댓글 내용\" 또는 댓글만",
+    "importPlaceholder": "철수: 이 영상 정말 좋아요!\n영희: 더 많은 튜토리얼을 만들어 주세요!\n익명 댓글 내용",
+    "import": "가져오기",
+    "importSuccess": "{count}개 댓글을 가져왔습니다",
+    "anonymous": "익명",
+    "noComments": "댓글이 없습니다",
+    "noCommentsHint": "\"댓글 가져오기\"를 클릭하여 팬 인터랙션 관리를 시작하세요",
+    "highPriority": "높은 우선순위",
+    "replied": "답변 완료",
+    "deleteComment": "댓글 삭제",
+    "deleted": "삭제되었습니다",
+    "replyMarked": "답변 완료로 표시됨",
+    "aiReplyDraft": "AI 답변 초안",
+    "replyPlaceholder": "초안을 선택하거나 수동으로 답변 입력...",
+    "confirm": "확인",
+    "last7Days": "최근 7일",
+    "last30Days": "최근 30일",
+    "totalComments": "총 댓글 수",
+    "repliedCount": "답변 완료",
+    "replyRate": "답변율",
+    "avgSentiment": "평균 감정",
+    "categoryBreakdown": "카테고리 분포",
+    "countUnit": "{count}개",
+    "sentimentTrend": "감정 추세"
+  },
+  "brand": {
+    "pageTitle": "브랜드 협업",
+    "pageDescription": "브랜드 협업 초대 및 제안 관리",
+    "addDeal": "협업 추가",
+    "stats": {
+      "activeDeals": "진행 중인 건",
+      "completedDeals": "완료된 건",
+      "totalRevenue": "총 수익"
+    },
+    "empty": {
+      "title": "브랜드 협업이 없습니다",
+      "description": "브랜드 협업 건을 추가하여 제안부터 완료까지 전체 프로세스를 추적하세요"
+    },
+    "status": {
+      "DRAFT": "초안",
+      "PROPOSAL_SENT": "제안 완료",
+      "NEGOTIATING": "협상 중",
+      "CONFIRMED": "확정됨",
+      "IN_PROGRESS": "진행 중",
+      "COMPLETED": "완료",
+      "CANCELLED": "취소됨"
+    },
+    "dealType": {
+      "SPONSORED_POST": "스폰서 게시물",
+      "BRAND_AMBASSADOR": "브랜드 앰버서더",
+      "PRODUCT_REVIEW": "제품 리뷰",
+      "AFFILIATE": "제휴 마케팅",
+      "EVENT": "이벤트 협업",
+      "OTHER": "기타"
+    },
+    "createDialog": {
+      "title": "브랜드 협업 추가"
+    },
+    "deleteDialog": {
+      "title": "브랜드 협업 삭제",
+      "description": "이 브랜드 협업 건을 삭제하시겠습니까?"
+    },
+    "form": {
+      "brandName": "브랜드 이름",
+      "dealType": "협업 유형",
+      "selectType": "유형 선택",
+      "budgetMin": "예산 하한 (NT$)",
+      "budgetMax": "예산 상한 (NT$)",
+      "notes": "메모"
+    },
+    "detail": {
+      "budgetRange": "예산 범위",
+      "aiProposal": "AI 제안"
+    },
+    "action": {
+      "cancel": "취소",
+      "create": "생성",
+      "delete": "삭제",
+      "markProposalSent": "제안 완료로 표시",
+      "aiGenerate": "AI 제안 생성",
+      "generating": "생성 중...",
+      "startNegotiation": "협상 시작",
+      "confirmDeal": "협업 확정",
+      "startExecution": "실행 시작",
+      "markCompleted": "완료로 표시",
+      "cancelDeal": "협업 취소"
+    },
+    "validation": {
+      "requiredFields": "브랜드 이름과 협업 유형을 입력하세요"
+    },
+    "toast": {
+      "created": "브랜드 협업이 생성되었습니다",
+      "statusUpdated": "상태가 업데이트되었습니다",
+      "proposalGenerated": "제안이 생성되었습니다",
+      "deleted": "삭제되었습니다"
+    }
+  },
+  "monetize": {
+    "title": "AI 수익화 어드바이저",
+    "subtitle": "모든 수익 채널을 통합하여 건강 보고서, AI 조언, 수익 예측 제공",
+    "tabHealth": "수익 개요",
+    "tabAdvice": "AI 조언",
+    "tabForecast": "수익 예측",
+    "period30d": "최근 30일",
+    "period90d": "최근 90일",
+    "totalRevenue": "총 수익",
+    "channel.membership": "멤버십",
+    "channel.digitalProduct": "디지털 상품",
+    "channel.brandDeal": "브랜드 협업",
+    "channel.affiliate": "제휴 마케팅",
+    "channel.subscription": "플랫폼 구독",
+    "membershipMrr": "MRR: {mrr} | 회원: {members}",
+    "churnRate": "이탈율: {rate}%",
+    "digitalProductSales": "판매량: {sales} | 평균 주문액: {avgOrder}",
+    "topSelling": "인기 상품: {name}",
+    "brandDealActive": "진행 중: {deals} | 평균 단가: {avgValue}",
+    "conversionRate": "전환율: {rate}%",
+    "affiliateClicks": "클릭: {clicks} | 전환: {rate}%",
+    "topLink": "최고: {name}",
+    "adviceDescription": "AI가 수익 데이터를 분석하여 실행 가능한 수익화 조언을 제공합니다",
+    "generateAdvice": "조언 생성",
+    "adviceEmpty": "\"조언 생성\"을 클릭하여 AI 수익화 제안을 받으세요",
+    "suggestions": "수익화 제안",
+    "impact.HIGH": "높은 영향",
+    "impact.MEDIUM": "보통 영향",
+    "impact.LOW": "낮은 영향",
+    "category.PRICING": "가격 최적화",
+    "category.GROWTH": "성장 전략",
+    "category.RETENTION": "리텐션 향상",
+    "category.NEW_CHANNEL": "새 채널",
+    "category.OPTIMIZATION": "효율 최적화",
+    "estimatedImpact": "예상 영향: {impact}",
+    "executionSteps": "실행 단계:",
+    "pricingAdvice": "가격 조언",
+    "perMonth": "/월",
+    "people": "명",
+    "salesUnit": "건",
+    "recommendNewChannels": "추천 새 채널",
+    "difficulty.EASY": "쉬움",
+    "difficulty.MEDIUM": "보통",
+    "difficulty.HARD": "어려움",
+    "estimatedMonthlyRevenue": "예상 {amount}/월",
+    "prerequisites": "전제 조건: {items}",
+    "insufficientData": "데이터 부족",
+    "nextMonth": "다음 달",
+    "twoMonthsLater": "2개월 후",
+    "threeMonthsLater": "3개월 후",
+    "forecastAssumptions": "예측 가정"
+  },
+  "store": {
+    "pageTitle": "디지털 상품 스토어",
+    "pageDescription": "PDF, 템플릿, 프리셋, 전자책 등 디지털 상품 판매",
+    "addProduct": "상품 추가",
+    "typeLabels": {
+      "pdf": "📄 PDF",
+      "template": "📐 템플릿",
+      "preset": "🎨 프리셋",
+      "ebook": "📖 전자책",
+      "videoCourse": "🎬 영상 코스",
+      "audio": "🎵 오디오",
+      "other": "📦 기타"
+    },
+    "stats": {
+      "productCount": "상품 수",
+      "totalRevenue": "총 매출",
+      "totalSales": "총 판매량"
+    },
+    "status": {
+      "published": "게시됨",
+      "unpublished": "미게시"
+    },
+    "aiCopy": "AI 카피",
+    "productStats": {
+      "sales": "{count} 판매",
+      "revenue": "NT${amount} 매출"
+    },
+    "action": {
+      "publish": "게시",
+      "unpublish": "게시 취소",
+      "aiRewrite": "AI 다시 쓰기",
+      "cancel": "취소",
+      "aiGenerating": "AI 생성 중...",
+      "createProduct": "상품 생성",
+      "delete": "삭제"
+    },
+    "empty": {
+      "title": "디지털 상품이 없습니다",
+      "description": "첫 번째 디지털 상품을 추가하면 AI가 매력적인 상품 설명을 자동 생성합니다"
+    },
+    "dialog": {
+      "createTitle": "디지털 상품 추가",
+      "deleteTitle": "상품 삭제",
+      "deleteDescription": "이 상품을 삭제하시겠습니까? 모든 주문 기록도 함께 삭제됩니다."
+    },
+    "form": {
+      "name": "상품 이름",
+      "namePlaceholder": "예: Lightroom 스타일 프리셋 팩",
+      "type": "상품 유형",
+      "price": "가격 (NT$)",
+      "description": "간략한 설명 (선택사항, AI가 전체 카피를 자동 생성합니다)",
+      "descriptionPlaceholder": "상품 특징을 간략히 설명...",
+      "tags": "태그 (쉼표로 구분)",
+      "tagsPlaceholder": "사진, Lightroom, 프리셋"
+    },
+    "aiHint": "AI가 상품 정보를 기반으로 마케팅 카피와 SEO 태그를 자동 생성합니다",
+    "validation": {
+      "nameRequired": "상품 이름을 입력하세요",
+      "priceRequired": "가격을 설정하세요"
+    },
+    "toast": {
+      "created": "상품이 생성되었습니다. AI 설명이 생성되었습니다",
+      "published": "게시되었습니다",
+      "unpublished": "게시 취소되었습니다",
+      "aiRegenerated": "AI 카피가 재생성되었습니다",
+      "deleted": "상품이 삭제되었습니다"
+    }
+  },
+  "email": {
+    "pageTitle": "AI 이메일 마케팅",
+    "pageDescription": "AI가 이메일 시퀀스를 자동 생성하고 구독자 리스트를 관리",
+    "stats": {
+      "subscribers": "구독자",
+      "sent": "발송됨",
+      "avgOpenRate": "평균 오픈율",
+      "campaigns": "캠페인"
+    },
+    "tabs": {
+      "campaigns": "이메일 캠페인",
+      "subscribers": "구독자 리스트"
+    },
+    "empty": {
+      "campaignsTitle": "이메일 캠페인이 없습니다",
+      "campaignsDescription": "AI에게 완전한 이메일 마케팅 시퀀스를 생성하세요: 환영 → 육성 → 판매",
+      "campaignsAction": "AI 시퀀스 생성",
+      "subscribersTitle": "구독자가 없습니다",
+      "subscribersDescription": "이메일 리스트에 구독자를 추가하세요"
+    },
+    "campaign": {
+      "emailCount": "{count}통",
+      "typeSequence": "자동 시퀀스",
+      "typeSingle": "단일",
+      "statusDraft": "초안",
+      "statusSent": "발송됨",
+      "statusScheduled": "예약됨",
+      "statusSending": "발송 중",
+      "sentStats": "{sent} 발송 · {opened} 오픈 · {clicked} 클릭"
+    },
+    "subscriber": {
+      "name": "이름",
+      "source": "소스",
+      "status": "상태",
+      "joinDate": "가입일",
+      "active": "활성",
+      "unsubscribed": "구독 취소"
+    },
+    "actions": {
+      "addSubscriber": "구독자 추가",
+      "aiGenerateSequence": "AI 이메일 시퀀스 생성",
+      "send": "발송",
+      "cancel": "취소",
+      "add": "추가",
+      "adding": "추가 중...",
+      "generateSequence": "시퀀스 생성",
+      "aiGenerating": "AI 생성 중..."
+    },
+    "dialog": {
+      "addSubscriberTitle": "구독자 추가",
+      "nameLabel": "이름 (선택사항)",
+      "namePlaceholder": "팬 이름",
+      "aiGenerateTitle": "AI 이메일 시퀀스 생성",
+      "purposeLabel": "마케팅 목적",
+      "purposePlaceholder": "예: 새 온라인 코스 홍보, 신규 회원 환영, 한정 할인",
+      "productNameLabel": "상품 이름 (선택사항)",
+      "productNamePlaceholder": "예: Lightroom 프리셋 팩",
+      "toneLabel": "톤",
+      "emailCountLabel": "이메일 수",
+      "emailCount3": "3통 (기본)",
+      "emailCount5": "5통 (표준)",
+      "emailCount7": "7통 (완전)",
+      "aiFunnelHint": "AI가 자동화 이메일 퍼널을 생성합니다: 환영 → 육성 → 판매"
+    },
+    "toneOptions": {
+      "friendlyProfessional": "친근하고 전문적",
+      "enthusiastic": "열정적",
+      "formalAuthoritative": "격식 있고 권위 있는",
+      "casualHumorous": "캐주얼하고 유머러스"
+    },
+    "preview": {
+      "emailIndex": "제 {index} 통",
+      "sendOnDay": "{day}일차 발송"
+    },
+    "confirm": {
+      "sendTitle": "이메일 캠페인 발송",
+      "sendDescription": "이 이메일 캠페인을 모든 대상 구독자에게 발송하시겠습니까? 발송 후 취소할 수 없습니다.",
+      "sendConfirmLabel": "발송 확인",
+      "deleteTitle": "이메일 캠페인 삭제",
+      "deleteDescription": "이 이메일 캠페인을 삭제하시겠습니까? 모든 이메일 템플릿도 함께 삭제됩니다.",
+      "deleteConfirmLabel": "삭제"
+    },
+    "toast": {
+      "subscriberAdded": "구독자가 추가되었습니다",
+      "aiSequenceGenerated": "AI가 {count}통의 이메일 시퀀스를 생성했습니다",
+      "sendQueued": "발송 대기열에 추가: {subscriberCount}명 구독자, {emailCount}통 이메일",
+      "deleted": "삭제되었습니다"
+    },
+    "validation": {
+      "emailRequired": "이메일을 입력하세요",
+      "purposeRequired": "마케팅 목적을 입력하세요"
+    }
+  },
+  "landing": {
+    "pageTitle": "랜딩 페이지",
+    "pageDescription": "개인 브랜드 페이지 만들기",
+    "themes": {
+      "modern": "모던",
+      "minimal": "미니멀",
+      "bold": "볼드",
+      "creative": "크리에이티브"
+    },
+    "niches": {
+      "tech": "테크",
+      "food": "푸드",
+      "travel": "여행",
+      "education": "교육",
+      "lifestyle": "라이프스타일",
+      "entertainment": "엔터테인먼트",
+      "business": "비즈니스",
+      "design": "디자인",
+      "health": "건강",
+      "music": "음악"
+    },
+    "toast": {
+      "generated": "랜딩 페이지가 생성되었습니다!",
+      "updated": "업데이트되었습니다",
+      "linkCopied": "링크가 복사되었습니다"
+    },
+    "emptyState": {
+      "description": "AI가 당신의 창작 분야에 맞는 전문적인 랜딩 페이지를 자동 생성합니다 (카피, 색상, 레이아웃 포함)",
+      "generateButton": "AI 원클릭 생성"
+    },
+    "generateDialog": {
+      "title": "AI 랜딩 페이지 생성",
+      "nameLabel": "당신의 이름 / 브랜드 이름",
+      "namePlaceholder": "예: Nick Creates",
+      "nicheLabel": "창작 분야",
+      "nichePlaceholder": "분야 선택",
+      "descriptionLabel": "추가 설명 (선택사항)",
+      "descriptionPlaceholder": "AI에게 더 많은 정보를 알려주세요. 예: AI 도구 리뷰에 집중, 10만 팔로워...",
+      "cancel": "취소",
+      "generating": "AI 생성 중...",
+      "startGenerate": "생성 시작"
+    },
+    "editor": {
+      "viewCount": "{slug} · {count}회 조회",
+      "copyLink": "링크 복사",
+      "preview": "미리보기",
+      "unpublish": "게시 취소",
+      "publish": "🚀 페이지 게시",
+      "statusPublished": "✅ 게시됨",
+      "statusDraft": "📝 초안",
+      "theme": "테마: {theme}",
+      "viewPublicPage": "공개 페이지 보기",
+      "headlineTitle": "헤드라인",
+      "mainHeadline": "메인 헤드라인",
+      "subHeadline": "서브 헤드라인",
+      "bioTitle": "자기소개",
+      "themeColorTitle": "테마 색상",
+      "ctaTitle": "CTA 버튼",
+      "sectionsTitle": "페이지 섹션",
+      "unnamedSection": "이름 없는 섹션",
+      "previewTitle": "페이지 미리보기"
+    }
   }
 }
