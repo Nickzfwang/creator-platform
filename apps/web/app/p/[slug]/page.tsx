@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { ExternalLink, Mail, Youtube, Instagram, Facebook, Twitter } from "lucide-react";
+import { ExternalLink, Mail, Youtube, Instagram, Facebook, Twitter, ChevronDown, Play, Star, Quote } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 
@@ -30,6 +30,220 @@ const platformIcons: Record<string, React.ReactNode> = {
   tiktok: <span className="text-lg">🎵</span>,
   email: <Mail className="h-5 w-5" />,
 };
+
+// ─── Block Template Components ───
+
+function FaqBlock({ section, primaryColor }: { section: any; primaryColor: string }) {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const items = section.items ?? [];
+  return (
+    <div className="rounded-xl border p-6" style={{ borderColor: `${primaryColor}30` }}>
+      {section.title && <h2 className="text-xl font-bold mb-4" style={{ color: primaryColor }}>{section.title}</h2>}
+      <div className="space-y-2">
+        {items.map((item: any, j: number) => {
+          const question = item.question ?? item.title ?? item.text ?? String(item);
+          const answer = item.answer ?? item.content ?? item.description ?? "";
+          const isOpen = openIndex === j;
+          return (
+            <div key={j} className="rounded-lg border" style={{ borderColor: `${primaryColor}20` }}>
+              <button
+                className="w-full flex items-center justify-between p-4 text-left text-sm font-medium"
+                onClick={() => setOpenIndex(isOpen ? null : j)}
+              >
+                <span>{question}</span>
+                <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} style={{ color: primaryColor }} />
+              </button>
+              {isOpen && answer && (
+                <div className="px-4 pb-4 text-sm opacity-70 leading-relaxed">{answer}</div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function PricingBlock({ section, primaryColor }: { section: any; primaryColor: string }) {
+  const items = section.items ?? [];
+  return (
+    <div className="rounded-xl border p-6" style={{ borderColor: `${primaryColor}30` }}>
+      {section.title && <h2 className="text-xl font-bold mb-4 text-center" style={{ color: primaryColor }}>{section.title}</h2>}
+      {section.content && <p className="text-sm text-center opacity-70 mb-6">{section.content}</p>}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {items.map((item: any, j: number) => (
+          <div key={j} className="rounded-lg border p-5 text-center relative" style={{ borderColor: item.recommended ? primaryColor : `${primaryColor}30` }}>
+            {item.recommended && (
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-0.5 text-xs font-bold text-white" style={{ backgroundColor: primaryColor }}>
+                推薦
+              </div>
+            )}
+            <h3 className="text-lg font-bold">{item.name ?? item.title}</h3>
+            {item.price !== undefined && (
+              <div className="mt-2">
+                <span className="text-3xl font-bold" style={{ color: primaryColor }}>${item.price}</span>
+                {item.period && <span className="text-sm opacity-60">/{item.period}</span>}
+              </div>
+            )}
+            {item.description && <p className="mt-2 text-sm opacity-60">{item.description}</p>}
+            {item.features && (
+              <ul className="mt-4 space-y-2 text-left">
+                {item.features.map((f: string, k: number) => (
+                  <li key={k} className="flex items-start gap-2 text-sm">
+                    <span style={{ color: primaryColor }}>✓</span>
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {item.url && (
+              <a href={item.url} target="_blank" rel="noopener noreferrer"
+                className="mt-4 block rounded-lg py-2 px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                style={{ backgroundColor: primaryColor }}>
+                {item.buttonLabel ?? "選擇方案"}
+              </a>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function VideoBlock({ section, primaryColor }: { section: any; primaryColor: string }) {
+  const items = section.items ?? [];
+  const singleUrl = section.content ?? items[0]?.url;
+
+  function getEmbedUrl(url: string): string | null {
+    try {
+      const u = new URL(url);
+      if (u.hostname.includes("youtube.com") || u.hostname.includes("youtu.be")) {
+        const videoId = u.hostname.includes("youtu.be") ? u.pathname.slice(1) : u.searchParams.get("v");
+        return videoId ? `https://www.youtube-nocookie.com/embed/${videoId}` : null;
+      }
+      return null;
+    } catch { return null; }
+  }
+
+  const videos = singleUrl ? [{ url: singleUrl, title: section.title }] : items;
+
+  return (
+    <div className="rounded-xl border p-6" style={{ borderColor: `${primaryColor}30` }}>
+      {section.title && <h2 className="text-xl font-bold mb-4" style={{ color: primaryColor }}>{section.title}</h2>}
+      <div className="space-y-4">
+        {videos.map((v: any, j: number) => {
+          const embedUrl = getEmbedUrl(v.url ?? "");
+          if (embedUrl) {
+            return (
+              <div key={j} className="aspect-video rounded-lg overflow-hidden">
+                <iframe src={embedUrl} className="h-full w-full" allowFullScreen title={v.title ?? `Video ${j + 1}`} />
+              </div>
+            );
+          }
+          return (
+            <a key={j} href={v.url} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-3 rounded-lg border p-4 transition-colors hover:bg-gray-50"
+              style={{ borderColor: `${primaryColor}20` }}>
+              <Play className="h-8 w-8 shrink-0" style={{ color: primaryColor }} />
+              <div>
+                <div className="font-medium">{v.title ?? "觀看影片"}</div>
+                {v.description && <div className="text-sm opacity-60">{v.description}</div>}
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function TestimonialsBlock({ section, primaryColor }: { section: any; primaryColor: string }) {
+  const items = section.items ?? [];
+  return (
+    <div className="rounded-xl border p-6" style={{ borderColor: `${primaryColor}30` }}>
+      {section.title && <h2 className="text-xl font-bold mb-4" style={{ color: primaryColor }}>{section.title}</h2>}
+      <div className="grid gap-4 md:grid-cols-2">
+        {items.map((item: any, j: number) => (
+          <div key={j} className="rounded-lg p-4" style={{ backgroundColor: `${primaryColor}08` }}>
+            <Quote className="h-5 w-5 mb-2 opacity-30" style={{ color: primaryColor }} />
+            <p className="text-sm leading-relaxed italic opacity-80">{item.quote ?? item.text ?? item.content}</p>
+            <div className="mt-3 flex items-center gap-2">
+              {item.avatar && <img src={item.avatar} className="h-8 w-8 rounded-full" alt="" />}
+              <div>
+                <div className="text-sm font-medium">{item.name ?? item.author}</div>
+                {item.role && <div className="text-xs opacity-50">{item.role}</div>}
+              </div>
+              {item.rating && (
+                <div className="ml-auto flex gap-0.5">
+                  {Array.from({ length: item.rating }).map((_, k) => (
+                    <Star key={k} className="h-3 w-3 fill-current" style={{ color: "#f59e0b" }} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SocialGridBlock({ section, primaryColor }: { section: any; primaryColor: string }) {
+  const items = section.items ?? [];
+  return (
+    <div className="rounded-xl border p-6" style={{ borderColor: `${primaryColor}30` }}>
+      {section.title && <h2 className="text-xl font-bold mb-4" style={{ color: primaryColor }}>{section.title}</h2>}
+      {section.content && <p className="text-sm opacity-70 mb-4">{section.content}</p>}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+        {items.map((item: any, j: number) => (
+          <a key={j} href={item.url ?? "#"} target="_blank" rel="noopener noreferrer"
+            className="flex flex-col items-center gap-2 rounded-lg border p-4 transition-all hover:shadow-md hover:scale-[1.02]"
+            style={{ borderColor: `${primaryColor}20` }}>
+            <div className="flex h-10 w-10 items-center justify-center rounded-full" style={{ backgroundColor: `${primaryColor}15`, color: primaryColor }}>
+              {platformIcons[(item.platform ?? "").toLowerCase()] ?? <ExternalLink className="h-5 w-5" />}
+            </div>
+            <span className="text-sm font-medium">{item.label ?? item.platform ?? item.title}</span>
+            {item.followers && <span className="text-xs opacity-50">{item.followers} 粉絲</span>}
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DefaultBlock({ section, primaryColor }: { section: any; primaryColor: string }) {
+  return (
+    <div className="rounded-xl border p-6" style={{ borderColor: `${primaryColor}30` }}>
+      {section.title && (
+        <h2 className="text-xl font-bold mb-3" style={{ color: primaryColor }}>{section.title}</h2>
+      )}
+      {section.content && (
+        <p className="text-sm leading-relaxed opacity-80">{section.content}</p>
+      )}
+      {section.items && section.items.length > 0 && (
+        <ul className="mt-3 space-y-2">
+          {section.items.map((item: any, j: number) => (
+            <li key={j} className="flex items-start gap-2 text-sm">
+              <span style={{ color: primaryColor }}>✦</span>
+              <span>{typeof item === "string" ? item : item.text || item.title || JSON.stringify(item)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function SectionRenderer({ section, primaryColor }: { section: any; primaryColor: string }) {
+  switch (section.type) {
+    case "faq": return <FaqBlock section={section} primaryColor={primaryColor} />;
+    case "pricing": return <PricingBlock section={section} primaryColor={primaryColor} />;
+    case "video": return <VideoBlock section={section} primaryColor={primaryColor} />;
+    case "testimonials": return <TestimonialsBlock section={section} primaryColor={primaryColor} />;
+    case "social-grid": return <SocialGridBlock section={section} primaryColor={primaryColor} />;
+    default: return <DefaultBlock section={section} primaryColor={primaryColor} />;
+  }
+}
 
 export default function PublicLandingPage() {
   const params = useParams();
@@ -156,30 +370,11 @@ export default function PublicLandingPage() {
           </div>
         )}
 
-        {/* Sections */}
+        {/* Sections — rendered by type-specific block templates */}
         {sections.length > 0 && (
           <div className="mt-10 space-y-8 pb-16">
             {sections.map((section, i) => (
-              <div key={i} className="rounded-xl border p-6" style={{ borderColor: `${primaryColor}30` }}>
-                {section.title && (
-                  <h2 className="text-xl font-bold mb-3" style={{ color: primaryColor }}>
-                    {section.title}
-                  </h2>
-                )}
-                {section.content && (
-                  <p className="text-sm leading-relaxed opacity-80">{section.content}</p>
-                )}
-                {section.items && section.items.length > 0 && (
-                  <ul className="mt-3 space-y-2">
-                    {section.items.map((item: any, j: number) => (
-                      <li key={j} className="flex items-start gap-2 text-sm">
-                        <span style={{ color: primaryColor }}>✦</span>
-                        <span>{typeof item === "string" ? item : item.text || item.title || JSON.stringify(item)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
+              <SectionRenderer key={i} section={section} primaryColor={primaryColor} />
             ))}
           </div>
         )}
