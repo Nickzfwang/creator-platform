@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Bookmark, Star, Trash2, ExternalLink, Filter, Sparkles, Lightbulb, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
@@ -41,6 +42,7 @@ const categoryColors: Record<string, string> = {
 };
 
 export default function ClipsPage() {
+  const t = useTranslations("clips");
   const [filter, setFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const queryClient = useQueryClient();
@@ -69,7 +71,7 @@ export default function ClipsPage() {
       api(`/v1/clips/${clipId}`, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clips"] });
-      toast.success("已刪除收藏");
+      toast.success(t("deleteSuccess"));
     },
   });
 
@@ -88,8 +90,8 @@ export default function ClipsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="收藏庫"
-        description="透過 Chrome 擴充功能收藏的社群精華內容，AI 自動摘要分類"
+        title={t("pageTitle")}
+        description={t("pageDescription")}
       />
 
       {/* Search + Filter */}
@@ -99,7 +101,7 @@ export default function ClipsPage() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="搜尋收藏內容..."
+            placeholder={t("searchPlaceholder")}
             className="pl-9"
           />
         </div>
@@ -109,14 +111,14 @@ export default function ClipsPage() {
             size="sm"
             onClick={() => setFilter("all")}
           >
-            全部
+            {t("filterAll")}
           </Button>
           <Button
             variant={filter === "starred" ? "default" : "outline"}
             size="sm"
             onClick={() => setFilter("starred")}
           >
-            <Star className="mr-1 h-3 w-3" /> 星標
+            <Star className="mr-1 h-3 w-3" /> {t("filterStarred")}
           </Button>
           {platforms.map((p) => (
             <Button
@@ -147,8 +149,8 @@ export default function ClipsPage() {
       ) : filteredClips.length === 0 ? (
         <EmptyState
           icon={Bookmark}
-          title="尚無收藏內容"
-          description="安裝 Chrome 擴充功能，在瀏覽 Facebook、YouTube、Threads 時一鍵收藏精華內容"
+          title={t("emptyTitle")}
+          description={t("emptyDescription")}
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -205,7 +207,7 @@ export default function ClipsPage() {
                 {clip.aiSummary && (
                   <div className="mt-2 rounded-lg bg-purple-50 p-2.5 dark:bg-purple-950/20">
                     <p className="flex items-center gap-1 text-xs font-medium text-purple-700 dark:text-purple-400 mb-1">
-                      <Sparkles className="h-3 w-3" /> AI 摘要
+                      <Sparkles className="h-3 w-3" /> {t("aiSummary")}
                     </p>
                     <p className="text-xs text-purple-900 dark:text-purple-200 leading-relaxed">
                       {clip.aiSummary}

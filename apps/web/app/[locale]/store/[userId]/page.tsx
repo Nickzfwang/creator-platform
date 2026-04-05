@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { ShoppingBag, Tag, Loader2, ExternalLink, Search, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
@@ -36,30 +37,13 @@ interface Product {
   createdAt: string;
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  PDF: "PDF",
-  TEMPLATE: "模板",
-  PRESET: "預設集",
-  EBOOK: "電子書",
-  VIDEO_COURSE: "影片課程",
-  AUDIO: "音檔",
-  OTHER: "其他",
-};
-
 type SortKey = "newest" | "oldest" | "price_asc" | "price_desc" | "popular";
-
-const SORT_LABELS: Record<SortKey, string> = {
-  newest: "最新上架",
-  oldest: "最早上架",
-  price_asc: "價格低到高",
-  price_desc: "價格高到低",
-  popular: "最多人買",
-};
 
 export default function PublicStorePage() {
   const { userId } = useParams<{ userId: string }>();
   const searchParams = useSearchParams();
   const cancelled = searchParams.get("cancelled");
+  const t = useTranslations("publicStore");
 
   const [buyDialog, setBuyDialog] = useState<Product | null>(null);
   const [buyerEmail, setBuyerEmail] = useState("");
@@ -69,6 +53,24 @@ export default function PublicStorePage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("all");
   const [sort, setSort] = useState<SortKey>("newest");
+
+  const TYPE_LABELS: Record<string, string> = {
+    PDF: "PDF",
+    TEMPLATE: t("typeTemplate"),
+    PRESET: t("typePreset"),
+    EBOOK: t("typeEbook"),
+    VIDEO_COURSE: t("typeVideoCourse"),
+    AUDIO: t("typeAudio"),
+    OTHER: t("typeOther"),
+  };
+
+  const SORT_LABELS: Record<SortKey, string> = {
+    newest: t("sortNewest"),
+    oldest: t("sortOldest"),
+    price_asc: t("sortPriceAsc"),
+    price_desc: t("sortPriceDesc"),
+    popular: t("sortPopular"),
+  };
 
   const { data: products, isLoading } = useQuery({
     queryKey: ["public-store", userId],
@@ -162,23 +164,23 @@ export default function PublicStorePage() {
   return (
     <>
       {/* SEO Meta Tags */}
-      <title>{`數位商品商店`}</title>
-      <meta name="description" content="瀏覽並購買創作者的數位商品 — 模板、課程、電子書等" />
-      <meta property="og:title" content="數位商品商店" />
-      <meta property="og:description" content="瀏覽並購買創作者的數位商品" />
+      <title>{t("storeTitle")}</title>
+      <meta name="description" content={t("metaDescription")} />
+      <meta property="og:title" content={t("storeTitle")} />
+      <meta property="og:description" content={t("metaDescriptionShort")} />
       <meta property="og:type" content="website" />
 
       <div className="mx-auto max-w-4xl px-4 py-12">
         {cancelled && (
           <div className="mb-6 rounded-lg bg-amber-50 p-4 text-sm text-amber-800 dark:bg-amber-950 dark:text-amber-200">
-            付款已取消，您可以重新選購。
+            {t("paymentCancelled")}
           </div>
         )}
 
         <div className="mb-8 text-center">
           <ShoppingBag className="mx-auto mb-3 h-10 w-10 text-primary" />
-          <h1 className="text-2xl font-bold">數位商品商店</h1>
-          <p className="mt-1 text-muted-foreground">瀏覽並購買數位商品</p>
+          <h1 className="text-2xl font-bold">{t("storeTitle")}</h1>
+          <p className="mt-1 text-muted-foreground">{t("storeSubtitle")}</p>
         </div>
 
         {/* Search & Filter Bar */}
@@ -188,7 +190,7 @@ export default function PublicStorePage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="搜尋商品名稱、描述、標籤..."
+                placeholder={t("searchPlaceholder")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9"
@@ -203,7 +205,7 @@ export default function PublicStorePage() {
                   size="sm"
                   onClick={() => setCategory("all")}
                 >
-                  全部
+                  {t("categoryAll")}
                 </Button>
                 {categories.map((cat) => (
                   <Button
@@ -236,8 +238,8 @@ export default function PublicStorePage() {
             {/* Results count */}
             {(search || category !== "all") && (
               <p className="text-sm text-muted-foreground">
-                找到 {filteredProducts.length} 個商品
-                {search && <span>（搜尋：{search}）</span>}
+                {t("resultsFound", { count: filteredProducts.length })}
+                {search && <span>{t("searchQuery", { query: search })}</span>}
               </p>
             )}
           </div>
@@ -245,11 +247,11 @@ export default function PublicStorePage() {
 
         {!products?.length ? (
           <div className="text-center text-muted-foreground py-20">
-            目前尚無商品上架
+            {t("noProducts")}
           </div>
         ) : filteredProducts.length === 0 ? (
           <div className="text-center text-muted-foreground py-20">
-            找不到符合條件的商品
+            {t("noMatchingProducts")}
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2">
@@ -294,13 +296,13 @@ export default function PublicStorePage() {
                       )}
                     </div>
                     <Button onClick={() => { setBuyDialog(product); setBuyerEmail(""); setBuyerName(""); }}>
-                      購買
+                      {t("buy")}
                     </Button>
                   </div>
 
                   {product.salesCount > 0 && (
                     <p className="text-xs text-muted-foreground mt-2">
-                      已售出 {product.salesCount} 份
+                      {t("soldCount", { count: product.salesCount })}
                     </p>
                   )}
                 </CardContent>
@@ -313,14 +315,14 @@ export default function PublicStorePage() {
         <Dialog open={!!buyDialog} onOpenChange={() => setBuyDialog(null)}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>購買：{buyDialog?.name}</DialogTitle>
+              <DialogTitle>{t("purchaseTitle", { name: buyDialog?.name ?? "" })}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="rounded-lg bg-muted/50 p-3 text-center">
                 <span className="text-2xl font-bold text-primary">NT${buyDialog?.price}</span>
               </div>
               <div className="space-y-2">
-                <Label>Email（用於接收下載連結）</Label>
+                <Label>{t("emailLabel")}</Label>
                 <Input
                   type="email"
                   value={buyerEmail}
@@ -329,21 +331,21 @@ export default function PublicStorePage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>姓名（選填）</Label>
+                <Label>{t("nameLabel")}</Label>
                 <Input
                   value={buyerName}
                   onChange={(e) => setBuyerName(e.target.value)}
-                  placeholder="您的姓名"
+                  placeholder={t("namePlaceholder")}
                 />
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setBuyDialog(null)}>取消</Button>
+              <Button variant="outline" onClick={() => setBuyDialog(null)}>{t("cancelButton")}</Button>
               <Button onClick={handlePurchase} disabled={purchase.isPending || !buyerEmail.trim()}>
                 {purchase.isPending ? (
-                  <><Loader2 className="mr-1 h-4 w-4 animate-spin" /> 處理中...</>
+                  <><Loader2 className="mr-1 h-4 w-4 animate-spin" /> {t("processing")}</>
                 ) : (
-                  <><ExternalLink className="mr-1 h-4 w-4" /> 前往付款</>
+                  <><ExternalLink className="mr-1 h-4 w-4" /> {t("goToPayment")}</>
                 )}
               </Button>
             </DialogFooter>

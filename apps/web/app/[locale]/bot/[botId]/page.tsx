@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { Send, Bot, User, Loader2, MessageCircle, AlertCircle } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
@@ -33,6 +34,7 @@ function getAnonymousId(): string {
 
 export default function PublicBotChatPage() {
   const { botId } = useParams<{ botId: string }>();
+  const t = useTranslations("publicBot");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -125,8 +127,8 @@ export default function PublicBotChatPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 dark:bg-gray-950">
         <AlertCircle className="h-12 w-12 text-gray-300 mb-4" />
-        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">找不到此 Bot</h1>
-        <p className="mt-2 text-gray-500">此 Bot 不存在或未開放公開使用</p>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t("notFoundTitle")}</h1>
+        <p className="mt-2 text-gray-500">{t("notFoundDescription")}</p>
       </div>
     );
   }
@@ -153,7 +155,7 @@ export default function PublicBotChatPage() {
           </div>
           <div className="ml-auto flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-full bg-green-500" />
-            <span className="text-xs text-gray-500">在線</span>
+            <span className="text-xs text-gray-500">{t("online")}</span>
           </div>
         </div>
       </header>
@@ -164,7 +166,7 @@ export default function PublicBotChatPage() {
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <MessageCircle className="h-12 w-12 text-gray-200 dark:text-gray-700 mb-4" />
-              <p className="text-gray-400">開始對話吧！</p>
+              <p className="text-gray-400">{t("startConversation")}</p>
             </div>
           )}
 
@@ -208,7 +210,7 @@ export default function PublicBotChatPage() {
           {/* Error */}
           {chatMutation.isError && (
             <div className="mx-auto max-w-sm rounded-lg bg-red-50 p-3 text-center text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400">
-              發送失敗：{chatMutation.error.message}
+              {t("sendFailed", { error: chatMutation.error.message })}
             </div>
           )}
 
@@ -226,7 +228,7 @@ export default function PublicBotChatPage() {
             onKeyDown={handleKeyDown}
             onCompositionStart={() => setIsComposing(true)}
             onCompositionEnd={() => setIsComposing(false)}
-            placeholder="輸入訊息..."
+            placeholder={t("inputPlaceholder")}
             rows={1}
             className="flex-1 resize-none rounded-xl border bg-gray-50 px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary dark:bg-gray-800 dark:border-gray-700"
             style={{ maxHeight: 120 }}

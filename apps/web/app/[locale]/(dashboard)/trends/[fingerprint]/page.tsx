@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -29,36 +30,34 @@ interface TrendHistory {
 
 const phaseBadge: Record<
   TrendHistory["currentPhase"],
-  { label: string; className: string }
+  { key: string; className: string }
 > = {
   NEW: {
-    label: "\uD83C\uDD95 \u65B0\u8DA8\u52E2",
+    key: "phaseNew",
     className:
       "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
   },
   RISING: {
-    label: "\uD83D\uDCC8 \u4E0A\u5347\u4E2D",
+    key: "phaseRising",
     className:
       "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
   },
   PEAK: {
-    label: "\uD83D\uDD25 \u9AD8\u5CF0",
+    key: "phasePeakBadge",
     className: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
   },
   DECLINING: {
-    label: "\uD83D\uDCC9 \u8870\u9000\u4E2D",
+    key: "phaseDeclining",
     className:
       "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
   },
 };
 
-const phaseExplanation: Record<TrendHistory["currentPhase"], string> = {
-  NEW: "\u9019\u662F\u4E00\u500B\u65B0\u51FA\u73FE\u7684\u8DA8\u52E2\uFF0C\u5C1A\u5728\u89C0\u5BDF\u968E\u6BB5\u3002\u5EFA\u8B70\u6301\u7E8C\u8FFD\u8E64\uFF0C\u82E5\u8207\u4F60\u7684\u5167\u5BB9\u9818\u57DF\u76F8\u95DC\uFF0C\u53EF\u4EE5\u63D0\u524D\u4F48\u5C40\u3002",
-  RISING:
-    "\u8DA8\u52E2\u6B63\u5728\u4E0A\u5347\uFF0C\u95DC\u6CE8\u5EA6\u9010\u6F38\u589E\u52A0\u3002\u73FE\u5728\u662F\u88FD\u4F5C\u76F8\u95DC\u5167\u5BB9\u7684\u597D\u6642\u6A5F\uFF0C\u80FD\u5920\u642D\u4E0A\u8DA8\u52E2\u7684\u4E0A\u5347\u6CE2\u3002",
-  PEAK: "\u8DA8\u52E2\u5DF2\u9054\u5230\u9AD8\u5CF0\uFF0C\u95DC\u6CE8\u5EA6\u6700\u9AD8\u3002\u7ACB\u5373\u767C\u5E03\u76F8\u95DC\u5167\u5BB9\u53EF\u4EE5\u7372\u5F97\u6700\u5927\u66DD\u5149\uFF0C\u4F46\u8ACB\u6CE8\u610F\u7AF6\u722D\u4E5F\u6700\u6FC0\u70C8\u3002",
-  DECLINING:
-    "\u8DA8\u52E2\u5DF2\u958B\u59CB\u8870\u9000\uFF0C\u95DC\u6CE8\u5EA6\u4E0B\u964D\u4E2D\u3002\u53EF\u4EE5\u505A\u7E3D\u7D50\u6027\u5167\u5BB9\uFF0C\u4F46\u4E0D\u5EFA\u8B70\u5927\u91CF\u6295\u5165\u8CC7\u6E90\u3002",
+const phaseExplanationKeys: Record<TrendHistory["currentPhase"], string> = {
+  NEW: "detail.phaseExplanationNew",
+  RISING: "detail.phaseExplanationRising",
+  PEAK: "detail.phaseExplanationPeak",
+  DECLINING: "detail.phaseExplanationDeclining",
 };
 
 function getBarColor(score: number): string {
@@ -73,6 +72,7 @@ function daysSince(dateStr: string): number {
 }
 
 export default function TrendDetailPage() {
+  const t = useTranslations("trends");
   const params = useParams<{ fingerprint: string }>();
 
   const { data: trend, isLoading } = useQuery({
@@ -91,11 +91,11 @@ export default function TrendDetailPage() {
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          返回趨勢雷達
+          {t("backToTrends")}
         </Link>
         <Card>
           <CardContent className="flex items-center justify-center py-12">
-            <p className="text-sm text-muted-foreground">載入中...</p>
+            <p className="text-sm text-muted-foreground">{t("loading")}</p>
           </CardContent>
         </Card>
       </div>
@@ -110,11 +110,11 @@ export default function TrendDetailPage() {
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          返回趨勢雷達
+          {t("backToTrends")}
         </Link>
         <Card>
           <CardContent className="py-12 text-center">
-            <p className="text-sm text-muted-foreground">找不到此趨勢資料</p>
+            <p className="text-sm text-muted-foreground">{t("detail.notFound")}</p>
           </CardContent>
         </Card>
       </div>
@@ -132,7 +132,7 @@ export default function TrendDetailPage() {
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        返回趨勢雷達
+        {t("backToTrends")}
       </Link>
 
       {/* Title + Phase */}
@@ -141,17 +141,17 @@ export default function TrendDetailPage() {
           <h1 className="text-2xl font-bold tracking-tight">{trend.title}</h1>
           <div className="flex items-center gap-3">
             <Badge variant="secondary" className={phase.className}>
-              {phase.label}
+              {t(phase.key)}
             </Badge>
             <span className="text-sm text-muted-foreground">
-              已追蹤 {trackedDays} 天
+              {t("detail.trackedDays", { days: trackedDays })}
             </span>
           </div>
         </div>
         <Button asChild>
           <Link href="/strategy">
             <Calendar className="mr-2 h-4 w-4" />
-            排入內容日曆
+            {t("detail.addToCalendar")}
           </Link>
         </Button>
       </div>
@@ -161,7 +161,7 @@ export default function TrendDetailPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <TrendingUp className="h-5 w-5 text-emerald-600" />
-            14 天趨勢走勢
+            {t("detail.historyChart")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -210,24 +210,24 @@ export default function TrendDetailPage() {
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <Flame className="h-5 w-5 text-orange-500" />
-              高峰數據
+              {t("detail.peakData")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">最高分數</span>
+              <span className="text-sm text-muted-foreground">{t("detail.peakScore")}</span>
               <span className="text-lg font-bold">
                 {Math.round(trend.peakScore * 100)}%
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">高峰日期</span>
+              <span className="text-sm text-muted-foreground">{t("detail.peakDate")}</span>
               <span className="text-sm font-medium">
                 {new Date(trend.peakDate).toLocaleDateString("zh-TW")}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">首次發現</span>
+              <span className="text-sm text-muted-foreground">{t("detail.firstSeen")}</span>
               <span className="text-sm font-medium">
                 {new Date(trend.firstSeenAt).toLocaleDateString("zh-TW")}
               </span>
@@ -239,15 +239,15 @@ export default function TrendDetailPage() {
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <Lightbulb className="h-5 w-5 text-amber-500" />
-              階段分析
+              {t("detail.phaseAnalysis")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <Badge variant="secondary" className={`mb-3 ${phase.className}`}>
-              {phase.label}
+              {t(phase.key)}
             </Badge>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              {phaseExplanation[trend.currentPhase]}
+              {t(phaseExplanationKeys[trend.currentPhase])}
             </p>
           </CardContent>
         </Card>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Video, Eye, Users, DollarSign, Lightbulb, TrendingUp, Calendar, MessageSquare, ArrowRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 import { useVideos } from "@/hooks/use-videos";
 import { usePosts } from "@/hooks/use-posts";
@@ -52,9 +53,9 @@ function useWeeklyPlan() {
   });
 }
 
-// ─── Trend Chart ───
+// --- Trend Chart ---
 
-function TrendChart({ data }: { data: { date: string; views: number }[] }) {
+function TrendChart({ data, viewsLabel }: { data: { date: string; views: number }[]; viewsLabel: string }) {
   if (!data || data.length === 0) return null;
 
   return (
@@ -81,7 +82,7 @@ function TrendChart({ data }: { data: { date: string; views: number }[] }) {
           width={40}
         />
         <Tooltip
-          formatter={(value: number) => [formatNumber(value), "觀看"]}
+          formatter={(value: number) => [formatNumber(value), viewsLabel]}
           labelFormatter={(d) => new Date(d).toLocaleDateString("zh-TW")}
         />
         <Area
@@ -96,14 +97,16 @@ function TrendChart({ data }: { data: { date: string; views: number }[] }) {
   );
 }
 
-// ─── Quick Actions ───
+// --- Quick Actions ---
 
 function QuickActions() {
+  const t = useTranslations("overview");
+
   const actions = [
-    { label: "內容策略", href: "/strategy", icon: Lightbulb, color: "text-amber-500" },
-    { label: "變現顧問", href: "/monetize", icon: TrendingUp, color: "text-green-500" },
-    { label: "粉絲互動", href: "/interactions", icon: MessageSquare, color: "text-blue-500" },
-    { label: "排程管理", href: "/schedule", icon: Calendar, color: "text-purple-500" },
+    { label: t("actionStrategy"), href: "/strategy", icon: Lightbulb, color: "text-amber-500" },
+    { label: t("actionMonetize"), href: "/monetize", icon: TrendingUp, color: "text-green-500" },
+    { label: t("actionInteractions"), href: "/interactions", icon: MessageSquare, color: "text-blue-500" },
+    { label: t("actionSchedule"), href: "/schedule", icon: Calendar, color: "text-purple-500" },
   ];
 
   return (
@@ -125,10 +128,11 @@ function QuickActions() {
   );
 }
 
-// ─── Weekly Plan Card ───
+// --- Weekly Plan Card ---
 
 function WeeklyPlanCard() {
   const { data, isLoading } = useWeeklyPlan();
+  const t = useTranslations("overview");
 
   if (isLoading) return <Skeleton className="h-24" />;
 
@@ -142,17 +146,17 @@ function WeeklyPlanCard() {
     <Card className="border-primary/20 bg-primary/5">
       <CardContent className="flex items-center justify-between p-4">
         <div>
-          <p className="font-medium text-sm">本週內容計畫</p>
+          <p className="font-medium text-sm">{t("weeklyPlanTitle")}</p>
           <p className="text-xs text-muted-foreground mt-1">
-            {planned > 0 && `${planned} 個待確認`}
+            {planned > 0 && t("pendingConfirm", { count: planned })}
             {planned > 0 && inProduction > 0 && " · "}
-            {inProduction > 0 && `${inProduction} 個製作中`}
-            {planned === 0 && inProduction === 0 && `${items.length} 個項目`}
+            {inProduction > 0 && t("inProduction", { count: inProduction })}
+            {planned === 0 && inProduction === 0 && t("itemCount", { count: items.length })}
           </p>
         </div>
         <Link href="/strategy?tab=calendar">
           <Button size="sm" variant="outline">
-            查看計畫
+            {t("viewPlan")}
             <ArrowRight className="ml-1 h-3 w-3" />
           </Button>
         </Link>
@@ -161,9 +165,10 @@ function WeeklyPlanCard() {
   );
 }
 
-// ─── Main Page ───
+// --- Main Page ---
 
 export default function DashboardPage() {
+  const t = useTranslations("overview");
   const { data: overview, isLoading: overviewLoading } = useDashboardOverview();
   const { data: videosData, isLoading: videosLoading } = useVideos({ limit: 5 });
   const { data: postsData, isLoading: postsLoading } = usePosts({ limit: 5, status: "SCHEDULED" });
@@ -176,7 +181,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">歡迎回來</h1>
+      <h1 className="text-2xl font-bold">{t("welcomeBack")}</h1>
 
       {/* Weekly Plan */}
       <WeeklyPlanCard />
@@ -187,24 +192,24 @@ export default function DashboardPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
-            label="總粉絲數"
+            label={t("totalFollowers")}
             value={formatNumber(overview?.metrics?.totalFollowers ?? 0)}
             change={overview?.metrics?.followersChangePercent}
             icon={Users}
           />
           <StatCard
-            label="總觀看次數"
+            label={t("totalViews")}
             value={formatNumber(overview?.metrics?.totalViews ?? 0)}
             change={overview?.metrics?.viewsChangePercent}
             icon={Eye}
           />
           <StatCard
-            label="互動率"
+            label={t("engagementRate")}
             value={`${(overview?.metrics?.avgEngagementRate ?? 0).toFixed(1)}%`}
             icon={Video}
           />
           <StatCard
-            label="本月收入"
+            label={t("monthlyRevenue")}
             value={`NT$${(overview?.metrics?.totalRevenue ?? 0).toLocaleString()}`}
             change={overview?.metrics?.revenueChangePercent}
             icon={DollarSign}
@@ -216,17 +221,17 @@ export default function DashboardPage() {
       {trendData.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">觀看趨勢（近 30 天）</CardTitle>
+            <CardTitle className="text-base">{t("viewTrendTitle")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <TrendChart data={trendData} />
+            <TrendChart data={trendData} viewsLabel={t("viewsLabel")} />
           </CardContent>
         </Card>
       )}
 
       {/* Quick Actions */}
       <div>
-        <h2 className="text-sm font-medium text-muted-foreground mb-3">快捷操作</h2>
+        <h2 className="text-sm font-medium text-muted-foreground mb-3">{t("quickActions")}</h2>
         <QuickActions />
       </div>
 
@@ -235,10 +240,10 @@ export default function DashboardPage() {
         {/* Recent videos */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base">最近影片</CardTitle>
+            <CardTitle className="text-base">{t("recentVideos")}</CardTitle>
             <Link href="/videos">
               <Button variant="ghost" size="sm">
-                查看全部
+                {t("viewAll")}
                 <ArrowRight className="ml-1 h-3 w-3" />
               </Button>
             </Link>
@@ -251,7 +256,7 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : !videosData?.data?.length ? (
-              <p className="text-sm text-muted-foreground py-6 text-center">尚無影片，上傳你的第一支影片吧</p>
+              <p className="text-sm text-muted-foreground py-6 text-center">{t("noVideos")}</p>
             ) : (
               <div className="space-y-3">
                 {videosData.data.map((video) => (
@@ -276,10 +281,10 @@ export default function DashboardPage() {
         {/* Upcoming posts */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base">即將發布</CardTitle>
+            <CardTitle className="text-base">{t("upcomingPosts")}</CardTitle>
             <Link href="/schedule">
               <Button variant="ghost" size="sm">
-                查看全部
+                {t("viewAll")}
                 <ArrowRight className="ml-1 h-3 w-3" />
               </Button>
             </Link>
@@ -292,7 +297,7 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : !postsData?.items?.length ? (
-              <p className="text-sm text-muted-foreground py-6 text-center">尚無排程，去排程管理建立吧</p>
+              <p className="text-sm text-muted-foreground py-6 text-center">{t("noPosts")}</p>
             ) : (
               <div className="space-y-3">
                 {postsData.items.map((post) => (
@@ -302,12 +307,12 @@ export default function DashboardPage() {
                   >
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">
-                        {post.contentText?.slice(0, 50) || "無標題"}
+                        {post.contentText?.slice(0, 50) || t("untitled")}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {post.scheduledAt
                           ? new Date(post.scheduledAt).toLocaleString("zh-TW")
-                          : "未排程"}
+                          : t("unscheduled")}
                       </p>
                     </div>
                     <Badge variant="outline">

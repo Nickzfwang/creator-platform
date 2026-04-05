@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import {
   Lightbulb,
   Calendar as CalendarIcon,
@@ -75,12 +76,15 @@ const sourceColors: Record<string, string> = {
   MIXED: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
 };
 
-const sourceLabels: Record<string, string> = {
-  HISTORY: "歷史數據",
-  TREND: "趨勢",
-  COMPETITOR: "競品",
-  MIXED: "綜合",
-};
+function getSourceLabel(t: (key: string) => string, source: string): string {
+  const map: Record<string, string> = {
+    HISTORY: t("source.history"),
+    TREND: t("source.trend"),
+    COMPETITOR: t("source.competitor"),
+    MIXED: t("source.mixed"),
+  };
+  return map[source] || source;
+}
 
 const confidenceColors: Record<string, string> = {
   HIGH: "bg-green-500",
@@ -98,15 +102,18 @@ const statusColors: Record<string, string> = {
   SKIPPED: "bg-gray-100 text-gray-500",
 };
 
-const statusLabels: Record<string, string> = {
-  SUGGESTED: "AI 建議",
-  PLANNED: "已規劃",
-  IN_PRODUCTION: "製作中",
-  PUBLISHED: "已發佈",
-  MEASURED: "已測量",
-  DISMISSED: "已忽略",
-  SKIPPED: "已跳過",
-};
+function getStatusLabel(t: (key: string) => string, status: string): string {
+  const map: Record<string, string> = {
+    SUGGESTED: t("status.suggested"),
+    PLANNED: t("status.planned"),
+    IN_PRODUCTION: t("status.inProduction"),
+    PUBLISHED: t("status.published"),
+    MEASURED: t("status.measured"),
+    DISMISSED: t("status.dismissed"),
+    SKIPPED: t("status.skipped"),
+  };
+  return map[status] || status;
+}
 
 const EMPTY_CALENDAR_ITEMS: CalendarItem[] = [];
 
@@ -128,6 +135,7 @@ function ScoreBar({ score }: { score: number }) {
 // ─── Suggestions Panel ───
 
 function SuggestionsPanel() {
+  const t = useTranslations("strategy");
   const [preference, setPreference] = useState<string>("MIXED");
   const { data, isLoading } = useSuggestions();
   const generateMut = useGenerateSuggestions();
@@ -141,8 +149,8 @@ function SuggestionsPanel() {
     generateMut.mutate(
       { preference, count: 7 },
       {
-        onSuccess: () => toast.success("已生成新的主題建議"),
-        onError: (err) => toast.error(`生成失敗: ${err.message}`),
+        onSuccess: () => toast.success(t("toast.suggestionsGenerated")),
+        onError: (err) => toast.error(t("toast.generateFailed", { error: err.message })),
       },
     );
   };
@@ -152,7 +160,7 @@ function SuggestionsPanel() {
     adoptMut.mutate(
       { id: s.id, dto: { scheduledDate: date, targetPlatforms: s.suggestedPlatforms } },
       {
-        onSuccess: () => toast.success("已排入內容日曆"),
+        onSuccess: () => toast.success(t("toast.adoptedToCalendar")),
         onError: (err) => toast.error(err.message),
       },
     );
@@ -162,14 +170,14 @@ function SuggestionsPanel() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
-          {["MIXED", "HISTORY", "TREND", "COMPETITOR"].map((p) => (
+          {(["MIXED", "HISTORY", "TREND", "COMPETITOR"] as const).map((p) => (
             <Button
               key={p}
               variant={preference === p ? "default" : "outline"}
               size="sm"
               onClick={() => setPreference(p)}
             >
-              {sourceLabels[p] || p}
+              {getSourceLabel(t, p)}
             </Button>
           ))}
         </div>
@@ -179,7 +187,7 @@ function SuggestionsPanel() {
           ) : (
             <Sparkles className="mr-2 h-4 w-4" />
           )}
-          AI 推薦主題
+          {t("suggestions.generateButton")}
         </Button>
       </div>
 
@@ -193,8 +201,8 @@ function SuggestionsPanel() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Lightbulb className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground mb-2">還沒有主題建議</p>
-            <p className="text-sm text-muted-foreground mb-4">點擊「AI 推薦主題」開始生成</p>
+            <p className="text-muted-foreground mb-2">{t("suggestions.empty")}</p>
+            <p className="text-sm text-muted-foreground mb-4">{t("suggestions.emptyHint")}</p>
           </CardContent>
         </Card>
       ) : (
@@ -208,21 +216,21 @@ function SuggestionsPanel() {
                     <p className="text-sm text-muted-foreground">{s.description}</p>
                   </div>
                   <Badge className={sourceColors[s.dataSource]}>
-                    {sourceLabels[s.dataSource]}
+                    {getSourceLabel(t, s.dataSource)}
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1">預估表現</p>
+                    <p className="text-xs text-muted-foreground mb-1">{t("suggestions.performanceScore")}</p>
                     <ScoreBar score={s.performanceScore} />
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground mb-1">信心指標</p>
+                    <p className="text-xs text-muted-foreground mb-1">{t("suggestions.confidenceLevel")}</p>
                     <div className="flex items-center gap-2">
                       <div className={`h-2 w-2 rounded-full ${confidenceColors[s.confidenceLevel]}`} />
-                      <span className="text-xs">{s.confidenceLevel === "HIGH" ? "高" : s.confidenceLevel === "MEDIUM" ? "中" : "低"}</span>
+                      <span className="text-xs">{s.confidenceLevel === "HIGH" ? t("confidence.high") : s.confidenceLevel === "MEDIUM" ? t("confidence.medium") : t("confidence.low")}</span>
                       {s.confidenceReason && (
                         <span className="text-xs text-muted-foreground">- {s.confidenceReason}</span>
                       )}
@@ -243,7 +251,7 @@ function SuggestionsPanel() {
                 <Collapsible>
                   <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
                     <ChevronDown className="h-3 w-3" />
-                    推薦理由
+                    {t("suggestions.reasoning")}
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <p className="mt-2 text-sm text-muted-foreground bg-muted p-3 rounded-md">
@@ -255,24 +263,24 @@ function SuggestionsPanel() {
               <CardFooter className="gap-2">
                 <Button size="sm" onClick={() => handleAdopt(s)} disabled={adoptMut.isPending}>
                   <Check className="mr-1 h-3 w-3" />
-                  排入日曆
+                  {t("suggestions.adopt")}
                 </Button>
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => dismissMut.mutate(s.id, { onSuccess: () => toast.success("已忽略"), onError: (err: Error) => toast.error(err.message) })}
+                  onClick={() => dismissMut.mutate(s.id, { onSuccess: () => toast.success(t("toast.dismissed")), onError: (err: Error) => toast.error(err.message) })}
                 >
                   <ThumbsDown className="mr-1 h-3 w-3" />
-                  忽略
+                  {t("suggestions.dismiss")}
                 </Button>
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => replaceMut.mutate(s.id, { onSuccess: () => toast.success("已換一個"), onError: (err: Error) => toast.error(err.message) })}
+                  onClick={() => replaceMut.mutate(s.id, { onSuccess: () => toast.success(t("toast.replaced")), onError: (err: Error) => toast.error(err.message) })}
                   disabled={replaceMut.isPending}
                 >
                   <RefreshCw className="mr-1 h-3 w-3" />
-                  換一個
+                  {t("suggestions.replace")}
                 </Button>
               </CardFooter>
             </Card>
@@ -286,6 +294,7 @@ function SuggestionsPanel() {
 // ─── Calendar Panel ───
 
 function CalendarPanel() {
+  const t = useTranslations("strategy");
   const [{ startDate, endDate, now }] = useState(() => {
     const n = new Date();
     return {
@@ -325,7 +334,7 @@ function CalendarPanel() {
       { title: newTitle, scheduledDate: newDate },
       {
         onSuccess: () => {
-          toast.success("已新增日曆項目");
+          toast.success(t("toast.calendarItemAdded"));
           setShowAdd(false);
           setNewTitle("");
           setNewDate("");
@@ -338,22 +347,22 @@ function CalendarPanel() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-medium">
-          {now.getFullYear()} 年 {now.getMonth() + 1} 月
+          {t("calendar.monthTitle", { year: now.getFullYear(), month: now.getMonth() + 1 })}
         </h3>
         <Dialog open={showAdd} onOpenChange={setShowAdd}>
           <DialogTrigger asChild>
             <Button size="sm">
               <Plus className="mr-1 h-3 w-3" />
-              手動新增
+              {t("calendar.addManually")}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>新增內容計畫</DialogTitle>
+              <DialogTitle>{t("calendar.addDialogTitle")}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
               <Input
-                placeholder="主題標題"
+                placeholder={t("calendar.titlePlaceholder")}
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
               />
@@ -363,7 +372,7 @@ function CalendarPanel() {
                 onChange={(e) => setNewDate(e.target.value)}
               />
               <Button onClick={handleAdd} disabled={createMut.isPending} className="w-full">
-                新增
+                {t("calendar.addButton")}
               </Button>
             </div>
           </DialogContent>
@@ -380,8 +389,8 @@ function CalendarPanel() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <CalendarIcon className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">本月沒有內容計畫</p>
-            <p className="text-sm text-muted-foreground">從 AI 推薦中採用建議，或手動新增</p>
+            <p className="text-muted-foreground">{t("calendar.empty")}</p>
+            <p className="text-sm text-muted-foreground">{t("calendar.emptyHint")}</p>
           </CardContent>
         </Card>
       ) : (
@@ -389,7 +398,7 @@ function CalendarPanel() {
           {weekGroups.map(([weekStart, weekItems]) => (
             <div key={weekStart}>
               <h4 className="text-sm font-medium text-muted-foreground mb-2">
-                {weekStart} 起的一週
+                {t("calendar.weekOf", { date: weekStart })}
               </h4>
               <div className="space-y-2">
                 {weekItems.map((item) => (
@@ -416,17 +425,17 @@ function CalendarPanel() {
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge className={statusColors[item.status] || ""}>
-                          {statusLabels[item.status] || item.status}
+                          {getStatusLabel(t, item.status)}
                         </Badge>
                         {item.status !== "PUBLISHED" && item.status !== "MEASURED" && (
                           <Button
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            aria-label="刪除"
+                            aria-label={t("common.delete")}
                             onClick={() =>
                               deleteMut.mutate(item.id, {
-                                onSuccess: () => toast.success("已刪除"),
+                                onSuccess: () => toast.success(t("toast.deleted")),
                                 onError: (err: Error) => toast.error(err.message),
                               })
                             }
@@ -463,6 +472,7 @@ function CalendarPanel() {
 // ─── Competitor Panel ───
 
 function CompetitorPanel() {
+  const t = useTranslations("strategy");
   const { data, isLoading } = useCompetitors();
   const analysisQuery = useCompetitorAnalysis();
   const addMut = useAddCompetitor();
@@ -479,7 +489,7 @@ function CompetitorPanel() {
     if (!channelUrl) return;
     addMut.mutate(channelUrl, {
       onSuccess: () => {
-        toast.success("已新增競品頻道");
+        toast.success(t("toast.competitorAdded"));
         setShowAdd(false);
         setChannelUrl("");
       },
@@ -491,28 +501,28 @@ function CompetitorPanel() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          已追蹤 {quota.used}/{quota.max} 個頻道
+          {t("competitors.quota", { used: quota.used, max: quota.max })}
         </p>
         <Dialog open={showAdd} onOpenChange={setShowAdd}>
           <DialogTrigger asChild>
             <Button size="sm" disabled={quota.used >= quota.max}>
               <Plus className="mr-1 h-3 w-3" />
-              追蹤新頻道
+              {t("competitors.addChannel")}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>追蹤競品頻道</DialogTitle>
+              <DialogTitle>{t("competitors.addDialogTitle")}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
               <Input
-                placeholder="YouTube 頻道 URL (例如 https://youtube.com/@channel)"
+                placeholder={t("competitors.channelUrlPlaceholder")}
                 value={channelUrl}
                 onChange={(e) => setChannelUrl(e.target.value)}
               />
               <Button onClick={handleAdd} disabled={addMut.isPending} className="w-full">
                 {addMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                新增追蹤
+                {t("competitors.addButton")}
               </Button>
             </div>
           </DialogContent>
@@ -529,8 +539,8 @@ function CompetitorPanel() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Users className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">尚未追蹤任何競品頻道</p>
-            <p className="text-sm text-muted-foreground">追蹤同領域創作者，AI 會分析他們的內容策略</p>
+            <p className="text-muted-foreground">{t("competitors.empty")}</p>
+            <p className="text-sm text-muted-foreground">{t("competitors.emptyHint")}</p>
           </CardContent>
         </Card>
       ) : (
@@ -550,7 +560,7 @@ function CompetitorPanel() {
                     <div>
                       <p className="font-medium text-sm">{c.channelName}</p>
                       <p className="text-xs text-muted-foreground">
-                        {c.subscriberCount ? `${(c.subscriberCount / 1000).toFixed(1)}K 訂閱` : "訂閱數未知"}
+                        {c.subscriberCount ? t("competitors.subscriberCount", { count: (c.subscriberCount / 1000).toFixed(1) }) : t("competitors.subscriberUnknown")}
                       </p>
                     </div>
                   </div>
@@ -558,11 +568,11 @@ function CompetitorPanel() {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8"
-                    aria-label="取消追蹤"
+                    aria-label={t("competitors.untrack")}
                     onClick={(e) => {
                       e.stopPropagation();
                       removeMut.mutate(c.id, {
-                        onSuccess: () => toast.success("已取消追蹤"),
+                        onSuccess: () => toast.success(t("toast.untracked")),
                         onError: (err: Error) => toast.error(err.message),
                       });
                     }}
@@ -571,9 +581,9 @@ function CompetitorPanel() {
                   </Button>
                 </div>
                 <div className="flex gap-4 mt-3 text-xs text-muted-foreground">
-                  <span>近 30 天: {c.recentVideoCount} 支影片</span>
+                  <span>{t("competitors.recentVideos", { count: c.recentVideoCount })}</span>
                   {c.avgViews !== null && (
-                    <span>平均觀看: {(c.avgViews / 1000).toFixed(1)}K</span>
+                    <span>{t("competitors.avgViews", { count: (c.avgViews / 1000).toFixed(1) })}</span>
                   )}
                 </div>
               </CardContent>
@@ -585,7 +595,7 @@ function CompetitorPanel() {
       {/* Selected competitor videos */}
       {selectedId && videosData?.data && videosData.data.length > 0 && (
         <div className="space-y-2">
-          <h4 className="text-sm font-medium">近期影片</h4>
+          <h4 className="text-sm font-medium">{t("competitors.recentVideosList")}</h4>
           {videosData.data.map((v) => (
             <Card key={v.id} className="p-3">
               <div className="flex items-center justify-between">
@@ -593,7 +603,7 @@ function CompetitorPanel() {
                   <p className="text-sm font-medium">{v.title}</p>
                   <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
                     <span>{new Date(v.publishedAt).toLocaleDateString("zh-TW")}</span>
-                    {v.viewCount !== null && <span>{v.viewCount.toLocaleString()} 觀看</span>}
+                    {v.viewCount !== null && <span>{t("competitors.viewCount", { count: v.viewCount.toLocaleString() })}</span>}
                   </div>
                 </div>
               </div>
@@ -606,7 +616,7 @@ function CompetitorPanel() {
       {competitors.length > 0 && analysisQuery.data && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">AI 競品分析</CardTitle>
+            <CardTitle className="text-sm">{t("competitors.aiAnalysis")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="prose prose-sm dark:prose-invert max-w-none">
@@ -614,7 +624,7 @@ function CompetitorPanel() {
             </div>
             {analysisQuery.data.opportunities.length > 0 && (
               <div className="mt-3">
-                <p className="text-xs font-medium mb-1">差異化機會</p>
+                <p className="text-xs font-medium mb-1">{t("competitors.opportunities")}</p>
                 <div className="flex flex-wrap gap-1">
                   {analysisQuery.data.opportunities.map((o, i) => (
                     <Badge key={i} variant="outline" className="text-xs">
@@ -634,6 +644,7 @@ function CompetitorPanel() {
 // ─── Review Panel ───
 
 function ReviewPanel() {
+  const t = useTranslations("strategy");
   const [period, setPeriod] = useState("month");
   const { data, isLoading } = useStrategyReview(period);
 
@@ -641,8 +652,8 @@ function ReviewPanel() {
     <div className="space-y-4">
       <div className="flex gap-2">
         {[
-          { value: "month", label: "本月" },
-          { value: "quarter", label: "本季" },
+          { value: "month", label: t("review.thisMonth") },
+          { value: "quarter", label: t("review.thisQuarter") },
         ].map((p) => (
           <Button
             key={p.value}
@@ -667,13 +678,13 @@ function ReviewPanel() {
             <Card>
               <CardContent className="pt-6">
                 <p className="text-2xl font-bold">{data.summary.totalSuggested}</p>
-                <p className="text-xs text-muted-foreground">AI 建議總數</p>
+                <p className="text-xs text-muted-foreground">{t("review.totalSuggested")}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-6">
                 <p className="text-2xl font-bold">{data.summary.totalAdopted}</p>
-                <p className="text-xs text-muted-foreground">已採用</p>
+                <p className="text-xs text-muted-foreground">{t("review.totalAdopted")}</p>
               </CardContent>
             </Card>
             <Card>
@@ -681,13 +692,13 @@ function ReviewPanel() {
                 <p className="text-2xl font-bold">
                   {(data.summary.adoptionRate * 100).toFixed(0)}%
                 </p>
-                <p className="text-xs text-muted-foreground">採用率</p>
+                <p className="text-xs text-muted-foreground">{t("review.adoptionRate")}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-6">
                 <p className="text-2xl font-bold">{data.summary.totalPublished}</p>
-                <p className="text-xs text-muted-foreground">已發佈</p>
+                <p className="text-xs text-muted-foreground">{t("review.totalPublished")}</p>
               </CardContent>
             </Card>
           </div>
@@ -695,23 +706,23 @@ function ReviewPanel() {
           {data.topPerformers.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">最佳表現 TOP 3</CardTitle>
+                <CardTitle className="text-sm">{t("review.topPerformers")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {data.topPerformers.map((t, i) => (
-                    <div key={t.calendarItemId} className="flex items-center justify-between">
+                  {data.topPerformers.map((tp, i) => (
+                    <div key={tp.calendarItemId} className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <span className="text-lg font-bold text-muted-foreground">#{i + 1}</span>
                         <div>
-                          <p className="text-sm font-medium">{t.title}</p>
+                          <p className="text-sm font-medium">{tp.title}</p>
                           <p className="text-xs text-muted-foreground">
-                            預估 {t.predictedScore}/10
+                            {t("review.predictedScore", { score: tp.predictedScore })}
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-medium">{t.actualViews.toLocaleString()} 觀看</p>
+                        <p className="text-sm font-medium">{t("review.actualViews", { count: tp.actualViews.toLocaleString() })}</p>
                       </div>
                     </div>
                   ))}
@@ -723,7 +734,7 @@ function ReviewPanel() {
           {data.sourceBreakdown.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">數據來源分析</CardTitle>
+                <CardTitle className="text-sm">{t("review.sourceBreakdown")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
@@ -731,13 +742,13 @@ function ReviewPanel() {
                     <div key={s.source} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Badge className={sourceColors[s.source]}>
-                          {sourceLabels[s.source] || s.source}
+                          {getSourceLabel(t, s.source)}
                         </Badge>
-                        <span className="text-sm">{s.count} 個建議</span>
+                        <span className="text-sm">{t("review.suggestionCount", { count: s.count })}</span>
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        採用率 {(s.adoptionRate * 100).toFixed(0)}%
-                        {s.avgActualViews !== null && ` | 平均 ${(s.avgActualViews / 1000).toFixed(1)}K 觀看`}
+                        {t("review.adoptionRateValue", { rate: (s.adoptionRate * 100).toFixed(0) })}
+                        {s.avgActualViews !== null && ` | ${t("review.avgViews", { count: (s.avgActualViews / 1000).toFixed(1) })}`}
                       </div>
                     </div>
                   ))}
@@ -750,8 +761,8 @@ function ReviewPanel() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <BarChart3 className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">尚無回顧數據</p>
-            <p className="text-sm text-muted-foreground">開始使用 AI 推薦後，這裡會顯示成效分析</p>
+            <p className="text-muted-foreground">{t("review.empty")}</p>
+            <p className="text-sm text-muted-foreground">{t("review.emptyHint")}</p>
           </CardContent>
         </Card>
       )}
@@ -762,12 +773,13 @@ function ReviewPanel() {
 // ─── Main Page ───
 
 export default function StrategyPage() {
+  const t = useTranslations("strategy");
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">AI 內容策略</h1>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
         <p className="text-muted-foreground">
-          數據驅動的影片主題推薦、內容日曆規劃、競品追蹤與策略回顧
+          {t("description")}
         </p>
       </div>
 
@@ -775,19 +787,19 @@ export default function StrategyPage() {
         <TabsList>
           <TabsTrigger value="suggestions" className="gap-2">
             <Lightbulb className="h-4 w-4" />
-            AI 推薦
+            {t("tabs.suggestions")}
           </TabsTrigger>
           <TabsTrigger value="calendar" className="gap-2">
             <CalendarIcon className="h-4 w-4" />
-            內容日曆
+            {t("tabs.calendar")}
           </TabsTrigger>
           <TabsTrigger value="competitors" className="gap-2">
             <Users className="h-4 w-4" />
-            競品追蹤
+            {t("tabs.competitors")}
           </TabsTrigger>
           <TabsTrigger value="review" className="gap-2">
             <BarChart3 className="h-4 w-4" />
-            策略回顧
+            {t("tabs.review")}
           </TabsTrigger>
         </TabsList>
 

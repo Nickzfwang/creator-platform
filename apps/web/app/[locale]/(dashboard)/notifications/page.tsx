@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Bell, Check, CheckCheck, Flame, Target, BarChart3, Megaphone, Loader2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -37,40 +38,41 @@ const typeIcons: Record<Notification["type"], React.ReactNode> = {
   SYSTEM: <Megaphone className="h-5 w-5 text-purple-500" />,
 };
 
-const typeLabels: Record<Notification["type"], string> = {
-  TREND_VIRAL_ALERT: "爆紅警報",
-  TREND_KEYWORD_HIT: "關鍵字命中",
-  TREND_DAILY_SUMMARY: "每日摘要",
-  SYSTEM: "系統通知",
-};
-
-function timeAgo(dateStr: string): string {
-  const now = Date.now();
-  const then = new Date(dateStr).getTime();
-  const diffMs = now - then;
-
-  const seconds = Math.floor(diffMs / 1000);
-  if (seconds < 60) return "剛剛";
-
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes} 分鐘前`;
-
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} 小時前`;
-
-  const days = Math.floor(hours / 24);
-  return `${days} 天前`;
-}
-
 const LIMIT = 20;
 
 export default function NotificationsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const t = useTranslations("notifications");
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [cursor, setCursor] = useState<string | null>(null);
   const [allItems, setAllItems] = useState<Notification[]>([]);
   const [hasMore, setHasMore] = useState(false);
+
+  const typeLabels: Record<Notification["type"], string> = {
+    TREND_VIRAL_ALERT: t("typeViralAlert"),
+    TREND_KEYWORD_HIT: t("typeKeywordHit"),
+    TREND_DAILY_SUMMARY: t("typeDailySummary"),
+    SYSTEM: t("typeSystem"),
+  };
+
+  function timeAgo(dateStr: string): string {
+    const now = Date.now();
+    const then = new Date(dateStr).getTime();
+    const diffMs = now - then;
+
+    const seconds = Math.floor(diffMs / 1000);
+    if (seconds < 60) return t("justNow");
+
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return t("minutesAgo", { count: minutes });
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return t("hoursAgo", { count: hours });
+
+    const days = Math.floor(hours / 24);
+    return t("daysAgo", { count: days });
+  }
 
   const { data: queryData, isLoading, isFetching } = useQuery({
     queryKey: ["notifications", unreadOnly, cursor],
@@ -108,9 +110,9 @@ export default function NotificationsPage() {
     onSuccess: () => {
       setAllItems((prev) => prev.map((n) => ({ ...n, isRead: true, readAt: new Date().toISOString() })));
       queryClient.invalidateQueries({ queryKey: ["notifications-unread-count"] });
-      toast.success("已將所有通知標為已讀");
+      toast.success(t("markAllReadSuccess"));
     },
-    onError: () => toast.error("操作失敗，請稍後再試"),
+    onError: () => toast.error(t("operationFailed")),
   });
 
   const readOneMutation = useMutation({
@@ -153,8 +155,8 @@ export default function NotificationsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="通知中心"
-        description="追蹤趨勢警報、關鍵字命中和系統訊息"
+        title={t("title")}
+        description={t("description")}
         action={
           <Button
             variant="outline"
@@ -162,7 +164,7 @@ export default function NotificationsPage() {
             disabled={readAllMutation.isPending || unreadCount === 0}
           >
             <CheckCheck className="mr-2 h-4 w-4" />
-            全部已讀
+            {t("markAllRead")}
           </Button>
         }
       />
@@ -175,14 +177,14 @@ export default function NotificationsPage() {
           onClick={() => handleFilterChange(false)}
         >
           <Bell className="mr-1 h-3 w-3" />
-          全部
+          {t("filterAll")}
         </Button>
         <Button
           variant={unreadOnly ? "default" : "outline"}
           size="sm"
           onClick={() => handleFilterChange(true)}
         >
-          未讀
+          {t("filterUnread")}
           {unreadCount > 0 && (
             <Badge variant="destructive" className="ml-1.5 px-1.5 py-0 text-xs">
               {unreadCount}
@@ -196,7 +198,7 @@ export default function NotificationsPage() {
         <Card>
           <CardContent className="flex items-center justify-center gap-3 py-12">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">載入通知中...</p>
+            <p className="text-sm text-muted-foreground">{t("loading")}</p>
           </CardContent>
         </Card>
       ) : allItems.length === 0 ? (
@@ -204,7 +206,7 @@ export default function NotificationsPage() {
           <CardContent className="py-12 text-center">
             <Bell className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              {unreadOnly ? "沒有未讀通知" : "尚無通知"}
+              {unreadOnly ? t("noUnread") : t("noNotifications")}
             </p>
           </CardContent>
         </Card>
@@ -268,7 +270,7 @@ export default function NotificationsPage() {
                 {isFetching ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
-                {isFetching ? "載入中..." : "載入更多"}
+                {isFetching ? t("loadingMore") : t("loadMore")}
               </Button>
             </div>
           )}

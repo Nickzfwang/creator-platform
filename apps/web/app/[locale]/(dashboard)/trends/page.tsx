@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { Radar, RefreshCw, Sparkles, ExternalLink, Lightbulb, TrendingUp, Filter, Loader2, Settings } from "lucide-react";
 import { toast } from "sonner";
@@ -48,29 +49,29 @@ const categoryColors: Record<string, string> = {
   "新產品": "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
 };
 
-const platformFilters = [
-  { label: "全部", value: "all" },
-  { label: "YouTube", value: "API_YOUTUBE_TRENDING" },
-  { label: "TikTok", value: "SCRAPER_TIKTOK" },
-  { label: "Threads", value: "SCRAPER_THREADS" },
-  { label: "Dcard", value: "API_DCARD" },
-  { label: "Reddit", value: "RSS_REDDIT" },
-  { label: "Claude Code", value: "RSS_CLAUDE_CODE" },
-  { label: "媒體", value: "rss" },
-];
+const platformFilterKeys = [
+  { key: "platformAll", value: "all" },
+  { key: "platformYouTube", value: "API_YOUTUBE_TRENDING" },
+  { key: "platformTikTok", value: "SCRAPER_TIKTOK" },
+  { key: "platformThreads", value: "SCRAPER_THREADS" },
+  { key: "platformDcard", value: "API_DCARD" },
+  { key: "platformReddit", value: "RSS_REDDIT" },
+  { key: "platformClaudeCode", value: "RSS_CLAUDE_CODE" },
+  { key: "platformMedia", value: "rss" },
+] as const;
 
-const phaseFilters = [
-  { label: "🔥 爆紅", value: "PEAK" },
-  { label: "📈 上升中", value: "RISING" },
-  { label: "🆕 新趨勢", value: "NEW" },
-  { label: "📉 衰退中", value: "DECLINING" },
-];
+const phaseFilterKeys = [
+  { key: "phasePeak", value: "PEAK" },
+  { key: "phaseRising", value: "RISING" },
+  { key: "phaseNew", value: "NEW" },
+  { key: "phaseDeclining", value: "DECLINING" },
+] as const;
 
-const phaseBadgeConfig: Record<TrendTopic["phase"], { label: string; className: string }> = {
-  NEW: { label: "🆕 新趨勢", className: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" },
-  RISING: { label: "📈 上升中", className: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" },
-  PEAK: { label: "🔥 高峰", className: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200" },
-  DECLINING: { label: "📉 衰退中", className: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200" },
+const phaseBadgeConfig: Record<TrendTopic["phase"], { key: string; className: string }> = {
+  NEW: { key: "phaseNew", className: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" },
+  RISING: { key: "phaseRising", className: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" },
+  PEAK: { key: "phasePeakBadge", className: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200" },
+  DECLINING: { key: "phaseDeclining", className: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200" },
 };
 
 function ScoreBar({ score }: { score: number }) {
@@ -106,6 +107,7 @@ function matchesPlatformFilter(sourcePlatform: string, filterValue: string): boo
 }
 
 export default function TrendsPage() {
+  const t = useTranslations("trends");
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [activePlatform, setActivePlatform] = useState<string>("all");
   const [activePhase, setActivePhase] = useState<string>("all");
@@ -121,7 +123,7 @@ export default function TrendsPage() {
   const refreshMutation = useMutation({
     mutationFn: () => api<{ success: boolean; jobId: string }>("/v1/trends/refresh", { method: "POST" }),
     onSuccess: () => {
-      toast.success("趨勢掃描已啟動，約 30 秒後自動更新");
+      toast.success(t("refreshStarted"));
       // Poll for new data after background job completes
       const poll = setInterval(async () => {
         try {
@@ -130,7 +132,7 @@ export default function TrendsPage() {
           if (!report?.generatedAt || fresh.generatedAt > report.generatedAt) {
             queryClient.setQueryData(["trends"], fresh);
             clearInterval(poll);
-            toast.success(`趨勢已更新（${fresh.topics.length} 個話題）`);
+            toast.success(t("refreshComplete", { count: fresh.topics.length }));
           }
         } catch { /* ignore polling errors */ }
       }, 5000);
@@ -138,7 +140,7 @@ export default function TrendsPage() {
       setTimeout(() => clearInterval(poll), 120000);
     },
     onError: (err: Error & { detail?: string }) =>
-      toast.error(err.detail || err.message || "重新整理失敗，請稍後再試"),
+      toast.error(err.detail || err.message || t("refreshError")),
   });
 
   const isRefreshing = refreshMutation.isPending;
@@ -155,14 +157,14 @@ export default function TrendsPage() {
   }) ?? [];
 
   const nextRefreshLabel = report?.nextRefreshAt
-    ? `下次更新：${new Date(report.nextRefreshAt).toLocaleString("zh-TW")}`
+    ? t("nextRefresh", { time: new Date(report.nextRefreshAt).toLocaleString("zh-TW") })
     : null;
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="趨勢雷達"
-        description="AI 自動掃描各大平台，為你整理今日熱門話題和內容靈感"
+        title={t("pageTitle")}
+        description={t("pageDescription")}
         action={
           <div className="flex items-center gap-2">
             {nextRefreshLabel && (
@@ -181,7 +183,7 @@ export default function TrendsPage() {
               disabled={isRefreshing}
             >
               <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-              {isRefreshing ? "掃描中..." : "重新掃描"}
+              {isRefreshing ? t("scanning") : t("rescan")}
             </Button>
           </div>
         }
@@ -197,10 +199,10 @@ export default function TrendsPage() {
             </div>
             <div>
               <p className="text-sm font-medium text-emerald-900 dark:text-emerald-200">
-                AI 趨勢雷達掃描中...
+                {t("scanningOverlay")}
               </p>
               <p className="text-xs text-emerald-700 dark:text-emerald-400">
-                正在從 Dcard、iThome、TechCrunch 等平台抓取最新資料並進行 AI 分析，約需 15-30 秒
+                {t("scanningOverlayDetail")}
               </p>
               <div className="mt-2 flex items-center gap-2">
                 <Loader2 className="h-3 w-3 animate-spin text-emerald-600" />
@@ -222,8 +224,8 @@ export default function TrendsPage() {
               <div className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-emerald-500 animate-ping" />
             </div>
             <div>
-              <p className="text-sm font-medium">AI 正在掃描各大平台的熱門話題...</p>
-              <p className="text-xs text-muted-foreground">首次載入需要 15-30 秒，請稍候</p>
+              <p className="text-sm font-medium">{t("loadingScan")}</p>
+              <p className="text-xs text-muted-foreground">{t("loadingScanDetail")}</p>
             </div>
           </CardContent>
         </Card>
@@ -232,7 +234,7 @@ export default function TrendsPage() {
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <Radar className="h-5 w-5 text-emerald-600" />
-              今日趨勢總覽
+              {t("todaySummary")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -244,14 +246,14 @@ export default function TrendsPage() {
               ))}
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <span>資料來源：</span>
+              <span>{t("dataSources")}</span>
               {report.sources.map((s) => (
                 <Badge key={s} variant="outline" className="text-xs">
                   {s}
                 </Badge>
               ))}
               <span className="ml-auto">
-                更新時間：{new Date(report.generatedAt).toLocaleString("zh-TW")}
+                {t("updatedAt", { time: new Date(report.generatedAt).toLocaleString("zh-TW") })}
               </span>
             </div>
           </CardContent>
@@ -263,14 +265,14 @@ export default function TrendsPage() {
         <div className="space-y-3">
           {/* Platform Filters */}
           <div className="flex flex-wrap gap-2">
-            {platformFilters.map((pf) => (
+            {platformFilterKeys.map((pf) => (
               <Button
                 key={pf.value}
                 variant={activePlatform === pf.value ? "default" : "outline"}
                 size="sm"
                 onClick={() => setActivePlatform(pf.value)}
               >
-                {pf.label}
+                {t(pf.key)}
               </Button>
             ))}
           </div>
@@ -282,16 +284,16 @@ export default function TrendsPage() {
               size="sm"
               onClick={() => setActivePhase("all")}
             >
-              全部階段
+              {t("allPhases")}
             </Button>
-            {phaseFilters.map((pf) => (
+            {phaseFilterKeys.map((pf) => (
               <Button
                 key={pf.value}
                 variant={activePhase === pf.value ? "default" : "outline"}
                 size="sm"
                 onClick={() => setActivePhase(pf.value)}
               >
-                {pf.label}
+                {t(pf.key)}
               </Button>
             ))}
           </div>
@@ -305,7 +307,7 @@ export default function TrendsPage() {
                 onClick={() => setActiveCategory("all")}
               >
                 <Filter className="mr-1 h-3 w-3" />
-                全部 ({report?.topics?.length ?? 0})
+                {t("allCategories", { count: report?.topics?.length ?? 0 })}
               </Button>
               {categories.map((cat) => (
                 <Button
@@ -343,14 +345,14 @@ export default function TrendsPage() {
                           variant="secondary"
                           className={`text-xs ${phaseConfig.className}`}
                         >
-                          {phaseConfig.label}
+                          {t(phaseConfig.key)}
                         </Badge>
                         {topic.isCrossPlatform && (
                           <Badge
                             variant="secondary"
                             className="text-xs bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200"
                           >
-                            🌐 跨平台熱點
+                            {t("crossPlatformHot")}
                           </Badge>
                         )}
                         <span className="text-xs text-muted-foreground">
@@ -381,7 +383,7 @@ export default function TrendsPage() {
                   {/* Relevance Score */}
                   <div className="mt-3">
                     <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="text-muted-foreground">創作者相關度</span>
+                      <span className="text-muted-foreground">{t("creatorRelevance")}</span>
                     </div>
                     <ScoreBar score={topic.relevanceScore} />
                   </div>
@@ -391,7 +393,7 @@ export default function TrendsPage() {
                     <div className="mt-3 rounded-lg bg-amber-50 p-3 dark:bg-amber-950/20">
                       <p className="flex items-center gap-1 text-xs font-medium text-amber-700 dark:text-amber-400 mb-1">
                         <Lightbulb className="h-3 w-3" />
-                        內容靈感
+                        {t("contentIdeas")}
                       </p>
                       <ul className="space-y-1">
                         {topic.contentIdeas.map((idea, j) => (
@@ -407,7 +409,7 @@ export default function TrendsPage() {
                   <div className="mt-3 flex justify-end">
                     <Button variant="ghost" size="sm" asChild>
                       <Link href={`/trends/${topic.fingerprint}`}>
-                        查看詳情
+                        {t("viewDetails")}
                         <ExternalLink className="ml-1 h-3 w-3" />
                       </Link>
                     </Button>
@@ -423,10 +425,10 @@ export default function TrendsPage() {
         <Card className="border-red-200 dark:border-red-900">
           <CardContent className="py-12 text-center">
             <Radar className="mx-auto mb-3 h-10 w-10 text-red-400" />
-            <p className="text-sm text-red-600 dark:text-red-400">載入趨勢資料失敗，請稍後再試</p>
+            <p className="text-sm text-red-600 dark:text-red-400">{t("loadError")}</p>
             <Button variant="outline" className="mt-3" onClick={() => refreshMutation.mutate()}>
               <RefreshCw className="mr-2 h-4 w-4" />
-              重試
+              {t("retry")}
             </Button>
           </CardContent>
         </Card>
@@ -436,10 +438,10 @@ export default function TrendsPage() {
         <Card>
           <CardContent className="py-12 text-center">
             <Radar className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">尚未載入趨勢資料</p>
+            <p className="text-sm text-muted-foreground">{t("noData")}</p>
             <Button variant="outline" className="mt-3" onClick={() => refreshMutation.mutate()}>
               <RefreshCw className="mr-2 h-4 w-4" />
-              開始掃描
+              {t("startScan")}
             </Button>
           </CardContent>
         </Card>

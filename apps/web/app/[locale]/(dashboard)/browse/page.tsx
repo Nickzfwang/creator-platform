@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Globe, Play, Loader2, ExternalLink, Sparkles, Lightbulb, Rss, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useMutation } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { api } from "@/lib/api";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -34,15 +35,10 @@ interface ExploreResult {
   completedAt: string;
 }
 
-const CATEGORIES = [
-  { id: "all", label: "全部", emoji: "🌐" },
-  { id: "tech", label: "科技", emoji: "💻" },
-  { id: "dcard", label: "Dcard", emoji: "💬" },
-  { id: "threads", label: "Threads", emoji: "🧵" },
-  { id: "tiktok", label: "TikTok", emoji: "🎵" },
-  { id: "global", label: "國際", emoji: "🌍" },
-  { id: "lifestyle", label: "生活", emoji: "☕" },
-];
+const CATEGORY_IDS = ["all", "tech", "dcard", "threads", "tiktok", "global", "lifestyle"] as const;
+const CATEGORY_EMOJIS: Record<string, string> = {
+  all: "🌐", tech: "💻", dcard: "💬", threads: "🧵", tiktok: "🎵", global: "🌍", lifestyle: "☕",
+};
 
 const categoryColors: Record<string, string> = {
   "科技": "bg-blue-100 text-blue-800",
@@ -68,6 +64,7 @@ function scoreColor(score: number): string {
 }
 
 export default function ExplorePage() {
+  const t = useTranslations("browse");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [customUrl, setCustomUrl] = useState("");
   const [results, setResults] = useState<ExploreResult | null>(null);
@@ -80,7 +77,7 @@ export default function ExplorePage() {
       }),
     onSuccess: (data) => {
       setResults(data);
-      toast.success(`已探索 ${data.totalPosts} 篇熱門內容`);
+      toast.success(t("exploreSuccess", { count: data.totalPosts }));
     },
     onError: (e) => toast.error(e.message),
   });
@@ -96,8 +93,8 @@ export default function ExplorePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="AI 社群探索"
-        description="安全掃描公開 RSS 來源，AI 自動分析趨勢並提供創作靈感"
+        title={t("pageTitle")}
+        description={t("pageDescription")}
       />
 
       {/* Category Selection */}
@@ -105,16 +102,16 @@ export default function ExplorePage() {
         <CardContent className="pt-5">
           <div className="space-y-4">
             <div>
-              <p className="text-sm font-medium mb-2">選擇探索類別</p>
+              <p className="text-sm font-medium mb-2">{t("selectCategory")}</p>
               <div className="flex flex-wrap gap-2">
-                {CATEGORIES.map((cat) => (
+                {CATEGORY_IDS.map((id) => (
                   <Button
-                    key={cat.id}
-                    variant={selectedCategory === cat.id ? "default" : "outline"}
+                    key={id}
+                    variant={selectedCategory === id ? "default" : "outline"}
                     size="sm"
-                    onClick={() => { setSelectedCategory(cat.id); setCustomUrl(""); }}
+                    onClick={() => { setSelectedCategory(id); setCustomUrl(""); }}
                   >
-                    {cat.emoji} {cat.label}
+                    {CATEGORY_EMOJIS[id]} {t(`categories.${id}`)}
                   </Button>
                 ))}
               </div>
@@ -122,19 +119,19 @@ export default function ExplorePage() {
 
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <div className="flex-1 border-t" />
-              <span>或</span>
+              <span>{t("or")}</span>
               <div className="flex-1 border-t" />
             </div>
 
             <div>
-              <p className="text-sm font-medium mb-2">自訂 RSS 來源</p>
+              <p className="text-sm font-medium mb-2">{t("customRssSource")}</p>
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Rss className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     value={customUrl}
                     onChange={(e) => { setCustomUrl(e.target.value); setSelectedCategory(""); }}
-                    placeholder="貼上 RSS Feed URL（例如 https://example.com/feed/）"
+                    placeholder={t("rssPlaceholder")}
                     className="pl-9"
                   />
                 </div>
@@ -150,12 +147,12 @@ export default function ExplorePage() {
               {exploreMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  AI 正在探索分析中...（約 10-20 秒）
+                  {t("exploring")}
                 </>
               ) : (
                 <>
                   <Search className="mr-2 h-4 w-4" />
-                  開始 AI 探索
+                  {t("startExplore")}
                 </>
               )}
             </Button>
@@ -168,7 +165,7 @@ export default function ExplorePage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">
-              探索結果 — {results.totalPosts} 篇
+              {t("resultsTitle", { count: results.totalPosts })}
             </h3>
             <span className="text-xs text-muted-foreground">
               {new Date(results.completedAt).toLocaleString("zh-TW")}
@@ -217,7 +214,7 @@ export default function ExplorePage() {
                       {/* AI Summary */}
                       <div className="mt-2 rounded-md bg-muted/50 p-2">
                         <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground mb-0.5">
-                          <Sparkles className="h-3 w-3" /> AI 摘要
+                          <Sparkles className="h-3 w-3" /> {t("aiSummary")}
                         </p>
                         <p className="text-xs leading-relaxed">{post.aiSummary}</p>
                       </div>
@@ -227,7 +224,7 @@ export default function ExplorePage() {
                         <div className="mt-2 flex items-start gap-1.5 rounded-md border border-amber-200 bg-amber-50 p-2 dark:border-amber-900 dark:bg-amber-950/20">
                           <Lightbulb className="h-3.5 w-3.5 text-amber-600 mt-0.5 flex-shrink-0" />
                           <p className="text-xs text-amber-800 dark:text-amber-200">
-                            <span className="font-medium">創作靈感：</span>
+                            <span className="font-medium">{t("contentIdea")}</span>
                             {post.contentIdea}
                           </p>
                         </div>
@@ -256,9 +253,9 @@ export default function ExplorePage() {
       {!results && !exploreMutation.isPending && (
         <div className="rounded-lg border border-dashed p-12 text-center">
           <Globe className="mx-auto mb-3 h-12 w-12 text-muted-foreground" />
-          <h3 className="text-lg font-semibold mb-1">選擇類別開始探索</h3>
+          <h3 className="text-lg font-semibold mb-1">{t("emptyTitle")}</h3>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            AI 會自動掃描公開的新聞與部落格 RSS，分析熱門趨勢，並為你提供創作靈感建議
+            {t("emptyDescription")}
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-2 text-xs text-muted-foreground">
             <span>💬 Dcard</span>

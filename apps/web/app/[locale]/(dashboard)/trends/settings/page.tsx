@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -42,18 +43,19 @@ const MAX_KEYWORDS = 20;
 
 const notificationOptions: {
   key: keyof TrendSettings;
-  label: string;
-  group: string;
+  labelKey: string;
+  groupKey: string;
 }[] = [
-  { key: "notifyKeywordHit", label: "關鍵字命中", group: "站內通知" },
-  { key: "notifyViralAlert", label: "爆紅警報", group: "站內通知" },
-  { key: "notifyDailySummary", label: "每日摘要", group: "站內通知" },
-  { key: "emailKeywordHit", label: "關鍵字命中", group: "Email 通知" },
-  { key: "emailViralAlert", label: "爆紅警報", group: "Email 通知" },
-  { key: "emailDailySummary", label: "每日摘要", group: "Email 通知" },
+  { key: "notifyKeywordHit", labelKey: "settings.keywordHit", groupKey: "settings.inAppNotify" },
+  { key: "notifyViralAlert", labelKey: "settings.viralAlert", groupKey: "settings.inAppNotify" },
+  { key: "notifyDailySummary", labelKey: "settings.dailySummary", groupKey: "settings.inAppNotify" },
+  { key: "emailKeywordHit", labelKey: "settings.keywordHit", groupKey: "settings.emailNotify" },
+  { key: "emailViralAlert", labelKey: "settings.viralAlert", groupKey: "settings.emailNotify" },
+  { key: "emailDailySummary", labelKey: "settings.dailySummary", groupKey: "settings.emailNotify" },
 ];
 
 export default function TrendSettingsPage() {
+  const t = useTranslations("trends");
   const [newKeyword, setNewKeyword] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -77,9 +79,9 @@ export default function TrendSettingsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["trends", "keywords"] });
       setNewKeyword("");
-      toast.success("關鍵字已新增");
+      toast.success(t("settings.keywordAdded"));
     },
-    onError: () => toast.error("新增關鍵字失敗"),
+    onError: () => toast.error(t("settings.keywordAddError")),
   });
 
   const deleteKeywordMutation = useMutation({
@@ -88,11 +90,11 @@ export default function TrendSettingsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["trends", "keywords"] });
       setDeletingId(null);
-      toast.success("關鍵字已刪除");
+      toast.success(t("settings.keywordDeleted"));
     },
     onError: () => {
       setDeletingId(null);
-      toast.error("刪除關鍵字失敗");
+      toast.error(t("settings.keywordDeleteError"));
     },
   });
 
@@ -110,16 +112,16 @@ export default function TrendSettingsPage() {
       }),
     onSuccess: (data) => {
       queryClient.setQueryData(["trends", "settings"], data);
-      toast.success("設定已儲存");
+      toast.success(t("settings.settingsSaved"));
     },
-    onError: () => toast.error("更新設定失敗"),
+    onError: () => toast.error(t("settings.settingsUpdateError")),
   });
 
   function handleAddKeyword() {
     const trimmed = newKeyword.trim();
     if (!trimmed) return;
     if (keywords.length >= MAX_KEYWORDS) {
-      toast.error(`最多只能新增 ${MAX_KEYWORDS} 個關鍵字`);
+      toast.error(t("settings.keywordLimitReached", { max: MAX_KEYWORDS }));
       return;
     }
     addKeywordMutation.mutate(trimmed);
@@ -139,8 +141,8 @@ export default function TrendSettingsPage() {
 
   const groupedOptions = notificationOptions.reduce(
     (acc, opt) => {
-      if (!acc[opt.group]) acc[opt.group] = [];
-      acc[opt.group].push(opt);
+      if (!acc[opt.groupKey]) acc[opt.groupKey] = [];
+      acc[opt.groupKey].push(opt);
       return acc;
     },
     {} as Record<string, typeof notificationOptions>,
@@ -153,12 +155,12 @@ export default function TrendSettingsPage() {
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        返回趨勢雷達
+        {t("backToTrends")}
       </Link>
 
       <PageHeader
-        title="趨勢設定"
-        description="管理追蹤關鍵字和通知偏好"
+        title={t("settings.pageTitle")}
+        description={t("settings.pageDescription")}
       />
 
       {/* Keywords Section */}
@@ -166,14 +168,14 @@ export default function TrendSettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Hash className="h-5 w-5 text-blue-600" />
-            追蹤關鍵字
+            {t("settings.trackedKeywords")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Add keyword input */}
           <div className="flex items-center gap-2">
             <Input
-              placeholder="輸入關鍵字..."
+              placeholder={t("settings.keywordPlaceholder")}
               value={newKeyword}
               onChange={(e) => setNewKeyword(e.target.value)}
               onKeyDown={(e) => {
@@ -196,21 +198,21 @@ export default function TrendSettingsPage() {
               ) : (
                 <Plus className="mr-1 h-4 w-4" />
               )}
-              新增
+              {t("settings.add")}
             </Button>
           </div>
 
           {/* Quota */}
           <p className="text-xs text-muted-foreground">
-            {keywords.length} / {MAX_KEYWORDS} 個關鍵字
+            {t("settings.keywordQuota", { used: keywords.length, max: MAX_KEYWORDS })}
           </p>
 
           {/* Keyword tags */}
           {keywordsLoading ? (
-            <p className="text-sm text-muted-foreground">載入中...</p>
+            <p className="text-sm text-muted-foreground">{t("loading")}</p>
           ) : keywords.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              尚未設定追蹤關鍵字，新增關鍵字後系統會自動追蹤相關趨勢。
+              {t("settings.noKeywords")}
             </p>
           ) : (
             <div className="space-y-2">
@@ -222,12 +224,11 @@ export default function TrendSettingsPage() {
                   <div className="flex items-center gap-3">
                     <Badge variant="secondary">{kw.keyword}</Badge>
                     <span className="text-xs text-muted-foreground">
-                      命中 {kw.hitCount} 次
+                      {t("settings.hitCount", { count: kw.hitCount })}
                     </span>
                     {kw.lastHitAt && (
                       <span className="text-xs text-muted-foreground">
-                        最後命中：
-                        {new Date(kw.lastHitAt).toLocaleDateString("zh-TW")}
+                        {t("settings.lastHit", { date: new Date(kw.lastHitAt).toLocaleDateString("zh-TW") })}
                       </span>
                     )}
                   </div>
@@ -240,7 +241,7 @@ export default function TrendSettingsPage() {
                   >
                     <Trash2 className="h-4 w-4" />
                     {deletingId === kw.id && (
-                      <span className="ml-1">確認刪除</span>
+                      <span className="ml-1">{t("settings.confirmDelete")}</span>
                     )}
                   </Button>
                 </div>
@@ -255,16 +256,16 @@ export default function TrendSettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Bell className="h-5 w-5 text-amber-600" />
-            通知偏好
+            {t("settings.notificationPreferences")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {settingsLoading ? (
-            <p className="text-sm text-muted-foreground">載入中...</p>
+            <p className="text-sm text-muted-foreground">{t("loading")}</p>
           ) : (
-            Object.entries(groupedOptions).map(([group, options]) => (
-              <div key={group} className="space-y-3">
-                <h3 className="text-sm font-semibold">{group}</h3>
+            Object.entries(groupedOptions).map(([groupKey, options]) => (
+              <div key={groupKey} className="space-y-3">
+                <h3 className="text-sm font-semibold">{t(groupKey)}</h3>
                 <div className="space-y-3">
                   {options.map((opt) => (
                     <div
@@ -272,7 +273,7 @@ export default function TrendSettingsPage() {
                       className="flex items-center justify-between"
                     >
                       <span className="text-sm text-muted-foreground">
-                        {opt.label}
+                        {t(opt.labelKey)}
                       </span>
                       <Switch
                         checked={settings?.[opt.key] ?? false}

@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import Script from "next/script";
+import { useTranslations } from "next-intl";
 import { useAuthStore } from "@/lib/auth-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,32 +22,33 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-const loginSchema = z.object({
-  email: z.string().email("請輸入有效的電子郵件"),
-  password: z.string().min(1, "請輸入密碼"),
-});
-
-type LoginForm = z.infer<typeof loginSchema>;
-
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
 export default function LoginPage() {
   const router = useRouter();
   const { login, googleLogin, isLoading } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
+  const t = useTranslations("auth");
+
+  const loginSchema = z.object({
+    email: z.string().email(t("emailInvalid")),
+    password: z.string().min(1, t("passwordRequired")),
+  });
+
+  type LoginForm = z.infer<typeof loginSchema>;
 
   const handleGoogleCallback = useCallback(async (response: { credential: string }) => {
     setError(null);
     try {
       await googleLogin(response.credential);
-      toast.success("Google 登入成功");
+      toast.success(t("googleLoginSuccess"));
       router.push("/");
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Google 登入失敗";
+      const message = err instanceof Error ? err.message : t("googleLoginFailed");
       setError(message);
       toast.error(message);
     }
-  }, [googleLogin, router]);
+  }, [googleLogin, router, t]);
 
   useEffect(() => {
     if (GOOGLE_CLIENT_ID && typeof window !== "undefined" && (window as any).google) {
@@ -73,11 +75,11 @@ export default function LoginPage() {
     setError(null);
     try {
       await login(data.email, data.password);
-      toast.success("登入成功");
+      toast.success(t("loginSuccess"));
       router.push("/");
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : "登入失敗，請稍後再試";
+        err instanceof Error ? err.message : t("loginFailed");
       setError(message);
       toast.error(message);
     }
@@ -86,8 +88,8 @@ export default function LoginPage() {
   return (
     <Card className="w-full">
       <CardHeader className="space-y-1 text-center">
-        <CardTitle className="text-2xl font-bold">登入</CardTitle>
-        <CardDescription>登入您的 Creator Platform 帳號</CardDescription>
+        <CardTitle className="text-2xl font-bold">{t("login")}</CardTitle>
+        <CardDescription>{t("loginDescription")}</CardDescription>
       </CardHeader>
 
       <CardContent>
@@ -99,7 +101,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">電子郵件</Label>
+            <Label htmlFor="email">{t("emailLabel")}</Label>
             <Input
               id="email"
               type="email"
@@ -114,7 +116,7 @@ export default function LoginPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">密碼</Label>
+            <Label htmlFor="password">{t("password")}</Label>
             <Input
               id="password"
               type="password"
@@ -129,7 +131,7 @@ export default function LoginPage() {
           </div>
 
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "登入中..." : "登入"}
+            {isLoading ? t("loggingIn") : t("login")}
           </Button>
         </form>
 
@@ -140,7 +142,7 @@ export default function LoginPage() {
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">或</span>
+                <span className="bg-card px-2 text-muted-foreground">{t("or")}</span>
               </div>
             </div>
             <div id="google-signin-btn" className="flex justify-center" />
@@ -166,12 +168,12 @@ export default function LoginPage() {
 
       <CardFooter className="justify-center">
         <p className="text-sm text-muted-foreground">
-          還沒有帳號？{" "}
+          {t("noAccount")}{" "}
           <Link
             href="/register"
             className="font-medium text-primary hover:underline"
           >
-            註冊
+            {t("register")}
           </Link>
         </p>
       </CardFooter>

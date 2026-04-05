@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ExternalLink, Mail, Youtube, Instagram, Facebook, Twitter, ChevronDown, Play, Star, Quote } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
@@ -31,7 +32,7 @@ const platformIcons: Record<string, React.ReactNode> = {
   email: <Mail className="h-5 w-5" />,
 };
 
-// ─── Block Template Components ───
+// --- Block Template Components ---
 
 function FaqBlock({ section, primaryColor }: { section: any; primaryColor: string }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
@@ -64,7 +65,7 @@ function FaqBlock({ section, primaryColor }: { section: any; primaryColor: strin
   );
 }
 
-function PricingBlock({ section, primaryColor }: { section: any; primaryColor: string }) {
+function PricingBlock({ section, primaryColor, recommendedLabel, defaultButtonLabel }: { section: any; primaryColor: string; recommendedLabel: string; defaultButtonLabel: string }) {
   const items = section.items ?? [];
   return (
     <div className="rounded-xl border p-6" style={{ borderColor: `${primaryColor}30` }}>
@@ -75,7 +76,7 @@ function PricingBlock({ section, primaryColor }: { section: any; primaryColor: s
           <div key={j} className="rounded-lg border p-5 text-center relative" style={{ borderColor: item.recommended ? primaryColor : `${primaryColor}30` }}>
             {item.recommended && (
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-0.5 text-xs font-bold text-white" style={{ backgroundColor: primaryColor }}>
-                推薦
+                {recommendedLabel}
               </div>
             )}
             <h3 className="text-lg font-bold">{item.name ?? item.title}</h3>
@@ -100,7 +101,7 @@ function PricingBlock({ section, primaryColor }: { section: any; primaryColor: s
               <a href={item.url} target="_blank" rel="noopener noreferrer"
                 className="mt-4 block rounded-lg py-2 px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90"
                 style={{ backgroundColor: primaryColor }}>
-                {item.buttonLabel ?? "選擇方案"}
+                {item.buttonLabel ?? defaultButtonLabel}
               </a>
             )}
           </div>
@@ -110,7 +111,7 @@ function PricingBlock({ section, primaryColor }: { section: any; primaryColor: s
   );
 }
 
-function VideoBlock({ section, primaryColor }: { section: any; primaryColor: string }) {
+function VideoBlock({ section, primaryColor, watchVideoLabel }: { section: any; primaryColor: string; watchVideoLabel: string }) {
   const items = section.items ?? [];
   const singleUrl = section.content ?? items[0]?.url;
 
@@ -146,7 +147,7 @@ function VideoBlock({ section, primaryColor }: { section: any; primaryColor: str
               style={{ borderColor: `${primaryColor}20` }}>
               <Play className="h-8 w-8 shrink-0" style={{ color: primaryColor }} />
               <div>
-                <div className="font-medium">{v.title ?? "觀看影片"}</div>
+                <div className="font-medium">{v.title ?? watchVideoLabel}</div>
                 {v.description && <div className="text-sm opacity-60">{v.description}</div>}
               </div>
             </a>
@@ -188,7 +189,7 @@ function TestimonialsBlock({ section, primaryColor }: { section: any; primaryCol
   );
 }
 
-function SocialGridBlock({ section, primaryColor }: { section: any; primaryColor: string }) {
+function SocialGridBlock({ section, primaryColor, followersLabel }: { section: any; primaryColor: string; followersLabel: string }) {
   const items = section.items ?? [];
   return (
     <div className="rounded-xl border p-6" style={{ borderColor: `${primaryColor}30` }}>
@@ -203,7 +204,7 @@ function SocialGridBlock({ section, primaryColor }: { section: any; primaryColor
               {platformIcons[(item.platform ?? "").toLowerCase()] ?? <ExternalLink className="h-5 w-5" />}
             </div>
             <span className="text-sm font-medium">{item.label ?? item.platform ?? item.title}</span>
-            {item.followers && <span className="text-xs opacity-50">{item.followers} 粉絲</span>}
+            {item.followers && <span className="text-xs opacity-50">{item.followers} {followersLabel}</span>}
           </a>
         ))}
       </div>
@@ -234,13 +235,13 @@ function DefaultBlock({ section, primaryColor }: { section: any; primaryColor: s
   );
 }
 
-function SectionRenderer({ section, primaryColor }: { section: any; primaryColor: string }) {
+function SectionRenderer({ section, primaryColor, recommendedLabel, defaultButtonLabel, watchVideoLabel, followersLabel }: { section: any; primaryColor: string; recommendedLabel: string; defaultButtonLabel: string; watchVideoLabel: string; followersLabel: string }) {
   switch (section.type) {
     case "faq": return <FaqBlock section={section} primaryColor={primaryColor} />;
-    case "pricing": return <PricingBlock section={section} primaryColor={primaryColor} />;
-    case "video": return <VideoBlock section={section} primaryColor={primaryColor} />;
+    case "pricing": return <PricingBlock section={section} primaryColor={primaryColor} recommendedLabel={recommendedLabel} defaultButtonLabel={defaultButtonLabel} />;
+    case "video": return <VideoBlock section={section} primaryColor={primaryColor} watchVideoLabel={watchVideoLabel} />;
     case "testimonials": return <TestimonialsBlock section={section} primaryColor={primaryColor} />;
-    case "social-grid": return <SocialGridBlock section={section} primaryColor={primaryColor} />;
+    case "social-grid": return <SocialGridBlock section={section} primaryColor={primaryColor} followersLabel={followersLabel} />;
     default: return <DefaultBlock section={section} primaryColor={primaryColor} />;
   }
 }
@@ -248,6 +249,7 @@ function SectionRenderer({ section, primaryColor }: { section: any; primaryColor
 export default function PublicLandingPage() {
   const params = useParams();
   const slug = params?.slug as string;
+  const t = useTranslations("publicLanding");
   const [page, setPage] = useState<LandingPageData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -275,8 +277,8 @@ export default function PublicLandingPage() {
   if (error || !page) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50">
-        <h1 className="text-2xl font-bold text-gray-900">找不到此頁面</h1>
-        <p className="mt-2 text-gray-500">此 Landing Page 不存在或尚未發布</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t("notFoundTitle")}</h1>
+        <p className="mt-2 text-gray-500">{t("notFoundDescription")}</p>
       </div>
     );
   }
@@ -370,11 +372,19 @@ export default function PublicLandingPage() {
           </div>
         )}
 
-        {/* Sections — rendered by type-specific block templates */}
+        {/* Sections -- rendered by type-specific block templates */}
         {sections.length > 0 && (
           <div className="mt-10 space-y-8 pb-16">
             {sections.map((section, i) => (
-              <SectionRenderer key={i} section={section} primaryColor={primaryColor} />
+              <SectionRenderer
+                key={i}
+                section={section}
+                primaryColor={primaryColor}
+                recommendedLabel={t("recommended")}
+                defaultButtonLabel={t("selectPlan")}
+                watchVideoLabel={t("watchVideo")}
+                followersLabel={t("followers")}
+              />
             ))}
           </div>
         )}

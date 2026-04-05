@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { useAuthStore } from "@/lib/auth-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,28 +21,29 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-const registerSchema = z.object({
-  displayName: z
-    .string()
-    .min(2, "名稱至少 2 個字元")
-    .max(50, "名稱最多 50 個字元"),
-  email: z.string().email("請輸入有效的電子郵件"),
-  password: z
-    .string()
-    .min(8, "密碼至少 8 個字元")
-    .max(72, "密碼最多 72 個字元")
-    .regex(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-      "密碼需包含大寫字母、小寫字母和數字",
-    ),
-});
-
-type RegisterForm = z.infer<typeof registerSchema>;
-
 export default function RegisterPage() {
   const router = useRouter();
   const { register: registerUser, isLoading } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
+  const t = useTranslations("auth");
+
+  const registerSchema = z.object({
+    displayName: z
+      .string()
+      .min(2, t("displayNameMin", { min: 2 }))
+      .max(50, t("displayNameMax", { max: 50 })),
+    email: z.string().email(t("emailInvalid")),
+    password: z
+      .string()
+      .min(8, t("passwordMin", { min: 8 }))
+      .max(72, t("passwordMax", { max: 72 }))
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+        t("passwordRequirements"),
+      ),
+  });
+
+  type RegisterForm = z.infer<typeof registerSchema>;
 
   const {
     register,
@@ -55,11 +57,11 @@ export default function RegisterPage() {
     setError(null);
     try {
       await registerUser(data.email, data.password, data.displayName);
-      toast.success("帳號建立成功");
+      toast.success(t("registerSuccess"));
       router.push("/");
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : "註冊失敗，請稍後再試";
+        err instanceof Error ? err.message : t("registerFailed");
       setError(message);
       toast.error(message);
     }
@@ -68,8 +70,8 @@ export default function RegisterPage() {
   return (
     <Card className="w-full">
       <CardHeader className="space-y-1 text-center">
-        <CardTitle className="text-2xl font-bold">建立帳號</CardTitle>
-        <CardDescription>開始使用 Creator Platform</CardDescription>
+        <CardTitle className="text-2xl font-bold">{t("createAccount")}</CardTitle>
+        <CardDescription>{t("createAccountDescription")}</CardDescription>
       </CardHeader>
 
       <CardContent>
@@ -81,11 +83,11 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="displayName">顯示名稱</Label>
+            <Label htmlFor="displayName">{t("displayName")}</Label>
             <Input
               id="displayName"
               type="text"
-              placeholder="你的名稱"
+              placeholder={t("displayNamePlaceholder")}
               {...register("displayName")}
             />
             {errors.displayName && (
@@ -96,7 +98,7 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">電子郵件</Label>
+            <Label htmlFor="email">{t("emailLabel")}</Label>
             <Input
               id="email"
               type="email"
@@ -111,11 +113,11 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">密碼</Label>
+            <Label htmlFor="password">{t("password")}</Label>
             <Input
               id="password"
               type="password"
-              placeholder="至少 8 個字元，含大小寫和數字"
+              placeholder={t("passwordPlaceholder")}
               {...register("password")}
             />
             {errors.password && (
@@ -126,19 +128,19 @@ export default function RegisterPage() {
           </div>
 
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "建立中..." : "建立帳號"}
+            {isLoading ? t("creating") : t("createAccount")}
           </Button>
         </form>
       </CardContent>
 
       <CardFooter className="justify-center">
         <p className="text-sm text-muted-foreground">
-          已有帳號？{" "}
+          {t("hasAccount")}{" "}
           <Link
             href="/login"
             className="font-medium text-primary hover:underline"
           >
-            登入
+            {t("login")}
           </Link>
         </p>
       </CardFooter>
