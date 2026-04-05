@@ -76,6 +76,15 @@ export class ApiGatewayController {
     return this.apiGatewayService.getAvailableEvents();
   }
 
+  @Post('webhooks/:webhookId/test')
+  @ApiOperation({ summary: 'Send a test payload to a webhook endpoint' })
+  async testWebhook(
+    @CurrentUser('tenantId') tenantId: string,
+    @Param('webhookId') webhookId: string,
+  ) {
+    return this.apiGatewayService.testWebhook(tenantId, webhookId);
+  }
+
   @Delete('webhooks/:webhookId')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Disable a webhook' })

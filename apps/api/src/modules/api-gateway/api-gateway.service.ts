@@ -276,6 +276,67 @@ export class ApiGatewayService {
     return AVAILABLE_EVENTS;
   }
 
+  /**
+   * Send a test payload to a webhook endpoint to verify connectivity.
+   * Signs the payload with the webhook's secret using HMAC-SHA256.
+   */
+  async testWebhook(tenantId: string, webhookId: string) {
+    const tenant = await this.getTenant(tenantId);
+    const settings = (tenant.settings as unknown as TenantSettings) ?? {};
+    const webhooks = settings.webhooks ?? [];
+
+    const webhook = webhooks.find((w) => w.id === webhookId);
+    if (!webhook) throw new NotFoundException('Webhook not found');
+
+    const testPayload = {
+      event: 'webhook.test',
+      timestamp: new Date().toISOString(),
+      data: {
+        message: 'This is a test webhook delivery from Creator Platform.',
+        webhookId: webhook.id,
+      },
+    };
+
+    const body = JSON.stringify(testPayload);
+    const signature = createHash('sha256')
+      .update(`${webhook.secret}.${body}`)
+      .digest('hex');
+
+    try {
+      const response = await fetch(webhook.url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Webhook-Signature': `sha256=${signature}`,
+          'X-Webhook-Id': webhook.id,
+          'X-Webhook-Event': 'webhook.test',
+        },
+        body,
+        signal: AbortSignal.timeout(10000),
+      });
+
+      this.logger.log(`Webhook test sent to ${webhook.url}: ${response.status}`);
+
+      return {
+        success: response.ok,
+        statusCode: response.status,
+        url: webhook.url,
+        sentAt: testPayload.timestamp,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.warn(`Webhook test failed for ${webhook.url}: ${message}`);
+
+      return {
+        success: false,
+        statusCode: null,
+        url: webhook.url,
+        error: message,
+        sentAt: testPayload.timestamp,
+      };
+    }
+  }
+
   // ─── Rate Limits ───
 
   async getRateLimits(tenantId: string) {
