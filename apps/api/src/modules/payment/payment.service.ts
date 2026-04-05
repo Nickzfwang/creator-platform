@@ -17,6 +17,7 @@ interface UsageJson {
   postsUsed?: number;
   botMessagesUsed?: number;
   brandDealsUsed?: number;
+  aiCallsUsed?: number;
 }
 
 @Injectable()
@@ -255,7 +256,7 @@ export class PaymentService {
 
   async recordUsage(
     tenantId: string,
-    type: 'video' | 'post' | 'bot_message' | 'brand_deal',
+    type: 'video' | 'post' | 'bot_message' | 'brand_deal' | 'ai_call',
   ) {
     const subscription = await this.prisma.subscription.findFirst({
       where: { tenantId },
@@ -268,6 +269,7 @@ export class PaymentService {
       post: 'postsUsed',
       bot_message: 'botMessagesUsed',
       brand_deal: 'brandDealsUsed',
+      ai_call: 'aiCallsUsed',
     };
 
     const field = fieldMap[type];
@@ -285,7 +287,7 @@ export class PaymentService {
 
   async checkUsageLimit(
     tenantId: string,
-    type: 'video' | 'post' | 'bot_message' | 'brand_deal',
+    type: 'video' | 'post' | 'bot_message' | 'brand_deal' | 'ai_call',
   ): Promise<boolean> {
     const subscription = await this.prisma.subscription.findFirst({
       where: { tenantId },
@@ -300,12 +302,14 @@ export class PaymentService {
       post: 'postsPerMonth',
       bot_message: 'botMessagesPerMonth',
       brand_deal: 'brandDealsPerMonth',
+      ai_call: 'aiCallsPerMonth',
     };
     const usageMap: Record<string, keyof UsageJson> = {
       video: 'videosUsed',
       post: 'postsUsed',
       bot_message: 'botMessagesUsed',
       brand_deal: 'brandDealsUsed',
+      ai_call: 'aiCallsUsed',
     };
 
     const limit = limits[limitMap[type]];

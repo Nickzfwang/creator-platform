@@ -1,12 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
+import { PrismaService } from '../../prisma/prisma.service';
+import { PLAN_LIMITS, PlanLimits } from '../payment/constants/plan-limits';
+
+interface AiUsageContext {
+  tenantId: string;
+}
 
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
   private openai: OpenAI | null = null;
 
-  constructor() {
+  constructor(private readonly prisma: PrismaService) {
     const apiKey = process.env.OPENAI_API_KEY;
     if (apiKey) {
       this.openai = new OpenAI({ apiKey });
@@ -21,12 +27,54 @@ export class AiService {
   }
 
   /**
+   * Check if tenant has remaining AI quota. Returns true if allowed.
+   */
+  async checkAiQuota(tenantId: string): Promise<{ allowed: boolean; used: number; limit: number }> {
+    const subscription = await this.prisma.subscription.findFirst({
+      where: { tenantId },
+    });
+
+    if (!subscription) return { allowed: true, used: 0, limit: 50 }; // default FREE limits
+
+    const limits = (subscription.limits as unknown as PlanLimits) ?? PLAN_LIMITS[subscription.plan];
+    const usage = (subscription.usage as Record<string, number>) ?? {};
+    const used = usage.aiCallsUsed ?? 0;
+    const limit = limits.aiCallsPerMonth;
+
+    if (limit === -1) return { allowed: true, used, limit: -1 };
+    return { allowed: used < limit, used, limit };
+  }
+
+  /**
+   * Record an AI call usage (fire-and-forget)
+   */
+  private async recordAiUsage(tenantId?: string): Promise<void> {
+    if (!tenantId) return;
+    try {
+      const subscription = await this.prisma.subscription.findFirst({
+        where: { tenantId },
+      });
+      if (!subscription) return;
+
+      const usage = (subscription.usage as Record<string, number>) ?? {};
+      const updated = { ...usage, aiCallsUsed: (usage.aiCallsUsed ?? 0) + 1 };
+
+      await this.prisma.subscription.update({
+        where: { id: subscription.id },
+        data: { usage: updated as any },
+      });
+    } catch (err) {
+      this.logger.warn(`Failed to record AI usage: ${err}`);
+    }
+  }
+
+  /**
    * General-purpose chat completion
    */
   async chat(
     systemPrompt: string,
     userMessage: string,
-    options?: { model?: string; maxTokens?: number; temperature?: number },
+    options?: { model?: string; maxTokens?: number; temperature?: number; context?: AiUsageContext },
   ): Promise<string> {
     if (!this.openai) {
       return this.fallbackReply(userMessage);
@@ -43,6 +91,7 @@ export class AiService {
         ],
       });
 
+      this.recordAiUsage(options?.context?.tenantId);
       return response.choices[0]?.message?.content?.trim() ?? '';
     } catch (error) {
       this.logger.error(`OpenAI chat error: ${error}`);
@@ -56,7 +105,7 @@ export class AiService {
   async chatWithHistory(
     systemPrompt: string,
     messages: Array<{ role: 'user' | 'assistant'; content: string }>,
-    options?: { model?: string; maxTokens?: number; temperature?: number },
+    options?: { model?: string; maxTokens?: number; temperature?: number; context?: AiUsageContext },
   ): Promise<string> {
     if (!this.openai) {
       const lastMsg = messages[messages.length - 1]?.content ?? '';
@@ -74,6 +123,7 @@ export class AiService {
         ],
       });
 
+      this.recordAiUsage(options?.context?.tenantId);
       return response.choices[0]?.message?.content?.trim() ?? '';
     } catch (error) {
       this.logger.error(`OpenAI chat error: ${error}`);
@@ -88,7 +138,7 @@ export class AiService {
   async generateJson<T>(
     systemPrompt: string,
     userMessage: string,
-    options?: { model?: string; maxTokens?: number },
+    options?: { model?: string; maxTokens?: number; context?: AiUsageContext },
   ): Promise<T | null> {
     if (!this.openai) return null;
 
@@ -104,6 +154,7 @@ export class AiService {
         ],
       });
 
+      this.recordAiUsage(options?.context?.tenantId);
       const content = response.choices[0]?.message?.content?.trim();
       return content ? JSON.parse(content) : null;
     } catch (error) {

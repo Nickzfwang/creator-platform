@@ -13,7 +13,7 @@ describe('AiService', () => {
 
     beforeEach(() => {
       delete process.env.OPENAI_API_KEY;
-      service = new AiService();
+      service = new AiService(null as any);
     });
 
     it('isAvailable should return false', () => {
@@ -70,7 +70,7 @@ describe('AiService', () => {
 
     beforeEach(() => {
       process.env.OPENAI_API_KEY = 'sk-test-key-for-unit-testing';
-      service = new AiService();
+      service = new AiService(null as any);
     });
 
     it('isAvailable should return true', () => {
@@ -86,7 +86,7 @@ describe('AiService', () => {
 
     beforeEach(() => {
       delete process.env.OPENAI_API_KEY;
-      service = new AiService();
+      service = new AiService(null as any);
     });
 
     it('chat fallback should truncate long messages', async () => {

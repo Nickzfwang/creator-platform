@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Post,
   Body,
   UseGuards,
@@ -127,13 +128,31 @@ ${creatorContext}
       { role: 'user' as const, content: dto.message },
     ];
 
+    // Check AI quota
+    const quota = await this.aiService.checkAiQuota(tenantId);
+    if (!quota.allowed) {
+      return {
+        reply: `⚠️ 您本月的 AI 呼叫次數已達上限（${quota.used}/${quota.limit}）。請升級方案以繼續使用 AI 功能。`,
+        quotaExceeded: true,
+        usage: { used: quota.used, limit: quota.limit },
+      };
+    }
+
     const reply = await this.aiService.chatWithHistory(
       systemPrompt,
       messages,
-      { model: 'gpt-4o', maxTokens: 512, temperature: 0.7 },
+      { model: 'gpt-4o', maxTokens: 512, temperature: 0.7, context: { tenantId } },
     );
 
     return { reply };
+  }
+
+  @Get('usage')
+  @ApiOperation({ summary: 'Get current AI usage and quota' })
+  async getUsage(
+    @CurrentUser('tenantId') tenantId: string,
+  ) {
+    return this.aiService.checkAiQuota(tenantId);
   }
 
   @Post('generate-script')
@@ -141,6 +160,7 @@ ${creatorContext}
   @ApiOperation({ summary: 'AI generate video script/outline' })
   async generateScript(
     @CurrentUser('id') userId: string,
+    @CurrentUser('tenantId') tenantId: string,
     @Body() dto: GenerateScriptDto,
   ) {
     const systemPrompt = `你是一位頂尖的 YouTube 影片腳本撰寫師，曾協助多位百萬訂閱創作者製作爆款內容。你深諳 YouTube 演算法和觀眾心理學。
@@ -182,10 +202,22 @@ ${creatorContext}
       dto.additionalNotes ? `補充說明：${dto.additionalNotes}` : '',
     ].filter(Boolean).join('\n');
 
+    // Check AI quota
+    const quota = await this.aiService.checkAiQuota(tenantId);
+    if (!quota.allowed) {
+      return {
+        script: `⚠️ 您本月的 AI 呼叫次數已達上限（${quota.used}/${quota.limit}）。請升級方案以繼續使用 AI 功能。`,
+        topic: dto.topic,
+        generatedAt: new Date().toISOString(),
+        quotaExceeded: true,
+        usage: { used: quota.used, limit: quota.limit },
+      };
+    }
+
     const script = await this.aiService.chat(
       systemPrompt,
       userMsg,
-      { model: 'gpt-4o', maxTokens: 2048, temperature: 0.8 },
+      { model: 'gpt-4o', maxTokens: 2048, temperature: 0.8, context: { tenantId } },
     );
 
     return { script, topic: dto.topic, generatedAt: new Date().toISOString() };

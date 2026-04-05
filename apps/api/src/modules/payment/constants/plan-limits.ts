@@ -5,6 +5,7 @@ export interface PlanLimits {
   postsPerMonth: number;
   botMessagesPerMonth: number;
   brandDealsPerMonth: number;
+  aiCallsPerMonth: number;
 }
 
 // -1 = unlimited
@@ -14,24 +15,28 @@ export const PLAN_LIMITS: Record<SubscriptionPlan, PlanLimits> = {
     postsPerMonth: 30,
     botMessagesPerMonth: 100,
     brandDealsPerMonth: 1,
+    aiCallsPerMonth: 50,
   },
   STARTER: {
     videosPerMonth: 15,
     postsPerMonth: 150,
     botMessagesPerMonth: 1000,
     brandDealsPerMonth: 5,
+    aiCallsPerMonth: 300,
   },
   PRO: {
     videosPerMonth: 50,
     postsPerMonth: 500,
     botMessagesPerMonth: 5000,
     brandDealsPerMonth: 20,
+    aiCallsPerMonth: 1000,
   },
   BUSINESS: {
     videosPerMonth: -1,
     postsPerMonth: -1,
     botMessagesPerMonth: -1,
     brandDealsPerMonth: -1,
+    aiCallsPerMonth: -1,
   },
 };
 
@@ -55,7 +60,7 @@ export const PLAN_INFO: PlanInfo[] = [
     currency: 'usd',
     interval: 'month',
     limits: PLAN_LIMITS.FREE,
-    features: ['3 videos/month', '30 posts/month', 'Basic AI clipping', 'Community support'],
+    features: ['3 videos/month', '30 posts/month', '50 AI calls/month', 'Basic AI clipping', 'Community support'],
     stripePriceId: null,
     recommended: false,
   },
@@ -66,7 +71,7 @@ export const PLAN_INFO: PlanInfo[] = [
     currency: 'usd',
     interval: 'month',
     limits: PLAN_LIMITS.STARTER,
-    features: ['15 videos/month', '150 posts/month', '1,000 bot messages', '5 brand deals', 'Priority support'],
+    features: ['15 videos/month', '150 posts/month', '300 AI calls/month', '1,000 bot messages', '5 brand deals', 'Priority support'],
     stripePriceId: null, // Set via env: STRIPE_PRICE_STARTER
     recommended: false,
   },
@@ -77,7 +82,7 @@ export const PLAN_INFO: PlanInfo[] = [
     currency: 'usd',
     interval: 'month',
     limits: PLAN_LIMITS.PRO,
-    features: ['50 videos/month', '500 posts/month', '5,000 bot messages', '20 brand deals', 'Advanced analytics', 'Priority support'],
+    features: ['50 videos/month', '500 posts/month', '1,000 AI calls/month', '5,000 bot messages', '20 brand deals', 'Advanced analytics', 'Priority support'],
     stripePriceId: null, // Set via env: STRIPE_PRICE_PRO
     recommended: true,
   },
@@ -88,7 +93,7 @@ export const PLAN_INFO: PlanInfo[] = [
     currency: 'usd',
     interval: 'month',
     limits: PLAN_LIMITS.BUSINESS,
-    features: ['Unlimited videos', 'Unlimited posts', 'Unlimited bot messages', 'Unlimited brand deals', 'White-label options', 'Dedicated support'],
+    features: ['Unlimited videos', 'Unlimited posts', 'Unlimited AI calls', 'Unlimited bot messages', 'Unlimited brand deals', 'White-label options', 'Dedicated support'],
     stripePriceId: null, // Set via env: STRIPE_PRICE_BUSINESS
     recommended: false,
   },
