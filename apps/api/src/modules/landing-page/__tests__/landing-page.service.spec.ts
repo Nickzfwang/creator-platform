@@ -97,7 +97,7 @@ describe('LandingPageService', () => {
     it('should return most recent page', async () => {
       prisma.landingPage.findFirst.mockResolvedValue(makePage());
       const result = await service.getByUser('user-1');
-      expect(result.id).toBe('page-1');
+      expect(result!.id).toBe('page-1');
     });
 
     it('should return null if no page exists', async () => {

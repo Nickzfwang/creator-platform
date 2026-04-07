@@ -37,8 +37,9 @@ export class DashboardService {
     period: '7d' | '30d' | '90d' = '30d',
   ) {
     const cacheKey = `dashboard:overview:${userId}:${period}`;
-    const cached = await this.redis.get<Record<string, unknown>>(cacheKey);
-    if (cached) return cached;
+    const cached = await this.redis.get(cacheKey);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (cached) return cached as any;
     const days = period === '7d' ? 7 : period === '90d' ? 90 : 30;
     const now = new Date();
     const startDate = new Date(now);

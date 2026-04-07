@@ -148,6 +148,7 @@ export default function DashboardLayout({
   const { mutate: logout } = useLogout();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const t = useTranslations("nav");
 
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -157,7 +158,6 @@ export default function DashboardLayout({
     return null; // useRequireAuth will redirect
   }
 
-  const t = useTranslations("nav");
   const navKey = pathToNavKey[pathname];
   const pageTitle = navKey ? t(navKey) : t("dashboard");
   const initials = user.displayName
