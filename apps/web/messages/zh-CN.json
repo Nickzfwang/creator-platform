@@ -764,6 +764,106 @@
     "threeMonthsLater": "3 个月后",
     "forecastAssumptions": "预测假设"
   },
+  "strategy": {
+    "title": "内容策略",
+    "description": "AI 驱动的主题建议、内容日历、竞品分析与成效回顾",
+    "tabs": {
+      "suggestions": "主题建议",
+      "calendar": "内容日历",
+      "competitors": "竞品分析",
+      "review": "成效回顾"
+    },
+    "source": {
+      "history": "历史数据",
+      "trend": "热门趋势",
+      "competitor": "竞品参考",
+      "mixed": "综合"
+    },
+    "status": {
+      "suggested": "已建议",
+      "planned": "已排期",
+      "inProduction": "制作中",
+      "published": "已发布",
+      "measured": "已衡量",
+      "dismissed": "已忽略",
+      "skipped": "已跳过"
+    },
+    "confidence": {
+      "high": "高",
+      "medium": "中",
+      "low": "低"
+    },
+    "suggestions": {
+      "generateButton": "生成建议",
+      "empty": "暂无建议",
+      "emptyHint": "点击「生成建议」获取 AI 主题建议",
+      "performanceScore": "预测分数",
+      "confidenceLevel": "置信度",
+      "reasoning": "查看分析理由",
+      "adopt": "采纳",
+      "dismiss": "忽略",
+      "replace": "换一个"
+    },
+    "toast": {
+      "suggestionsGenerated": "建议已生成",
+      "generateFailed": "生成建议失败：{error}",
+      "adoptedToCalendar": "已加入内容日历",
+      "dismissed": "已忽略建议",
+      "replaced": "已替换建议",
+      "calendarItemAdded": "已新增日历项目",
+      "deleted": "已删除",
+      "competitorAdded": "已新增竞品",
+      "untracked": "已移除竞品"
+    },
+    "calendar": {
+      "monthTitle": "{year} 年 {month} 月",
+      "addManually": "手动新增",
+      "addDialogTitle": "新增日历项目",
+      "titlePlaceholder": "内容标题",
+      "addButton": "新增",
+      "empty": "暂无排期内容",
+      "emptyHint": "采纳建议或手动新增项目",
+      "weekOf": "{date} 那周"
+    },
+    "common": {
+      "delete": "删除"
+    },
+    "competitors": {
+      "quota": "已追踪 {used}/{max}",
+      "addChannel": "新增频道",
+      "addDialogTitle": "追踪竞品频道",
+      "channelUrlPlaceholder": "YouTube 频道网址",
+      "addButton": "新增",
+      "empty": "暂未追踪竞品",
+      "emptyHint": "新增竞品频道以分析其内容策略",
+      "subscriberCount": "{count}K 订阅者",
+      "subscriberUnknown": "订阅数未知",
+      "untrack": "取消追踪",
+      "recentVideos": "{count} 个近期视频",
+      "avgViews": "平均 {count}K 观看",
+      "recentVideosList": "近期视频",
+      "viewCount": "{count} 次观看",
+      "aiAnalysis": "AI 竞品分析",
+      "opportunities": "机会点"
+    },
+    "review": {
+      "thisMonth": "本月",
+      "thisQuarter": "本季",
+      "totalSuggested": "建议总数",
+      "totalAdopted": "已采纳",
+      "adoptionRate": "采纳率",
+      "totalPublished": "已发布",
+      "topPerformers": "最佳表现",
+      "predictedScore": "预测：{score}",
+      "actualViews": "{count} 次观看",
+      "sourceBreakdown": "来源分布",
+      "suggestionCount": "{count} 条建议",
+      "adoptionRateValue": "采纳率 {rate}%",
+      "avgViews": "平均 {count}K 观看",
+      "empty": "暂无回顾数据",
+      "emptyHint": "发布并衡量内容后将显示数据"
+    }
+  },
   "store": {
     "pageTitle": "数字商品商店",
     "pageDescription": "销售 PDF、模板、Preset、电子书等数字商品",
@@ -1106,6 +1206,42 @@
     "title": "当前离线",
     "description": "请检查网络连接后重试",
     "reload": "重新加载"
+  },
+  "clips": {
+    "pageTitle": "内容剪藏",
+    "pageDescription": "AI 自动摘要、分类、标记你浏览时收藏的内容",
+    "searchPlaceholder": "搜索标题、摘要或标签…",
+    "filterAll": "全部",
+    "filterStarred": "已加星",
+    "emptyTitle": "暂无剪藏",
+    "emptyDescription": "使用 Chrome 扩展在浏览时收藏内容，AI 会自动摘要与分类",
+    "aiSummary": "AI 摘要",
+    "deleteSuccess": "已删除剪藏"
+  },
+  "browse": {
+    "pageTitle": "AI 社区探索",
+    "pageDescription": "AI 扫描各大平台和 RSS 来源，为你找出热门内容与创作灵感",
+    "selectCategory": "选择分类",
+    "categories": {
+      "all": "全部",
+      "tech": "科技",
+      "dcard": "Dcard",
+      "threads": "Threads",
+      "tiktok": "TikTok",
+      "global": "国际",
+      "lifestyle": "生活"
+    },
+    "or": "或",
+    "customRssSource": "自定义 RSS 来源",
+    "rssPlaceholder": "https://example.com/feed.xml",
+    "exploring": "探索中…",
+    "startExplore": "开始探索",
+    "exploreSuccess": "找到 {count} 篇文章",
+    "resultsTitle": "找到 {count} 篇文章",
+    "aiSummary": "AI 摘要",
+    "contentIdea": "内容灵感：",
+    "emptyTitle": "探索热门内容",
+    "emptyDescription": "选择分类或粘贴 RSS 网址，点击「开始探索」让 AI 扫描并分析最新文章"
   },
   "trends": {
     "pageTitle": "趋势雷达",

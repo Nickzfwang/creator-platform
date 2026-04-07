@@ -764,6 +764,106 @@
     "threeMonthsLater": "3ヶ月後",
     "forecastAssumptions": "予測の前提条件"
   },
+  "strategy": {
+    "title": "コンテンツ戦略",
+    "description": "AI によるトピック提案、コンテンツカレンダー、競合分析、パフォーマンスレビュー",
+    "tabs": {
+      "suggestions": "トピック提案",
+      "calendar": "コンテンツカレンダー",
+      "competitors": "競合分析",
+      "review": "パフォーマンスレビュー"
+    },
+    "source": {
+      "history": "履歴データ",
+      "trend": "トレンド",
+      "competitor": "競合参考",
+      "mixed": "ミックス"
+    },
+    "status": {
+      "suggested": "提案済み",
+      "planned": "予定",
+      "inProduction": "制作中",
+      "published": "公開済み",
+      "measured": "測定済み",
+      "dismissed": "却下",
+      "skipped": "スキップ"
+    },
+    "confidence": {
+      "high": "高",
+      "medium": "中",
+      "low": "低"
+    },
+    "suggestions": {
+      "generateButton": "提案を生成",
+      "empty": "まだ提案がありません",
+      "emptyHint": "「提案を生成」をクリックして AI トピック提案を取得",
+      "performanceScore": "予測スコア",
+      "confidenceLevel": "信頼度",
+      "reasoning": "分析理由を表示",
+      "adopt": "採用",
+      "dismiss": "却下",
+      "replace": "入れ替え"
+    },
+    "toast": {
+      "suggestionsGenerated": "提案を生成しました",
+      "generateFailed": "提案の生成に失敗しました：{error}",
+      "adoptedToCalendar": "コンテンツカレンダーに追加しました",
+      "dismissed": "提案を却下しました",
+      "replaced": "提案を入れ替えました",
+      "calendarItemAdded": "カレンダー項目を追加しました",
+      "deleted": "削除しました",
+      "competitorAdded": "競合を追加しました",
+      "untracked": "競合を削除しました"
+    },
+    "calendar": {
+      "monthTitle": "{year}年{month}月",
+      "addManually": "手動追加",
+      "addDialogTitle": "カレンダー項目を追加",
+      "titlePlaceholder": "コンテンツタイトル",
+      "addButton": "追加",
+      "empty": "予定されたコンテンツはありません",
+      "emptyHint": "提案を採用するか手動で項目を追加",
+      "weekOf": "{date} の週"
+    },
+    "common": {
+      "delete": "削除"
+    },
+    "competitors": {
+      "quota": "追跡中 {used}/{max}",
+      "addChannel": "チャンネル追加",
+      "addDialogTitle": "競合チャンネルを追跡",
+      "channelUrlPlaceholder": "YouTube チャンネル URL",
+      "addButton": "追加",
+      "empty": "追跡中の競合はありません",
+      "emptyHint": "競合チャンネルを追加してコンテンツ戦略を分析",
+      "subscriberCount": "{count}K 登録者",
+      "subscriberUnknown": "登録者数不明",
+      "untrack": "追跡解除",
+      "recentVideos": "最近の動画 {count} 本",
+      "avgViews": "平均 {count}K 再生",
+      "recentVideosList": "最近の動画",
+      "viewCount": "{count} 回再生",
+      "aiAnalysis": "AI 競合分析",
+      "opportunities": "チャンス"
+    },
+    "review": {
+      "thisMonth": "今月",
+      "thisQuarter": "今四半期",
+      "totalSuggested": "提案総数",
+      "totalAdopted": "採用済み",
+      "adoptionRate": "採用率",
+      "totalPublished": "公開済み",
+      "topPerformers": "トップパフォーマー",
+      "predictedScore": "予測：{score}",
+      "actualViews": "{count} 回再生",
+      "sourceBreakdown": "ソース内訳",
+      "suggestionCount": "{count} 件の提案",
+      "adoptionRateValue": "採用率 {rate}%",
+      "avgViews": "平均 {count}K 再生",
+      "empty": "レビューデータがありません",
+      "emptyHint": "コンテンツを公開・測定後にデータが表示されます"
+    }
+  },
   "store": {
     "pageTitle": "デジタル商品ストア",
     "pageDescription": "PDF、テンプレート、プリセット、電子書籍などのデジタル商品を販売",
@@ -1106,6 +1206,42 @@
     "title": "オフラインです",
     "description": "インターネット接続を確認して再試行してください",
     "reload": "再読み込み"
+  },
+  "clips": {
+    "pageTitle": "コンテンツクリップ",
+    "pageDescription": "ブラウジング中に保存したコンテンツを AI が自動で要約・分類・タグ付け",
+    "searchPlaceholder": "タイトル、要約、タグで検索…",
+    "filterAll": "すべて",
+    "filterStarred": "スター付き",
+    "emptyTitle": "クリップがありません",
+    "emptyDescription": "Chrome 拡張機能を使ってブラウジング中にコンテンツを保存すると、AI が自動で要約・分類します",
+    "aiSummary": "AI 要約",
+    "deleteSuccess": "クリップを削除しました"
+  },
+  "browse": {
+    "pageTitle": "AI コミュニティ探索",
+    "pageDescription": "AI が主要プラットフォームや RSS フィードをスキャンし、トレンドコンテンツとインスピレーションを提供",
+    "selectCategory": "カテゴリを選択",
+    "categories": {
+      "all": "すべて",
+      "tech": "テクノロジー",
+      "dcard": "Dcard",
+      "threads": "Threads",
+      "tiktok": "TikTok",
+      "global": "グローバル",
+      "lifestyle": "ライフスタイル"
+    },
+    "or": "または",
+    "customRssSource": "カスタム RSS ソース",
+    "rssPlaceholder": "https://example.com/feed.xml",
+    "exploring": "探索中…",
+    "startExplore": "探索開始",
+    "exploreSuccess": "{count} 件の投稿が見つかりました",
+    "resultsTitle": "{count} 件の投稿",
+    "aiSummary": "AI 要約",
+    "contentIdea": "コンテンツアイデア：",
+    "emptyTitle": "トレンドコンテンツを発見",
+    "emptyDescription": "カテゴリを選択するか RSS URL を貼り付けて「探索開始」をクリックすると、AI が最新の投稿をスキャン・分析します"
   },
   "trends": {
     "pageTitle": "トレンドレーダー",

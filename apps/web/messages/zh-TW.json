@@ -764,6 +764,106 @@
     "threeMonthsLater": "3 個月後",
     "forecastAssumptions": "預測假設"
   },
+  "strategy": {
+    "title": "內容策略",
+    "description": "AI 驅動的主題建議、內容日曆、競品分析與成效回顧",
+    "tabs": {
+      "suggestions": "主題建議",
+      "calendar": "內容日曆",
+      "competitors": "競品分析",
+      "review": "成效回顧"
+    },
+    "source": {
+      "history": "歷史數據",
+      "trend": "熱門趨勢",
+      "competitor": "競品參考",
+      "mixed": "綜合"
+    },
+    "status": {
+      "suggested": "已建議",
+      "planned": "已排程",
+      "inProduction": "製作中",
+      "published": "已發佈",
+      "measured": "已衡量",
+      "dismissed": "已忽略",
+      "skipped": "已跳過"
+    },
+    "confidence": {
+      "high": "高",
+      "medium": "中",
+      "low": "低"
+    },
+    "suggestions": {
+      "generateButton": "產生建議",
+      "empty": "尚無建議",
+      "emptyHint": "點擊「產生建議」取得 AI 主題建議",
+      "performanceScore": "預測分數",
+      "confidenceLevel": "信心度",
+      "reasoning": "查看分析理由",
+      "adopt": "採用",
+      "dismiss": "忽略",
+      "replace": "換一個"
+    },
+    "toast": {
+      "suggestionsGenerated": "建議已產生",
+      "generateFailed": "產生建議失敗：{error}",
+      "adoptedToCalendar": "已加入內容日曆",
+      "dismissed": "已忽略建議",
+      "replaced": "已替換建議",
+      "calendarItemAdded": "已新增日曆項目",
+      "deleted": "已刪除",
+      "competitorAdded": "已新增競品",
+      "untracked": "已移除競品"
+    },
+    "calendar": {
+      "monthTitle": "{year} 年 {month} 月",
+      "addManually": "手動新增",
+      "addDialogTitle": "新增日曆項目",
+      "titlePlaceholder": "內容標題",
+      "addButton": "新增",
+      "empty": "尚無排程內容",
+      "emptyHint": "採用建議或手動新增項目",
+      "weekOf": "{date} 那週"
+    },
+    "common": {
+      "delete": "刪除"
+    },
+    "competitors": {
+      "quota": "已追蹤 {used}/{max}",
+      "addChannel": "新增頻道",
+      "addDialogTitle": "追蹤競品頻道",
+      "channelUrlPlaceholder": "YouTube 頻道網址",
+      "addButton": "新增",
+      "empty": "尚未追蹤競品",
+      "emptyHint": "新增競品頻道以分析其內容策略",
+      "subscriberCount": "{count}K 訂閱者",
+      "subscriberUnknown": "訂閱數未知",
+      "untrack": "取消追蹤",
+      "recentVideos": "{count} 部近期影片",
+      "avgViews": "平均 {count}K 觀看",
+      "recentVideosList": "近期影片",
+      "viewCount": "{count} 次觀看",
+      "aiAnalysis": "AI 競品分析",
+      "opportunities": "機會點"
+    },
+    "review": {
+      "thisMonth": "本月",
+      "thisQuarter": "本季",
+      "totalSuggested": "建議總數",
+      "totalAdopted": "已採用",
+      "adoptionRate": "採用率",
+      "totalPublished": "已發佈",
+      "topPerformers": "最佳表現",
+      "predictedScore": "預測：{score}",
+      "actualViews": "{count} 次觀看",
+      "sourceBreakdown": "來源分佈",
+      "suggestionCount": "{count} 則建議",
+      "adoptionRateValue": "採用率 {rate}%",
+      "avgViews": "平均 {count}K 觀看",
+      "empty": "尚無回顧數據",
+      "emptyHint": "發佈並衡量內容後將顯示數據"
+    }
+  },
   "store": {
     "pageTitle": "數位商品商店",
     "pageDescription": "販售 PDF、模板、Preset、電子書等數位商品",
@@ -1106,6 +1206,42 @@
     "title": "目前離線",
     "description": "請檢查網路連線後重試",
     "reload": "重新載入"
+  },
+  "clips": {
+    "pageTitle": "內容剪藏",
+    "pageDescription": "AI 自動摘要、分類、標記你瀏覽時收藏的內容",
+    "searchPlaceholder": "搜尋標題、摘要或標籤…",
+    "filterAll": "全部",
+    "filterStarred": "已加星",
+    "emptyTitle": "尚無剪藏",
+    "emptyDescription": "使用 Chrome 擴充功能在瀏覽時收藏內容，AI 會自動摘要與分類",
+    "aiSummary": "AI 摘要",
+    "deleteSuccess": "已刪除剪藏"
+  },
+  "browse": {
+    "pageTitle": "AI 社群探索",
+    "pageDescription": "AI 掃描各大平台和 RSS 來源，為你找出熱門內容與創作靈感",
+    "selectCategory": "選擇分類",
+    "categories": {
+      "all": "全部",
+      "tech": "科技",
+      "dcard": "Dcard",
+      "threads": "Threads",
+      "tiktok": "TikTok",
+      "global": "國際",
+      "lifestyle": "生活"
+    },
+    "or": "或",
+    "customRssSource": "自訂 RSS 來源",
+    "rssPlaceholder": "https://example.com/feed.xml",
+    "exploring": "探索中…",
+    "startExplore": "開始探索",
+    "exploreSuccess": "找到 {count} 篇文章",
+    "resultsTitle": "找到 {count} 篇文章",
+    "aiSummary": "AI 摘要",
+    "contentIdea": "內容靈感：",
+    "emptyTitle": "探索熱門內容",
+    "emptyDescription": "選擇分類或貼上 RSS 網址，點擊「開始探索」讓 AI 掃描並分析最新文章"
   },
   "trends": {
     "pageTitle": "趨勢雷達",

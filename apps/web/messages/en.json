@@ -764,6 +764,106 @@
     "threeMonthsLater": "3 Months Later",
     "forecastAssumptions": "Forecast Assumptions"
   },
+  "strategy": {
+    "title": "Content Strategy",
+    "description": "AI-powered topic suggestions, content calendar, competitor analysis, and performance review",
+    "tabs": {
+      "suggestions": "Topic Suggestions",
+      "calendar": "Content Calendar",
+      "competitors": "Competitor Analysis",
+      "review": "Performance Review"
+    },
+    "source": {
+      "history": "From History",
+      "trend": "Trending",
+      "competitor": "Competitor",
+      "mixed": "Mixed"
+    },
+    "status": {
+      "suggested": "Suggested",
+      "planned": "Planned",
+      "inProduction": "In Production",
+      "published": "Published",
+      "measured": "Measured",
+      "dismissed": "Dismissed",
+      "skipped": "Skipped"
+    },
+    "confidence": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "suggestions": {
+      "generateButton": "Generate Suggestions",
+      "empty": "No suggestions yet",
+      "emptyHint": "Click \"Generate Suggestions\" to get AI-powered topic ideas",
+      "performanceScore": "Performance Score",
+      "confidenceLevel": "Confidence",
+      "reasoning": "View reasoning",
+      "adopt": "Adopt",
+      "dismiss": "Dismiss",
+      "replace": "Replace"
+    },
+    "toast": {
+      "suggestionsGenerated": "Suggestions generated successfully",
+      "generateFailed": "Failed to generate suggestions: {error}",
+      "adoptedToCalendar": "Added to content calendar",
+      "dismissed": "Suggestion dismissed",
+      "replaced": "Suggestion replaced",
+      "calendarItemAdded": "Calendar item added",
+      "deleted": "Deleted successfully",
+      "competitorAdded": "Competitor added",
+      "untracked": "Competitor removed"
+    },
+    "calendar": {
+      "monthTitle": "{year}/{month}",
+      "addManually": "Add Manually",
+      "addDialogTitle": "Add Calendar Item",
+      "titlePlaceholder": "Content title",
+      "addButton": "Add",
+      "empty": "No content scheduled",
+      "emptyHint": "Adopt suggestions or add items manually",
+      "weekOf": "Week of {date}"
+    },
+    "common": {
+      "delete": "Delete"
+    },
+    "competitors": {
+      "quota": "{used}/{max} tracked",
+      "addChannel": "Add Channel",
+      "addDialogTitle": "Track Competitor Channel",
+      "channelUrlPlaceholder": "YouTube channel URL",
+      "addButton": "Add",
+      "empty": "No competitors tracked",
+      "emptyHint": "Add competitor channels to analyze their content strategy",
+      "subscriberCount": "{count}K subscribers",
+      "subscriberUnknown": "Subscribers unknown",
+      "untrack": "Untrack",
+      "recentVideos": "{count} recent videos",
+      "avgViews": "Avg {count}K views",
+      "recentVideosList": "Recent Videos",
+      "viewCount": "{count} views",
+      "aiAnalysis": "AI Competitive Analysis",
+      "opportunities": "Opportunities"
+    },
+    "review": {
+      "thisMonth": "This Month",
+      "thisQuarter": "This Quarter",
+      "totalSuggested": "Total Suggested",
+      "totalAdopted": "Adopted",
+      "adoptionRate": "Adoption Rate",
+      "totalPublished": "Published",
+      "topPerformers": "Top Performers",
+      "predictedScore": "Predicted: {score}",
+      "actualViews": "{count} views",
+      "sourceBreakdown": "Source Breakdown",
+      "suggestionCount": "{count} suggestions",
+      "adoptionRateValue": "Adoption {rate}%",
+      "avgViews": "Avg {count}K views",
+      "empty": "No review data yet",
+      "emptyHint": "Data will appear after content is published and measured"
+    }
+  },
   "store": {
     "pageTitle": "Digital Product Store",
     "pageDescription": "Sell PDFs, templates, presets, ebooks, and other digital products",
@@ -1106,6 +1206,42 @@
     "title": "You are offline",
     "description": "Please check your internet connection and try again",
     "reload": "Reload"
+  },
+  "clips": {
+    "pageTitle": "Content Clips",
+    "pageDescription": "AI-curated clips from your browsing — summarized, categorized, and tagged automatically",
+    "searchPlaceholder": "Search clips by title, summary, or tag…",
+    "filterAll": "All",
+    "filterStarred": "Starred",
+    "emptyTitle": "No clips yet",
+    "emptyDescription": "Use the Chrome extension to clip content while browsing — AI will summarize and categorize it automatically",
+    "aiSummary": "AI Summary",
+    "deleteSuccess": "Clip deleted"
+  },
+  "browse": {
+    "pageTitle": "AI Community Explorer",
+    "pageDescription": "AI scans major platforms and RSS feeds to find trending content and inspiration for you",
+    "selectCategory": "Select a category",
+    "categories": {
+      "all": "All",
+      "tech": "Tech",
+      "dcard": "Dcard",
+      "threads": "Threads",
+      "tiktok": "TikTok",
+      "global": "Global",
+      "lifestyle": "Lifestyle"
+    },
+    "or": "or",
+    "customRssSource": "Custom RSS source",
+    "rssPlaceholder": "https://example.com/feed.xml",
+    "exploring": "Exploring…",
+    "startExplore": "Start Exploring",
+    "exploreSuccess": "Found {count} posts",
+    "resultsTitle": "Found {count} posts",
+    "aiSummary": "AI Summary",
+    "contentIdea": "Content Idea: ",
+    "emptyTitle": "Discover trending content",
+    "emptyDescription": "Select a category or paste an RSS URL, then click \"Start Exploring\" to let AI scan and analyze the latest posts"
   },
   "trends": {
     "pageTitle": "Trend Radar",
