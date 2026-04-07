@@ -1,0 +1,167 @@
+{
+  "common": {
+    "internalError": "Internal server error",
+    "forbidden": "Insufficient permissions",
+    "tenantRequired": "Tenant context is required"
+  },
+  "auth": {
+    "userNotFound": "User not found",
+    "emailRegistered": "This email is already registered",
+    "invalidCredentials": "Invalid email or password",
+    "invalidRefreshToken": "Invalid or expired refresh token",
+    "googleNotConfigured": "Google OAuth is not configured",
+    "googleMissingEmail": "Google account is missing an email",
+    "invalidGoogleCredential": "Invalid Google credential"
+  },
+  "video": {
+    "notFound": "Video not found",
+    "notOwner": "You are not the owner of this video",
+    "notProcessed": "Video has not been processed yet. Please wait until processing is complete.",
+    "fileNotFound": "Video file does not exist. It may have been deleted. Please re-upload the video.",
+    "noAudioTrack": "This video has no audio track and cannot be analyzed for speech. Please upload a video with audio.",
+    "whisperNoWordData": "Whisper did not return word-level data. Please verify that OPENAI_API_KEY is set and the audio quality is acceptable.",
+    "noValidFillers": "No valid filler word markers selected",
+    "tooShortForChapters": "Video is too short (< 30s) to generate chapter markers",
+    "tooShortForScript": "Video is too short (< 30s) to generate a script summary",
+    "noTranscript": "Video has no transcript yet. Please complete video processing first.",
+    "chapterGenFailed": "AI failed to generate chapter markers. Please try again.",
+    "scriptGenFailed": "AI failed to generate a script summary. Please try again.",
+    "noEmbeddedSubtitles": "Unable to extract embedded subtitles. Please upload a video with audio or subtitles.",
+    "noAudioNoSubtitles": "This video has no audio track and no embedded subtitles. Subtitles cannot be generated. Please upload a video with audio.",
+    "notUploading": "Video is not in uploading state",
+    "onlyVideoFiles": "Only video files are allowed",
+    "noFileProvided": "No file provided",
+    "clipNotFound": "Clip not found"
+  },
+  "shortVideo": {
+    "sourceFileNotFound": "Original video file does not exist. Please re-upload.",
+    "noClips": "This video has no clips yet. Please generate AI clips first."
+  },
+  "contentStrategy": {
+    "nicheRequired": "New users must provide a niche to generate suggestions",
+    "generateFailed": "AI failed to generate suggestions. Please try again later.",
+    "invalidCursor": "Invalid cursor parameter",
+    "suggestionNotFound": "Suggestion not found",
+    "alreadyAdopted": "Suggestion has already been adopted",
+    "alreadyDismissed": "Suggestion has already been dismissed",
+    "replaceFailed": "Unable to generate a replacement suggestion. Please try again later.",
+    "calendarItemNotFound": "Calendar item not found",
+    "publishNeedsVideo": "Publishing requires an associated video ID",
+    "cannotDeletePublished": "Published or measured items cannot be deleted"
+  },
+  "competitor": {
+    "invalidYoutubeUrl": "Unable to parse YouTube channel URL. Please provide a valid channel link.",
+    "alreadyTracked": "This channel is already being tracked",
+    "notFound": "Competitor channel not found"
+  },
+  "trendRadar": {
+    "rateLimited": "Please wait 10 minutes before scanning again",
+    "invalidFingerprint": "Invalid fingerprint format",
+    "trendNotFound": "Trend not found",
+    "keywordAlreadyTracked": "This keyword is already being tracked",
+    "keywordNotFound": "Keyword not found",
+    "maxKeywords": "You can track up to {max} keywords",
+    "maxRssSources": "You can add up to 10 custom RSS sources",
+    "rssAlreadyAdded": "This RSS source has already been added",
+    "rssNotFound": "RSS source not found"
+  },
+  "interactions": {
+    "commentNotFound": "Comment not found"
+  },
+  "emailMarketing": {
+    "alreadySent": "This campaign has already been sent",
+    "noEmailTemplate": "This campaign has no email template",
+    "noMatchingSubscribers": "No subscribers match the criteria",
+    "invalidUnsubscribeLink": "Invalid unsubscribe link",
+    "subscriberNotFound": "Subscriber not found"
+  },
+  "payment": {
+    "stripeNotConfigured": "Stripe is not configured",
+    "stripeNotConfiguredAdmin": "Stripe is not configured. Please contact the administrator.",
+    "cannotCheckoutFree": "Free plans cannot be checked out",
+    "missingRawBody": "Missing raw request body",
+    "invalidWebhookSignature": "Invalid Webhook signature"
+  },
+  "membership": {
+    "tierNotFound": "Tier not found",
+    "tierNotActive": "Tier does not exist or is not active",
+    "tierAtCapacity": "This tier has reached its member limit",
+    "alreadySubscribed": "Already subscribed to this tier",
+    "cannotDeleteWithMembers": "Cannot delete a tier with active members. Please deactivate it first.",
+    "membershipNotFound": "Membership not found",
+    "alreadyCancelled": "Membership has already been cancelled"
+  },
+  "social": {
+    "invalidOAuthState": "Invalid OAuth state parameter",
+    "platformMismatch": "Platform mismatch in OAuth state",
+    "missingPkce": "Missing PKCE code_verifier",
+    "accountNotFound": "Social account not found",
+    "notAccountOwner": "You are not the account owner",
+    "noRefreshToken": "This account has no available refresh token"
+  },
+  "bot": {
+    "notFound": "Bot not found",
+    "notPublic": "This Bot is not public",
+    "conversationNotFound": "Conversation not found"
+  },
+  "knowledgeBase": {
+    "notFound": "Knowledge base not found"
+  },
+  "brandDeal": {
+    "notFound": "Brand deal not found"
+  },
+  "contentRepurpose": {
+    "videoNotFound": "Video not found",
+    "notVideoOwner": "You are not the video owner",
+    "videoNotProcessed": "Video must be in processed state",
+    "alreadyInProgress": "Content generation is already in progress",
+    "jobNotFound": "Job not found",
+    "noValidSocialPosts": "No valid social post items found",
+    "notEmailType": "Item is not an email type",
+    "itemNotFound": "Item not found",
+    "notItemOwner": "You are not the item owner"
+  },
+  "postScheduler": {
+    "clipNotFound": "Clip not found",
+    "scheduleMustBeFuture": "Scheduled time must be in the future",
+    "postNotFound": "Post not found",
+    "notPostOwner": "You are not the post owner"
+  },
+  "apiGateway": {
+    "maxApiKeys": "Maximum of 10 active API keys",
+    "apiKeyNotFound": "API key not found",
+    "maxWebhooks": "Maximum of 5 active Webhooks",
+    "webhookNotFound": "Webhook not found",
+    "tenantNotFound": "Tenant not found"
+  },
+  "user": {
+    "notFound": "User not found",
+    "onboardingCompleted": "Onboarding has already been completed",
+    "socialNotFound": "Social account not found",
+    "cannotDisconnectOthers": "Cannot disconnect another user's social account"
+  },
+  "landingPage": {
+    "notFound": "Page not found",
+    "notPublished": "Page has not been published"
+  },
+  "digitalProduct": {
+    "notFound": "Product not found",
+    "paymentNotConfigured": "Payment system is not configured",
+    "orderNotFound": "Order not found",
+    "paymentNotCompleted": "Payment has not been completed",
+    "invalidDownloadToken": "Invalid download token",
+    "downloadExpired": "Download link has expired"
+  },
+  "affiliate": {
+    "linkNotFound": "Affiliate link not found",
+    "trackingNotFound": "Tracking code not found",
+    "useRedirectEndpoint": "Please use the redirect endpoint for click events"
+  },
+  "tenant": {
+    "notFound": "Tenant not found",
+    "domainConflict": "Custom domain is already in use by another tenant"
+  },
+  "contentClip": {
+    "notFound": "Saved clip not found"
+  }
+}

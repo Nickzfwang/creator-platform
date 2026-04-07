@@ -1,0 +1,167 @@
+{
+  "common": {
+    "internalError": "서버 내부 오류",
+    "forbidden": "권한이 부족합니다",
+    "tenantRequired": "테넌트 컨텍스트가 필요합니다"
+  },
+  "auth": {
+    "userNotFound": "사용자를 찾을 수 없습니다",
+    "emailRegistered": "이미 등록된 이메일입니다",
+    "invalidCredentials": "이메일 또는 비밀번호가 올바르지 않습니다",
+    "invalidRefreshToken": "유효하지 않거나 만료된 refresh token입니다",
+    "googleNotConfigured": "Google OAuth가 설정되지 않았습니다",
+    "googleMissingEmail": "Google 계정에 이메일이 없습니다",
+    "invalidGoogleCredential": "유효하지 않은 Google 인증 정보입니다"
+  },
+  "video": {
+    "notFound": "영상을 찾을 수 없습니다",
+    "notOwner": "이 영상의 소유자가 아닙니다",
+    "notProcessed": "영상이 아직 처리되지 않았습니다. 처리 완료 후 다시 시도해 주세요.",
+    "fileNotFound": "영상 파일이 존재하지 않습니다. 삭제되었을 수 있습니다. 영상을 다시 업로드해 주세요.",
+    "noAudioTrack": "이 영상에는 오디오 트랙이 없어 음성 분석을 할 수 없습니다. 음성이 포함된 영상을 업로드해 주세요.",
+    "whisperNoWordData": "Whisper가 단어 수준 데이터를 반환하지 않았습니다. OPENAI_API_KEY가 설정되어 있고 오디오 품질이 정상인지 확인해 주세요.",
+    "noValidFillers": "유효한 필러 단어 마커가 선택되지 않았습니다",
+    "tooShortForChapters": "영상이 너무 짧아(30초 미만) 챕터 마커를 생성할 수 없습니다",
+    "tooShortForScript": "영상이 너무 짧아(30초 미만) 스크립트 요약을 생성할 수 없습니다",
+    "noTranscript": "영상의 전사본이 아직 없습니다. 먼저 영상 처리를 완료해 주세요.",
+    "chapterGenFailed": "AI가 챕터 마커를 생성하지 못했습니다. 다시 시도해 주세요.",
+    "scriptGenFailed": "AI가 스크립트 요약을 생성하지 못했습니다. 다시 시도해 주세요.",
+    "noEmbeddedSubtitles": "내장 자막을 추출할 수 없습니다. 음성 또는 자막이 포함된 영상을 업로드해 주세요.",
+    "noAudioNoSubtitles": "이 영상에는 오디오 트랙과 내장 자막이 모두 없어 자막을 생성할 수 없습니다. 음성이 포함된 영상을 업로드해 주세요.",
+    "notUploading": "영상이 업로드 중 상태가 아닙니다",
+    "onlyVideoFiles": "영상 파일만 허용됩니다",
+    "noFileProvided": "파일이 제공되지 않았습니다",
+    "clipNotFound": "클립을 찾을 수 없습니다"
+  },
+  "shortVideo": {
+    "sourceFileNotFound": "원본 영상 파일이 존재하지 않습니다. 다시 업로드해 주세요.",
+    "noClips": "이 영상에는 아직 클립이 없습니다. 먼저 AI 클립을 생성해 주세요."
+  },
+  "contentStrategy": {
+    "nicheRequired": "신규 사용자는 제안을 생성하려면 니치 분야를 입력해야 합니다",
+    "generateFailed": "AI가 제안 생성에 실패했습니다. 나중에 다시 시도해 주세요.",
+    "invalidCursor": "유효하지 않은 cursor 매개변수입니다",
+    "suggestionNotFound": "제안을 찾을 수 없습니다",
+    "alreadyAdopted": "이미 채택된 제안입니다",
+    "alreadyDismissed": "이미 무시된 제안입니다",
+    "replaceFailed": "대체 제안을 생성할 수 없습니다. 나중에 다시 시도해 주세요.",
+    "calendarItemNotFound": "캘린더 항목을 찾을 수 없습니다",
+    "publishNeedsVideo": "게시하려면 연결된 영상 ID가 필요합니다",
+    "cannotDeletePublished": "게시되었거나 측정된 항목은 삭제할 수 없습니다"
+  },
+  "competitor": {
+    "invalidYoutubeUrl": "YouTube 채널 URL을 파싱할 수 없습니다. 유효한 채널 링크를 입력해 주세요.",
+    "alreadyTracked": "이미 추적 중인 채널입니다",
+    "notFound": "경쟁 채널을 찾을 수 없습니다"
+  },
+  "trendRadar": {
+    "rateLimited": "10분 후에 다시 스캔해 주세요",
+    "invalidFingerprint": "유효하지 않은 핑거프린트 형식입니다",
+    "trendNotFound": "트렌드를 찾을 수 없습니다",
+    "keywordAlreadyTracked": "이미 추적 중인 키워드입니다",
+    "keywordNotFound": "키워드를 찾을 수 없습니다",
+    "maxKeywords": "키워드는 최대 {max}개까지 추적할 수 있습니다",
+    "maxRssSources": "사용자 지정 RSS 소스는 최대 10개까지 추가할 수 있습니다",
+    "rssAlreadyAdded": "이미 추가된 RSS 소스입니다",
+    "rssNotFound": "RSS 소스를 찾을 수 없습니다"
+  },
+  "interactions": {
+    "commentNotFound": "댓글을 찾을 수 없습니다"
+  },
+  "emailMarketing": {
+    "alreadySent": "이 캠페인은 이미 발송되었습니다",
+    "noEmailTemplate": "이 캠페인에는 이메일 템플릿이 없습니다",
+    "noMatchingSubscribers": "조건에 맞는 구독자가 없습니다",
+    "invalidUnsubscribeLink": "유효하지 않은 구독 취소 링크입니다",
+    "subscriberNotFound": "구독자를 찾을 수 없습니다"
+  },
+  "payment": {
+    "stripeNotConfigured": "Stripe가 설정되지 않았습니다",
+    "stripeNotConfiguredAdmin": "Stripe가 설정되지 않았습니다. 관리자에게 문의해 주세요.",
+    "cannotCheckoutFree": "무료 플랜은 결제할 수 없습니다",
+    "missingRawBody": "원본 요청 본문이 없습니다",
+    "invalidWebhookSignature": "유효하지 않은 Webhook 서명입니다"
+  },
+  "membership": {
+    "tierNotFound": "플랜을 찾을 수 없습니다",
+    "tierNotActive": "플랜이 존재하지 않거나 활성화되지 않았습니다",
+    "tierAtCapacity": "이 플랜은 인원 제한에 도달했습니다",
+    "alreadySubscribed": "이미 이 플랜을 구독 중입니다",
+    "cannotDeleteWithMembers": "활성 회원이 있는 플랜은 삭제할 수 없습니다. 먼저 비활성화해 주세요.",
+    "membershipNotFound": "회원 자격을 찾을 수 없습니다",
+    "alreadyCancelled": "회원이 이미 취소되었습니다"
+  },
+  "social": {
+    "invalidOAuthState": "유효하지 않은 OAuth 상태 매개변수입니다",
+    "platformMismatch": "OAuth 상태의 플랫폼이 일치하지 않습니다",
+    "missingPkce": "PKCE code_verifier가 없습니다",
+    "accountNotFound": "소셜 계정을 찾을 수 없습니다",
+    "notAccountOwner": "계정 소유자가 아닙니다",
+    "noRefreshToken": "이 계정에는 사용 가능한 refresh token이 없습니다"
+  },
+  "bot": {
+    "notFound": "Bot을 찾을 수 없습니다",
+    "notPublic": "이 Bot은 공개되지 않았습니다",
+    "conversationNotFound": "대화를 찾을 수 없습니다"
+  },
+  "knowledgeBase": {
+    "notFound": "지식 베이스를 찾을 수 없습니다"
+  },
+  "brandDeal": {
+    "notFound": "브랜드 협업을 찾을 수 없습니다"
+  },
+  "contentRepurpose": {
+    "videoNotFound": "영상을 찾을 수 없습니다",
+    "notVideoOwner": "영상의 소유자가 아닙니다",
+    "videoNotProcessed": "영상이 처리 완료 상태여야 합니다",
+    "alreadyInProgress": "콘텐츠 생성이 이미 진행 중입니다",
+    "jobNotFound": "작업을 찾을 수 없습니다",
+    "noValidSocialPosts": "유효한 소셜 게시물 항목을 찾을 수 없습니다",
+    "notEmailType": "이 항목은 이메일 유형이 아닙니다",
+    "itemNotFound": "항목을 찾을 수 없습니다",
+    "notItemOwner": "항목의 소유자가 아닙니다"
+  },
+  "postScheduler": {
+    "clipNotFound": "클립을 찾을 수 없습니다",
+    "scheduleMustBeFuture": "예약 시간은 미래여야 합니다",
+    "postNotFound": "게시물을 찾을 수 없습니다",
+    "notPostOwner": "게시물의 소유자가 아닙니다"
+  },
+  "apiGateway": {
+    "maxApiKeys": "활성 API 키는 최대 10개까지입니다",
+    "apiKeyNotFound": "API 키를 찾을 수 없습니다",
+    "maxWebhooks": "활성 Webhook은 최대 5개까지입니다",
+    "webhookNotFound": "Webhook을 찾을 수 없습니다",
+    "tenantNotFound": "테넌트를 찾을 수 없습니다"
+  },
+  "user": {
+    "notFound": "사용자를 찾을 수 없습니다",
+    "onboardingCompleted": "온보딩이 이미 완료되었습니다",
+    "socialNotFound": "소셜 계정을 찾을 수 없습니다",
+    "cannotDisconnectOthers": "다른 사용자의 소셜 계정을 연결 해제할 수 없습니다"
+  },
+  "landingPage": {
+    "notFound": "페이지를 찾을 수 없습니다",
+    "notPublished": "페이지가 아직 게시되지 않았습니다"
+  },
+  "digitalProduct": {
+    "notFound": "상품을 찾을 수 없습니다",
+    "paymentNotConfigured": "결제 시스템이 설정되지 않았습니다",
+    "orderNotFound": "주문을 찾을 수 없습니다",
+    "paymentNotCompleted": "결제가 완료되지 않았습니다",
+    "invalidDownloadToken": "유효하지 않은 다운로드 token입니다",
+    "downloadExpired": "다운로드 링크가 만료되었습니다"
+  },
+  "affiliate": {
+    "linkNotFound": "제휴 링크를 찾을 수 없습니다",
+    "trackingNotFound": "추적 코드를 찾을 수 없습니다",
+    "useRedirectEndpoint": "클릭 이벤트에는 리다이렉트 엔드포인트를 사용해 주세요"
+  },
+  "tenant": {
+    "notFound": "테넌트를 찾을 수 없습니다",
+    "domainConflict": "사용자 지정 도메인이 이미 다른 테넌트에서 사용 중입니다"
+  },
+  "contentClip": {
+    "notFound": "저장된 클립을 찾을 수 없습니다"
+  }
+}

@@ -80,7 +80,7 @@ export class AffiliateService {
       },
     });
 
-    if (!link) throw new NotFoundException('Affiliate link not found');
+    if (!link) throw new NotFoundException('errors.affiliate.linkNotFound');
     if (link.userId !== userId || link.tenantId !== tenantId) {
       throw new ForbiddenException();
     }
@@ -114,7 +114,7 @@ export class AffiliateService {
 
   async update(userId: string, tenantId: string, id: string, dto: UpdateLinkDto) {
     const link = await this.prisma.affiliateLink.findUnique({ where: { id } });
-    if (!link) throw new NotFoundException('Affiliate link not found');
+    if (!link) throw new NotFoundException('errors.affiliate.linkNotFound');
     if (link.userId !== userId || link.tenantId !== tenantId) {
       throw new ForbiddenException();
     }
@@ -133,7 +133,7 @@ export class AffiliateService {
 
   async deactivate(userId: string, tenantId: string, id: string) {
     const link = await this.prisma.affiliateLink.findUnique({ where: { id } });
-    if (!link) throw new NotFoundException('Affiliate link not found');
+    if (!link) throw new NotFoundException('errors.affiliate.linkNotFound');
     if (link.userId !== userId || link.tenantId !== tenantId) {
       throw new ForbiddenException();
     }
@@ -151,7 +151,7 @@ export class AffiliateService {
       where: { trackingCode },
     });
 
-    if (!link) throw new NotFoundException('Link not found');
+    if (!link) throw new NotFoundException('errors.affiliate.linkNotFound');
 
     // Record click event (fire-and-forget)
     if (link.isActive) {
@@ -189,10 +189,10 @@ export class AffiliateService {
       where: { trackingCode: dto.trackingCode },
     });
 
-    if (!link) throw new NotFoundException('Tracking code not found');
+    if (!link) throw new NotFoundException('errors.affiliate.trackingNotFound');
 
     if (dto.eventType === AffiliateEventType.CLICK) {
-      throw new BadRequestException('Use redirect endpoint for click events');
+      throw new BadRequestException('errors.affiliate.useRedirectEndpoint');
     }
 
     const event = await this.prisma.affiliateEvent.create({

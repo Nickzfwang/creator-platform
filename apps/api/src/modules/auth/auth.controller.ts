@@ -78,7 +78,7 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Invalid Google credential' })
   async googleLogin(@Body() dto: GoogleLoginDto) {
     if (!this.googleClient) {
-      throw new BadRequestException('Google OAuth 尚未設定');
+      throw new BadRequestException('errors.auth.googleNotConfigured');
     }
 
     try {
@@ -89,7 +89,7 @@ export class AuthController {
 
       const payload = ticket.getPayload();
       if (!payload?.email) {
-        throw new BadRequestException('Google 帳號缺少 email');
+        throw new BadRequestException('errors.auth.googleMissingEmail');
       }
 
       return this.authService.validateGoogleUser({
@@ -99,7 +99,7 @@ export class AuthController {
       });
     } catch (err) {
       if (err instanceof BadRequestException) throw err;
-      throw new BadRequestException('Invalid Google credential');
+      throw new BadRequestException('errors.auth.invalidGoogleCredential');
     }
   }
 

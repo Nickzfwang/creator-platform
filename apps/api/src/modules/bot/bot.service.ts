@@ -95,7 +95,7 @@ export class BotService {
       },
     });
 
-    if (!bot) throw new NotFoundException('Bot not found');
+    if (!bot) throw new NotFoundException('errors.bot.notFound');
     if (bot.userId !== userId || bot.tenantId !== tenantId) {
       throw new ForbiddenException();
     }
@@ -109,7 +109,7 @@ export class BotService {
 
   async getPublicBot(id: string) {
     const bot = await this.prisma.botConfig.findUnique({ where: { id } });
-    if (!bot || !bot.isPublic) throw new NotFoundException('Bot not found');
+    if (!bot || !bot.isPublic) throw new NotFoundException('errors.bot.notFound');
 
     return {
       id: bot.id,
@@ -122,7 +122,7 @@ export class BotService {
 
   async update(userId: string, tenantId: string, id: string, dto: UpdateBotDto) {
     const bot = await this.prisma.botConfig.findUnique({ where: { id } });
-    if (!bot) throw new NotFoundException('Bot not found');
+    if (!bot) throw new NotFoundException('errors.bot.notFound');
     if (bot.userId !== userId || bot.tenantId !== tenantId) {
       throw new ForbiddenException();
     }
@@ -150,7 +150,7 @@ export class BotService {
 
   async remove(userId: string, tenantId: string, id: string) {
     const bot = await this.prisma.botConfig.findUnique({ where: { id } });
-    if (!bot) throw new NotFoundException('Bot not found');
+    if (!bot) throw new NotFoundException('errors.bot.notFound');
     if (bot.userId !== userId || bot.tenantId !== tenantId) {
       throw new ForbiddenException();
     }
@@ -168,9 +168,9 @@ export class BotService {
       include: { knowledgeBase: { select: { id: true } } },
     });
 
-    if (!bot) throw new NotFoundException('Bot not found');
+    if (!bot) throw new NotFoundException('errors.bot.notFound');
     if (!bot.isPublic && !fanUserId) {
-      throw new ForbiddenException('This bot is not public');
+      throw new ForbiddenException('errors.bot.notPublic');
     }
 
     // Get or create conversation
@@ -181,7 +181,7 @@ export class BotService {
         where: { id: dto.conversationId },
       });
       if (!existing || existing.botId !== botId) {
-        throw new NotFoundException('Conversation not found');
+        throw new NotFoundException('errors.bot.conversationNotFound');
       }
       conversation = existing;
     } else {
@@ -289,7 +289,7 @@ ${personality.expertise?.length ? `- 專長領域：${personality.expertise.join
 
   async getConversations(userId: string, tenantId: string, botId: string, limit: number = 20, cursor?: string) {
     const bot = await this.prisma.botConfig.findUnique({ where: { id: botId } });
-    if (!bot) throw new NotFoundException('Bot not found');
+    if (!bot) throw new NotFoundException('errors.bot.notFound');
     if (bot.userId !== userId || bot.tenantId !== tenantId) {
       throw new ForbiddenException();
     }

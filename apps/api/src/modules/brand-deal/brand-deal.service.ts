@@ -78,7 +78,7 @@ export class BrandDealService {
 
   async findById(userId: string, tenantId: string, id: string) {
     const deal = await this.prisma.brandDeal.findUnique({ where: { id } });
-    if (!deal) throw new NotFoundException('Brand deal not found');
+    if (!deal) throw new NotFoundException('errors.brandDeal.notFound');
     if (deal.userId !== userId || deal.tenantId !== tenantId) {
       throw new ForbiddenException();
     }
@@ -87,7 +87,7 @@ export class BrandDealService {
 
   async update(userId: string, tenantId: string, id: string, dto: UpdateBrandDealDto) {
     const deal = await this.prisma.brandDeal.findUnique({ where: { id } });
-    if (!deal) throw new NotFoundException('Brand deal not found');
+    if (!deal) throw new NotFoundException('errors.brandDeal.notFound');
     if (deal.userId !== userId || deal.tenantId !== tenantId) {
       throw new ForbiddenException();
     }
@@ -132,7 +132,7 @@ export class BrandDealService {
 
   async remove(userId: string, tenantId: string, id: string) {
     const deal = await this.prisma.brandDeal.findUnique({ where: { id } });
-    if (!deal) throw new NotFoundException('Brand deal not found');
+    if (!deal) throw new NotFoundException('errors.brandDeal.notFound');
     if (deal.userId !== userId || deal.tenantId !== tenantId) {
       throw new ForbiddenException();
     }
@@ -151,7 +151,7 @@ export class BrandDealService {
 
   async generateProposal(userId: string, tenantId: string, dto: GenerateProposalDto) {
     const deal = await this.prisma.brandDeal.findUnique({ where: { id: dto.dealId } });
-    if (!deal) throw new NotFoundException('Brand deal not found');
+    if (!deal) throw new NotFoundException('errors.brandDeal.notFound');
     if (deal.userId !== userId || deal.tenantId !== tenantId) {
       throw new ForbiddenException();
     }

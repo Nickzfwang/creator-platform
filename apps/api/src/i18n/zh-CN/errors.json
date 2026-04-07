@@ -1,0 +1,167 @@
+{
+  "common": {
+    "internalError": "服务器内部错误",
+    "forbidden": "权限不足",
+    "tenantRequired": "需要租户上下文"
+  },
+  "auth": {
+    "userNotFound": "找不到用户",
+    "emailRegistered": "此 Email 已被注册",
+    "invalidCredentials": "Email 或密码错误",
+    "invalidRefreshToken": "无效或过期的 refresh token",
+    "googleNotConfigured": "Google OAuth 尚未设置",
+    "googleMissingEmail": "Google 账号缺少 email",
+    "invalidGoogleCredential": "无效的 Google 凭证"
+  },
+  "video": {
+    "notFound": "找不到视频",
+    "notOwner": "您不是此视频的拥有者",
+    "notProcessed": "视频尚未处理完成，请等待处理完成后再试",
+    "fileNotFound": "视频文件不存在，可能已被删除。请重新上传视频。",
+    "noAudioTrack": "此视频没有音频轨道，无法进行语音分析。请上传含有语音的视频。",
+    "whisperNoWordData": "Whisper 未返回 word-level 数据，请确认 OPENAI_API_KEY 已设置且音频品质正常。",
+    "noValidFillers": "没有选择有效的语助词标记",
+    "tooShortForChapters": "视频太短（< 30 秒），无法生成章节标记",
+    "tooShortForScript": "视频太短（< 30 秒），无法生成脚本摘要",
+    "noTranscript": "视频尚无转录稿，请先完成视频处理",
+    "chapterGenFailed": "AI 未能生成章节标记，请重试",
+    "scriptGenFailed": "AI 未能生成脚本摘要，请重试",
+    "noEmbeddedSubtitles": "无法提取嵌入字幕，请上传含有语音或字幕的视频。",
+    "noAudioNoSubtitles": "此视频没有音频轨道也没有嵌入字幕，无法生成字幕。请上传含有语音的视频。",
+    "notUploading": "视频状态不是上传中",
+    "onlyVideoFiles": "仅允许视频文件",
+    "noFileProvided": "未提供文件",
+    "clipNotFound": "找不到片段"
+  },
+  "shortVideo": {
+    "sourceFileNotFound": "原始视频文件不存在，请重新上传",
+    "noClips": "此视频尚无剪辑片段，请先生成 AI 片段"
+  },
+  "contentStrategy": {
+    "nicheRequired": "新用户需提供 niche 领域才能生成建议",
+    "generateFailed": "AI 生成建议失败，请稍后重试",
+    "invalidCursor": "无效的 cursor 参数",
+    "suggestionNotFound": "建议不存在",
+    "alreadyAdopted": "建议已被采用",
+    "alreadyDismissed": "建议已被忽略",
+    "replaceFailed": "无法生成替代建议，请稍后重试",
+    "calendarItemNotFound": "日历项目不存在",
+    "publishNeedsVideo": "发布状态需要关联视频 ID",
+    "cannotDeletePublished": "已发布或已测量的项目不可删除"
+  },
+  "competitor": {
+    "invalidYoutubeUrl": "无法解析 YouTube 频道 URL，请提供有效的频道链接",
+    "alreadyTracked": "已追踪此频道",
+    "notFound": "竞品频道不存在"
+  },
+  "trendRadar": {
+    "rateLimited": "请等待 10 分钟后再重新扫描",
+    "invalidFingerprint": "无效的指纹格式",
+    "trendNotFound": "找不到趋势",
+    "keywordAlreadyTracked": "此关键字已追踪",
+    "keywordNotFound": "关键字不存在",
+    "maxKeywords": "最多追踪 {max} 个关键字",
+    "maxRssSources": "最多新增 10 个自定义 RSS 来源",
+    "rssAlreadyAdded": "此 RSS 来源已新增",
+    "rssNotFound": "RSS 来源不存在"
+  },
+  "interactions": {
+    "commentNotFound": "评论不存在"
+  },
+  "emailMarketing": {
+    "alreadySent": "此活动已发送",
+    "noEmailTemplate": "此活动没有邮件模板",
+    "noMatchingSubscribers": "没有符合条件的订阅者",
+    "invalidUnsubscribeLink": "无效的取消订阅链接",
+    "subscriberNotFound": "找不到订阅者"
+  },
+  "payment": {
+    "stripeNotConfigured": "Stripe 尚未设置",
+    "stripeNotConfiguredAdmin": "Stripe 尚未设置，请联系管理员",
+    "cannotCheckoutFree": "免费方案无法结账",
+    "missingRawBody": "缺少原始请求内容",
+    "invalidWebhookSignature": "无效的 Webhook 签名"
+  },
+  "membership": {
+    "tierNotFound": "找不到方案",
+    "tierNotActive": "方案不存在或未启用",
+    "tierAtCapacity": "此方案已达人数上限",
+    "alreadySubscribed": "已订阅此方案",
+    "cannotDeleteWithMembers": "无法删除有活跃会员的方案，请先停用。",
+    "membershipNotFound": "找不到会员资格",
+    "alreadyCancelled": "会员已取消"
+  },
+  "social": {
+    "invalidOAuthState": "无效的 OAuth 状态参数",
+    "platformMismatch": "OAuth 状态中的平台不匹配",
+    "missingPkce": "缺少 PKCE code_verifier",
+    "accountNotFound": "找不到社交账号",
+    "notAccountOwner": "不是账号拥有者",
+    "noRefreshToken": "此账号没有可用的 refresh token"
+  },
+  "bot": {
+    "notFound": "找不到 Bot",
+    "notPublic": "此 Bot 不是公开的",
+    "conversationNotFound": "找不到对话"
+  },
+  "knowledgeBase": {
+    "notFound": "找不到知识库"
+  },
+  "brandDeal": {
+    "notFound": "找不到品牌合作"
+  },
+  "contentRepurpose": {
+    "videoNotFound": "找不到视频",
+    "notVideoOwner": "不是视频拥有者",
+    "videoNotProcessed": "视频必须处于已处理状态",
+    "alreadyInProgress": "内容生成已在进行中",
+    "jobNotFound": "找不到任务",
+    "noValidSocialPosts": "找不到有效的社交帖子项目",
+    "notEmailType": "项目不是 Email 类型",
+    "itemNotFound": "找不到项目",
+    "notItemOwner": "不是项目拥有者"
+  },
+  "postScheduler": {
+    "clipNotFound": "找不到片段",
+    "scheduleMustBeFuture": "排程时间必须在未来",
+    "postNotFound": "找不到帖子",
+    "notPostOwner": "不是帖子拥有者"
+  },
+  "apiGateway": {
+    "maxApiKeys": "最多 10 个有效 API 密钥",
+    "apiKeyNotFound": "找不到 API 密钥",
+    "maxWebhooks": "最多 5 个有效 Webhook",
+    "webhookNotFound": "找不到 Webhook",
+    "tenantNotFound": "找不到租户"
+  },
+  "user": {
+    "notFound": "找不到用户",
+    "onboardingCompleted": "新手引导已完成",
+    "socialNotFound": "找不到社交账号",
+    "cannotDisconnectOthers": "无法断开其他用户的社交账号"
+  },
+  "landingPage": {
+    "notFound": "找不到页面",
+    "notPublished": "页面尚未发布"
+  },
+  "digitalProduct": {
+    "notFound": "找不到商品",
+    "paymentNotConfigured": "支付系统尚未设置",
+    "orderNotFound": "找不到订单",
+    "paymentNotCompleted": "付款未完成",
+    "invalidDownloadToken": "无效的下载 token",
+    "downloadExpired": "下载链接已过期"
+  },
+  "affiliate": {
+    "linkNotFound": "找不到联盟链接",
+    "trackingNotFound": "找不到追踪码",
+    "useRedirectEndpoint": "请使用重定向端点进行点击事件"
+  },
+  "tenant": {
+    "notFound": "找不到租户",
+    "domainConflict": "自定义域名已被其他租户使用"
+  },
+  "contentClip": {
+    "notFound": "找不到收藏"
+  }
+}

@@ -96,7 +96,7 @@ export class ContentClipService {
 
   async toggleStar(clipId: string, userId: string) {
     const clip = await this.prisma.contentClip.findUnique({ where: { id: clipId } });
-    if (!clip || clip.userId !== userId) throw new NotFoundException('Clip not found');
+    if (!clip || clip.userId !== userId) throw new NotFoundException('errors.contentClip.notFound');
 
     return this.prisma.contentClip.update({
       where: { id: clipId },
@@ -106,7 +106,7 @@ export class ContentClipService {
 
   async deleteClip(clipId: string, userId: string) {
     const clip = await this.prisma.contentClip.findUnique({ where: { id: clipId } });
-    if (!clip || clip.userId !== userId) throw new NotFoundException('Clip not found');
+    if (!clip || clip.userId !== userId) throw new NotFoundException('errors.contentClip.notFound');
 
     await this.prisma.contentClip.delete({ where: { id: clipId } });
     return { deleted: true };

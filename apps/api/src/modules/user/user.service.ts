@@ -46,7 +46,7 @@ export class UserService {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('errors.user.notFound');
     }
 
     return user;
@@ -83,7 +83,7 @@ export class UserService {
     const user = await this.findById(id);
 
     if (user.onboardingCompleted) {
-      throw new ConflictException('Onboarding already completed');
+      throw new ConflictException('errors.user.onboardingCompleted');
     }
 
     const data: Record<string, unknown> = {
@@ -126,11 +126,11 @@ export class UserService {
     });
 
     if (!account) {
-      throw new NotFoundException('Social account not found');
+      throw new NotFoundException('errors.user.socialNotFound');
     }
 
     if (account.userId !== userId) {
-      throw new ForbiddenException('Cannot disconnect another user\'s social account');
+      throw new ForbiddenException('errors.user.cannotDisconnectOthers');
     }
 
     await this.prisma.socialAccount.delete({

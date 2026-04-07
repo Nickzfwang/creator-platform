@@ -37,12 +37,14 @@ import { NotificationModule } from './modules/notification/notification.module';
 import { BrevoModule } from './modules/brevo/brevo.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { ExportModule } from './modules/export/export.module';
+import { I18nConfigModule } from './i18n/i18n.module';
 
 @Module({
   imports: [
     PrismaModule,
     RedisModule,
     SentryModule,
+    I18nConfigModule,
     AiModule,
     StorageModule,
     ConfigModule.forRoot({

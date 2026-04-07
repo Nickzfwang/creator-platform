@@ -82,7 +82,7 @@ export class ContentStrategyService {
 
     const hasHistoryData = topContent && overview;
     if (!hasHistoryData && !dto.niche) {
-      throw new BadRequestException('新用戶需提供 niche 領域才能生成建議');
+      throw new BadRequestException('errors.contentStrategy.nicheRequired');
     }
 
     // 組裝 AI context
@@ -103,7 +103,7 @@ export class ContentStrategyService {
     );
 
     if (!suggestions?.suggestions?.length) {
-      throw new BadRequestException('AI 生成建議失敗，請稍後重試');
+      throw new BadRequestException('errors.contentStrategy.generateFailed');
     }
 
     // 批次寫入 DB
@@ -158,7 +158,7 @@ export class ContentStrategyService {
     // Validate cursor if provided
     const cursorDate = cursor ? new Date(cursor) : null;
     if (cursor && (!cursorDate || isNaN(cursorDate.getTime()))) {
-      throw new BadRequestException('無效的 cursor 參數');
+      throw new BadRequestException('errors.contentStrategy.invalidCursor');
     }
 
     const items = await this.prisma.topicSuggestion.findMany({
@@ -184,9 +184,9 @@ export class ContentStrategyService {
     const suggestion = await this.prisma.topicSuggestion.findFirst({
       where: { id: suggestionId, userId, tenantId },
     });
-    if (!suggestion) throw new NotFoundException('建議不存在');
-    if (suggestion.isAdopted) throw new BadRequestException('建議已被採用');
-    if (suggestion.isDismissed) throw new BadRequestException('建議已被忽略');
+    if (!suggestion) throw new NotFoundException('errors.contentStrategy.suggestionNotFound');
+    if (suggestion.isAdopted) throw new BadRequestException('errors.contentStrategy.alreadyAdopted');
+    if (suggestion.isDismissed) throw new BadRequestException('errors.contentStrategy.alreadyDismissed');
 
     const [updatedSuggestion, calendarItem] = await this.prisma.$transaction([
       this.prisma.topicSuggestion.update({
@@ -215,7 +215,7 @@ export class ContentStrategyService {
     const suggestion = await this.prisma.topicSuggestion.findFirst({
       where: { id: suggestionId, userId, tenantId },
     });
-    if (!suggestion) throw new NotFoundException('建議不存在');
+    if (!suggestion) throw new NotFoundException('errors.contentStrategy.suggestionNotFound');
 
     return this.prisma.topicSuggestion.update({
       where: { id: suggestionId },
@@ -227,7 +227,7 @@ export class ContentStrategyService {
     const suggestion = await this.prisma.topicSuggestion.findFirst({
       where: { id: suggestionId, userId, tenantId },
     });
-    if (!suggestion) throw new NotFoundException('建議不存在');
+    if (!suggestion) throw new NotFoundException('errors.contentStrategy.suggestionNotFound');
 
     // Dismiss old
     await this.prisma.topicSuggestion.update({
@@ -238,7 +238,7 @@ export class ContentStrategyService {
     // Generate one new
     const result = await this.generateSuggestions(userId, tenantId, { count: 5 });
     if (!result.suggestions[0]) {
-      throw new BadRequestException('無法生成替代建議，請稍後重試');
+      throw new BadRequestException('errors.contentStrategy.replaceFailed');
     }
     return result.suggestions[0];
   }
@@ -285,7 +285,7 @@ export class ContentStrategyService {
     const item = await this.prisma.contentCalendar.findFirst({
       where: { id: itemId, userId, tenantId },
     });
-    if (!item) throw new NotFoundException('日曆項目不存在');
+    if (!item) throw new NotFoundException('errors.contentStrategy.calendarItemNotFound');
 
     // Validate status transition
     if (dto.status) {
@@ -296,7 +296,7 @@ export class ContentStrategyService {
         );
       }
       if (dto.status === CalendarItemStatus.PUBLISHED && !dto.videoId && !item.videoId) {
-        throw new BadRequestException('發佈狀態需要關聯影片 ID');
+        throw new BadRequestException('errors.contentStrategy.publishNeedsVideo');
       }
     }
 
@@ -325,10 +325,10 @@ export class ContentStrategyService {
     const item = await this.prisma.contentCalendar.findFirst({
       where: { id: itemId, userId, tenantId },
     });
-    if (!item) throw new NotFoundException('日曆項目不存在');
+    if (!item) throw new NotFoundException('errors.contentStrategy.calendarItemNotFound');
 
     if (item.status === CalendarItemStatus.PUBLISHED || item.status === CalendarItemStatus.MEASURED) {
-      throw new BadRequestException('已發佈或已測量的項目不可刪除');
+      throw new BadRequestException('errors.contentStrategy.cannotDeletePublished');
     }
 
     await this.prisma.contentCalendar.delete({ where: { id: itemId } });
@@ -343,7 +343,7 @@ export class ContentStrategyService {
     const item = await this.prisma.contentCalendar.findFirst({
       where: { id: itemId, userId, tenantId },
     });
-    if (!item) throw new NotFoundException('日曆項目不存在');
+    if (!item) throw new NotFoundException('errors.contentStrategy.calendarItemNotFound');
 
     // Build scheduledAt from calendar date/time if not provided
     let scheduledAt: Date | null = null;

@@ -55,7 +55,7 @@ export class AuthService {
       where: { email },
     });
     if (existing) {
-      throw new ConflictException('Email already registered');
+      throw new ConflictException('errors.auth.emailRegistered');
     }
 
     const passwordHash = await bcrypt.hash(dto.password, this.BCRYPT_ROUNDS);
@@ -101,7 +101,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException('errors.auth.invalidCredentials');
     }
 
     if (!user.passwordHash) {
@@ -112,7 +112,7 @@ export class AuthService {
 
     const passwordValid = await bcrypt.compare(dto.password, user.passwordHash);
     if (!passwordValid) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException('errors.auth.invalidCredentials');
     }
 
     const tokens = await this.generateTokens(
@@ -138,13 +138,13 @@ export class AuthService {
         where: { id: payload.sub },
       });
       if (!user) {
-        throw new UnauthorizedException('User not found');
+        throw new UnauthorizedException('errors.auth.userNotFound');
       }
 
       return this.generateTokens(user.id, user.email, user.tenantId, user.role);
     } catch (error) {
       if (error instanceof UnauthorizedException) throw error;
-      throw new UnauthorizedException('Invalid or expired refresh token');
+      throw new UnauthorizedException('errors.auth.invalidRefreshToken');
     }
   }
 

@@ -36,7 +36,7 @@ export class TenantService {
     });
 
     if (!tenant) {
-      throw new NotFoundException('Tenant not found');
+      throw new NotFoundException('errors.tenant.notFound');
     }
 
     return tenant;
@@ -58,7 +58,7 @@ export class TenantService {
     });
 
     if (!tenant) {
-      throw new NotFoundException('Tenant not found');
+      throw new NotFoundException('errors.tenant.notFound');
     }
 
     return tenant;
@@ -80,7 +80,7 @@ export class TenantService {
     });
 
     if (!tenant) {
-      throw new NotFoundException('Tenant not found for this domain');
+      throw new NotFoundException('errors.tenant.notFound');
     }
 
     return tenant;
@@ -102,7 +102,7 @@ export class TenantService {
     });
 
     if (!tenant) {
-      throw new NotFoundException('Tenant not found');
+      throw new NotFoundException('errors.tenant.notFound');
     }
 
     const updateData: Record<string, unknown> = {};
@@ -189,7 +189,7 @@ export class TenantService {
     });
 
     if (!tenant) {
-      throw new NotFoundException('Tenant not found');
+      throw new NotFoundException('errors.tenant.notFound');
     }
 
     // Check custom domain uniqueness
@@ -198,7 +198,7 @@ export class TenantService {
         where: { customDomain: dto.customDomain },
       });
       if (existing) {
-        throw new ConflictException('Custom domain already in use by another tenant');
+        throw new ConflictException('errors.tenant.domainConflict');
       }
     }
 
@@ -239,7 +239,7 @@ export class TenantService {
     });
 
     if (!tenant) {
-      throw new NotFoundException('Tenant not found');
+      throw new NotFoundException('errors.tenant.notFound');
     }
 
     const [userCount, videoCount, postCount, dealCount, membershipCount] =
@@ -278,7 +278,7 @@ export class TenantService {
     });
 
     if (!tenant) {
-      throw new NotFoundException('Tenant not found');
+      throw new NotFoundException('errors.tenant.notFound');
     }
 
     return {

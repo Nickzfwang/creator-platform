@@ -66,7 +66,7 @@ export class CompetitorService {
     // Parse YouTube channel URL
     const channelId = this.parseYouTubeChannelUrl(channelUrl);
     if (!channelId) {
-      throw new BadRequestException('無法解析 YouTube 頻道 URL，請提供有效的頻道連結');
+      throw new BadRequestException('errors.competitor.invalidYoutubeUrl');
     }
 
     // Check duplicate
@@ -74,7 +74,7 @@ export class CompetitorService {
       where: { userId_channelId: { userId, channelId } },
     });
     if (existing && existing.tenantId === tenantId) {
-      throw new ConflictException('已追蹤此頻道');
+      throw new ConflictException('errors.competitor.alreadyTracked');
     }
 
     // Fetch channel info from YouTube Data API v3
@@ -184,7 +184,7 @@ export class CompetitorService {
     const competitor = await this.prisma.competitor.findFirst({
       where: { id: competitorId, userId, tenantId },
     });
-    if (!competitor) throw new NotFoundException('競品頻道不存在');
+    if (!competitor) throw new NotFoundException('errors.competitor.notFound');
 
     const clampedLimit = Math.min(limit, 50);
     const videos = await this.prisma.competitorVideo.findMany({
@@ -210,7 +210,7 @@ export class CompetitorService {
     const competitor = await this.prisma.competitor.findFirst({
       where: { id: competitorId, userId, tenantId },
     });
-    if (!competitor) throw new NotFoundException('競品頻道不存在');
+    if (!competitor) throw new NotFoundException('errors.competitor.notFound');
 
     await this.prisma.competitor.delete({ where: { id: competitorId } });
   }

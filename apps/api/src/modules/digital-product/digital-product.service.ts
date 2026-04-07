@@ -97,7 +97,7 @@ export class DigitalProductService {
         _count: { select: { orders: true } },
       },
     });
-    if (!product || product.userId !== userId) throw new NotFoundException('Product not found');
+    if (!product || product.userId !== userId) throw new NotFoundException('errors.digitalProduct.notFound');
     return product;
   }
 
@@ -112,7 +112,7 @@ export class DigitalProductService {
     tags?: string[];
   }) {
     const product = await this.prisma.digitalProduct.findUnique({ where: { id: productId } });
-    if (!product || product.userId !== userId) throw new NotFoundException('Product not found');
+    if (!product || product.userId !== userId) throw new NotFoundException('errors.digitalProduct.notFound');
 
     return this.prisma.digitalProduct.update({
       where: { id: productId },
@@ -122,7 +122,7 @@ export class DigitalProductService {
 
   async delete(productId: string, userId: string) {
     const product = await this.prisma.digitalProduct.findUnique({ where: { id: productId } });
-    if (!product || product.userId !== userId) throw new NotFoundException('Product not found');
+    if (!product || product.userId !== userId) throw new NotFoundException('errors.digitalProduct.notFound');
 
     await this.prisma.productOrder.deleteMany({ where: { productId } });
     await this.prisma.digitalProduct.delete({ where: { id: productId } });
@@ -146,10 +146,10 @@ export class DigitalProductService {
   // Purchase flow via Stripe Checkout
   async purchase(productId: string, buyerEmail: string, buyerName?: string) {
     const product = await this.prisma.digitalProduct.findUnique({ where: { id: productId } });
-    if (!product || !product.isPublished) throw new NotFoundException('Product not found');
+    if (!product || !product.isPublished) throw new NotFoundException('errors.digitalProduct.notFound');
 
     if (!this.stripe) {
-      throw new BadRequestException('Payment system not configured');
+      throw new BadRequestException('errors.digitalProduct.paymentNotConfigured');
     }
 
     // Create order in PENDING state
@@ -251,11 +251,11 @@ export class DigitalProductService {
       include: { product: { select: { fileUrl: true, name: true } } },
     });
 
-    if (!order) throw new NotFoundException('Order not found');
-    if (order.status !== 'COMPLETED') throw new BadRequestException('Payment not completed');
-    if (order.downloadToken !== token) throw new BadRequestException('Invalid download token');
+    if (!order) throw new NotFoundException('errors.digitalProduct.orderNotFound');
+    if (order.status !== 'COMPLETED') throw new BadRequestException('errors.digitalProduct.paymentNotCompleted');
+    if (order.downloadToken !== token) throw new BadRequestException('errors.digitalProduct.invalidDownloadToken');
     if (order.downloadExpiresAt && order.downloadExpiresAt < new Date()) {
-      throw new BadRequestException('Download link expired');
+      throw new BadRequestException('errors.digitalProduct.downloadExpired');
     }
 
     // Increment download count
@@ -273,7 +273,7 @@ export class DigitalProductService {
   // AI regenerate description
   async aiRegenerate(productId: string, userId: string) {
     const product = await this.prisma.digitalProduct.findUnique({ where: { id: productId } });
-    if (!product || product.userId !== userId) throw new NotFoundException('Product not found');
+    if (!product || product.userId !== userId) throw new NotFoundException('errors.digitalProduct.notFound');
 
     const result = await this.aiService.generateJson<{
       description: string;

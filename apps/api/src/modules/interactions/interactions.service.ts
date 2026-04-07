@@ -110,7 +110,7 @@ export class InteractionsService {
     const comment = await this.prisma.fanComment.findFirst({
       where: { id: commentId, userId, tenantId },
     });
-    if (!comment) throw new NotFoundException('留言不存在');
+    if (!comment) throw new NotFoundException('errors.interactions.commentNotFound');
 
     // Get RAG context if knowledge base specified
     let ragContext = '';
@@ -177,7 +177,7 @@ ${ragContext ? `\n## 知識庫參考資料\n${ragContext}` : ''}
     const comment = await this.prisma.fanComment.findFirst({
       where: { id: commentId, userId, tenantId },
     });
-    if (!comment) throw new NotFoundException('留言不存在');
+    if (!comment) throw new NotFoundException('errors.interactions.commentNotFound');
 
     const data: Prisma.FanCommentUpdateInput = {};
     if (dto.finalReply !== undefined) data.finalReply = dto.finalReply;
@@ -199,7 +199,7 @@ ${ragContext ? `\n## 知識庫參考資料\n${ragContext}` : ''}
     const comment = await this.prisma.fanComment.findFirst({
       where: { id: commentId, userId, tenantId },
     });
-    if (!comment) throw new NotFoundException('留言不存在');
+    if (!comment) throw new NotFoundException('errors.interactions.commentNotFound');
 
     await this.prisma.fanComment.delete({ where: { id: commentId } });
   }

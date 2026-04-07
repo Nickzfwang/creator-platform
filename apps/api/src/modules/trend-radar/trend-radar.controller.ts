@@ -62,7 +62,7 @@ export class TrendRadarController {
     // Simple rate limit: 1 refresh per 10 minutes
     const now = Date.now();
     if (now - this.lastRefreshAt < 10 * 60 * 1000) {
-      throw new ForbiddenException('請等待 10 分鐘後再重新掃描');
+      throw new ForbiddenException('errors.trendRadar.rateLimited');
     }
     this.lastRefreshAt = now;
 
@@ -82,12 +82,12 @@ export class TrendRadarController {
     @Query('period') period?: string,
   ) {
     if (!/^[a-f0-9]{16}$/.test(fingerprint)) {
-      throw new BadRequestException('Invalid fingerprint format');
+      throw new BadRequestException('errors.trendRadar.invalidFingerprint');
     }
     const days = period === '7d' ? 7 : period === '30d' ? 30 : 14;
     const history = await this.trendRadarService.getTrendHistory(fingerprint, days);
     if (!history) {
-      throw new NotFoundException('Trend not found');
+      throw new NotFoundException('errors.trendRadar.trendNotFound');
     }
     return history;
   }
@@ -120,7 +120,7 @@ export class TrendRadarController {
     // Check quota
     const count = await this.prisma.trendKeyword.count({ where: { userId } });
     if (count >= MAX_KEYWORDS) {
-      throw new ForbiddenException(`最多追蹤 ${MAX_KEYWORDS} 個關鍵字`);
+      throw new ForbiddenException('errors.trendRadar.maxKeywords');
     }
 
     // Check duplicate
@@ -128,7 +128,7 @@ export class TrendRadarController {
       where: { userId_keyword: { userId, keyword: dto.keyword.trim() } },
     });
     if (existing) {
-      throw new ConflictException('此關鍵字已追蹤');
+      throw new ConflictException('errors.trendRadar.keywordAlreadyTracked');
     }
 
     return this.prisma.trendKeyword.create({
@@ -151,7 +151,7 @@ export class TrendRadarController {
       where: { id, userId },
     });
     if (!keyword) {
-      throw new NotFoundException('關鍵字不存在');
+      throw new NotFoundException('errors.trendRadar.keywordNotFound');
     }
     await this.prisma.trendKeyword.delete({ where: { id } });
   }
@@ -218,14 +218,14 @@ export class TrendRadarController {
   ) {
     const count = await this.prisma.customRssSource.count({ where: { userId } });
     if (count >= 10) {
-      throw new ForbiddenException('最多新增 10 個自訂 RSS 來源');
+      throw new ForbiddenException('errors.trendRadar.maxRssSources');
     }
 
     const existing = await this.prisma.customRssSource.findUnique({
       where: { userId_url: { userId, url: dto.url } },
     });
     if (existing) {
-      throw new ConflictException('此 RSS 來源已新增');
+      throw new ConflictException('errors.trendRadar.rssAlreadyAdded');
     }
 
     return this.prisma.customRssSource.create({
@@ -249,7 +249,7 @@ export class TrendRadarController {
       where: { id, userId },
     });
     if (!source) {
-      throw new NotFoundException('RSS 來源不存在');
+      throw new NotFoundException('errors.trendRadar.rssNotFound');
     }
     await this.prisma.customRssSource.delete({ where: { id } });
   }

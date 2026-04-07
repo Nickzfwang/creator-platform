@@ -57,18 +57,18 @@ export class ShortVideoService {
     // Get the video and clip from DB
     const video = await this.prisma.video.findUnique({ where: { id: videoId } });
     if (!video || video.userId !== userId) {
-      throw new NotFoundException('Video not found');
+      throw new NotFoundException('errors.video.notFound');
     }
 
     const clip = await this.prisma.videoClip.findUnique({ where: { id: clipId } });
     if (!clip || clip.videoId !== videoId) {
-      throw new NotFoundException('Clip not found');
+      throw new NotFoundException('errors.video.clipNotFound');
     }
 
     // Find the source video file
     const sourceFile = this.findSourceFile(video.originalUrl);
     if (!sourceFile) {
-      throw new BadRequestException('原始影片檔案不存在，請重新上傳');
+      throw new BadRequestException('errors.shortVideo.sourceFileNotFound');
     }
 
     // Generate output filename
@@ -215,7 +215,7 @@ export class ShortVideoService {
     });
 
     if (clips.length === 0) {
-      throw new BadRequestException('此影片尚無剪輯片段，請先生成 AI 片段');
+      throw new BadRequestException('errors.shortVideo.noClips');
     }
 
     const results: ShortVideoResult[] = [];

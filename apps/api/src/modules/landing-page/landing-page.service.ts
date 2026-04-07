@@ -99,8 +99,8 @@ export class LandingPageService {
       where: { slug },
     });
 
-    if (!page) throw new NotFoundException('Page not found');
-    if (!page.isPublished) throw new NotFoundException('Page not published');
+    if (!page) throw new NotFoundException('errors.landingPage.notFound');
+    if (!page.isPublished) throw new NotFoundException('errors.landingPage.notPublished');
 
     // Increment view count
     await this.prisma.landingPage.update({
@@ -134,7 +134,7 @@ export class LandingPageService {
     }>,
   ) {
     const page = await this.prisma.landingPage.findUnique({ where: { id: pageId } });
-    if (!page || page.userId !== userId) throw new NotFoundException('Page not found');
+    if (!page || page.userId !== userId) throw new NotFoundException('errors.landingPage.notFound');
 
     return this.prisma.landingPage.update({
       where: { id: pageId },
@@ -152,7 +152,7 @@ export class LandingPageService {
     context?: string,
   ) {
     const page = await this.prisma.landingPage.findUnique({ where: { id: pageId } });
-    if (!page || page.userId !== userId) throw new NotFoundException('Page not found');
+    if (!page || page.userId !== userId) throw new NotFoundException('errors.landingPage.notFound');
 
     const result = await this.aiService.generateJson<{
       title: string;
@@ -178,7 +178,7 @@ export class LandingPageService {
    */
   async delete(pageId: string, userId: string) {
     const page = await this.prisma.landingPage.findUnique({ where: { id: pageId } });
-    if (!page || page.userId !== userId) throw new NotFoundException('Page not found');
+    if (!page || page.userId !== userId) throw new NotFoundException('errors.landingPage.notFound');
 
     await this.prisma.landingPage.delete({ where: { id: pageId } });
     return { deleted: true };

@@ -110,7 +110,7 @@ export class PaymentService {
     dto: CreateCheckoutDto,
   ) {
     if (dto.planId === SubscriptionPlan.FREE) {
-      throw new BadRequestException('Cannot checkout for Free plan');
+      throw new BadRequestException('errors.payment.cannotCheckoutFree');
     }
 
     const subscription = await this.prisma.subscription.findFirst({
@@ -127,7 +127,7 @@ export class PaymentService {
     }
 
     if (!this.stripe) {
-      throw new BadRequestException('Stripe 尚未設定，請聯繫管理員');
+      throw new BadRequestException('errors.payment.stripeNotConfiguredAdmin');
     }
 
     // Get or create Stripe Customer
@@ -185,7 +185,7 @@ export class PaymentService {
     }
 
     if (!this.stripe) {
-      throw new BadRequestException('Stripe 尚未設定');
+      throw new BadRequestException('errors.payment.stripeNotConfigured');
     }
 
     const session = await this.stripe.billingPortal.sessions.create({
@@ -201,7 +201,7 @@ export class PaymentService {
 
   async handleWebhook(signature: string, rawBody: Buffer | undefined) {
     if (!rawBody) {
-      throw new BadRequestException('Missing raw body');
+      throw new BadRequestException('errors.payment.missingRawBody');
     }
 
     let event: Stripe.Event;
@@ -213,7 +213,7 @@ export class PaymentService {
           event = this.stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
         } catch (err) {
           this.logger.error(`Webhook signature verification failed: ${err}`);
-          throw new BadRequestException('Invalid webhook signature');
+          throw new BadRequestException('errors.payment.invalidWebhookSignature');
         }
       } else {
         // Fallback: parse without verification (dev mode)
@@ -519,11 +519,11 @@ export class PaymentService {
       select: { stripeCustomerId: true, email: true, displayName: true },
     });
 
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException('errors.user.notFound');
 
     if (user.stripeCustomerId) return user.stripeCustomerId;
 
-    if (!this.stripe) throw new BadRequestException('Stripe 尚未設定');
+    if (!this.stripe) throw new BadRequestException('errors.payment.stripeNotConfigured');
 
     const customer = await this.stripe.customers.create({
       email: user.email,

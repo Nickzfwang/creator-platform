@@ -45,11 +45,11 @@ export class EmailMarketingService {
 
   async processUnsubscribe(subscriberId: string, token: string) {
     if (!this.verifyUnsubscribeToken(subscriberId, token)) {
-      throw new BadRequestException('Invalid unsubscribe link');
+      throw new BadRequestException('errors.emailMarketing.invalidUnsubscribeLink');
     }
 
     const sub = await this.prisma.emailSubscriber.findUnique({ where: { id: subscriberId } });
-    if (!sub) throw new NotFoundException('Subscriber not found');
+    if (!sub) throw new NotFoundException('errors.emailMarketing.subscriberNotFound');
 
     if (!sub.isActive) return { alreadyUnsubscribed: true };
 
@@ -261,8 +261,8 @@ ${count > 3 ? `4-${count}. 更多信件（持續培養 + 稀缺感）` : ''}
     });
 
     if (!campaign || campaign.userId !== userId) throw new NotFoundException();
-    if (campaign.status === 'SENT') throw new BadRequestException('此活動已寄送');
-    if (!campaign.emails.length) throw new BadRequestException('此活動沒有郵件模板');
+    if (campaign.status === 'SENT') throw new BadRequestException('errors.emailMarketing.alreadySent');
+    if (!campaign.emails.length) throw new BadRequestException('errors.emailMarketing.noEmailTemplate');
 
     // Get target subscribers (filter by tags if specified)
     const where: any = { userId, isActive: true };
@@ -275,7 +275,7 @@ ${count > 3 ? `4-${count}. 更多信件（持續培養 + 稀缺感）` : ''}
       select: { id: true, email: true, name: true },
     });
 
-    if (subscribers.length === 0) throw new BadRequestException('沒有符合條件的訂閱者');
+    if (subscribers.length === 0) throw new BadRequestException('errors.emailMarketing.noMatchingSubscribers');
 
     // Update status to SENDING
     await this.prisma.emailCampaign.update({

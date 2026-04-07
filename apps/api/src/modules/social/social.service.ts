@@ -156,11 +156,11 @@ export class SocialService {
     try {
       stateData = JSON.parse(Buffer.from(state, 'base64url').toString());
     } catch {
-      throw new BadRequestException('Invalid OAuth state parameter');
+      throw new BadRequestException('errors.social.invalidOAuthState');
     }
 
     if (stateData.platform !== platform) {
-      throw new BadRequestException('Platform mismatch in OAuth state');
+      throw new BadRequestException('errors.social.platformMismatch');
     }
 
     // State is signed via base64url encoding with platform verification above
@@ -190,7 +190,7 @@ export class SocialService {
 
       case SocialPlatform.TWITTER: {
         const codeVerifier = stateData.codeVerifier as string;
-        if (!codeVerifier) throw new BadRequestException('Missing PKCE code_verifier');
+        if (!codeVerifier) throw new BadRequestException('errors.social.missingPkce');
         const twTokens = await this.twitterApi.exchangeCodeForTokens(code, oauthConfig.redirectUri, codeVerifier);
         const twUser = await this.twitterApi.getUserInfo(twTokens.accessToken);
         tokens = {
@@ -366,10 +366,10 @@ export class SocialService {
     });
 
     if (!account) {
-      throw new NotFoundException('Social account not found');
+      throw new NotFoundException('errors.social.accountNotFound');
     }
     if (account.userId !== userId) {
-      throw new ForbiddenException('Not the account owner');
+      throw new ForbiddenException('errors.social.notAccountOwner');
     }
 
     // Best-effort revoke platform token
@@ -413,13 +413,13 @@ export class SocialService {
     });
 
     if (!account) {
-      throw new NotFoundException('Social account not found');
+      throw new NotFoundException('errors.social.accountNotFound');
     }
     if (account.userId !== userId) {
-      throw new ForbiddenException('Not the account owner');
+      throw new ForbiddenException('errors.social.notAccountOwner');
     }
     if (!account.refreshToken) {
-      throw new BadRequestException('No refresh token available for this account');
+      throw new BadRequestException('errors.social.noRefreshToken');
     }
 
     const decryptedRefreshToken = this.encryption.decrypt(account.refreshToken);

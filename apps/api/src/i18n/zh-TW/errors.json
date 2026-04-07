@@ -1,0 +1,167 @@
+{
+  "common": {
+    "internalError": "伺服器內部錯誤",
+    "forbidden": "權限不足",
+    "tenantRequired": "需要租戶上下文"
+  },
+  "auth": {
+    "userNotFound": "找不到使用者",
+    "emailRegistered": "此 Email 已被註冊",
+    "invalidCredentials": "Email 或密碼錯誤",
+    "invalidRefreshToken": "無效或過期的 refresh token",
+    "googleNotConfigured": "Google OAuth 尚未設定",
+    "googleMissingEmail": "Google 帳號缺少 email",
+    "invalidGoogleCredential": "無效的 Google 憑證"
+  },
+  "video": {
+    "notFound": "找不到影片",
+    "notOwner": "您不是此影片的擁有者",
+    "notProcessed": "影片尚未處理完成，請等待處理完成後再試",
+    "fileNotFound": "影片檔案不存在，可能已被刪除。請重新上傳影片。",
+    "noAudioTrack": "此影片沒有音訊軌道，無法進行語音分析。請上傳含有語音的影片。",
+    "whisperNoWordData": "Whisper 未回傳 word-level 資料，請確認 OPENAI_API_KEY 已設定且音訊品質正常。",
+    "noValidFillers": "沒有選擇有效的語助詞標記",
+    "tooShortForChapters": "影片太短（< 30 秒），無法產出章節標記",
+    "tooShortForScript": "影片太短（< 30 秒），無法產出腳本摘要",
+    "noTranscript": "影片尚無轉錄稿，請先完成影片處理",
+    "chapterGenFailed": "AI 未能生成章節標記，請重試",
+    "scriptGenFailed": "AI 未能生成腳本摘要，請重試",
+    "noEmbeddedSubtitles": "無法提取嵌入字幕，請上傳含有語音或字幕的影片。",
+    "noAudioNoSubtitles": "此影片沒有音訊軌道也沒有嵌入字幕，無法生成字幕。請上傳含有語音的影片。",
+    "notUploading": "影片狀態不是上傳中",
+    "onlyVideoFiles": "僅允許影片檔案",
+    "noFileProvided": "未提供檔案",
+    "clipNotFound": "找不到片段"
+  },
+  "shortVideo": {
+    "sourceFileNotFound": "原始影片檔案不存在，請重新上傳",
+    "noClips": "此影片尚無剪輯片段，請先生成 AI 片段"
+  },
+  "contentStrategy": {
+    "nicheRequired": "新用戶需提供 niche 領域才能生成建議",
+    "generateFailed": "AI 生成建議失敗，請稍後重試",
+    "invalidCursor": "無效的 cursor 參數",
+    "suggestionNotFound": "建議不存在",
+    "alreadyAdopted": "建議已被採用",
+    "alreadyDismissed": "建議已被忽略",
+    "replaceFailed": "無法生成替代建議，請稍後重試",
+    "calendarItemNotFound": "日曆項目不存在",
+    "publishNeedsVideo": "發佈狀態需要關聯影片 ID",
+    "cannotDeletePublished": "已發佈或已測量的項目不可刪除"
+  },
+  "competitor": {
+    "invalidYoutubeUrl": "無法解析 YouTube 頻道 URL，請提供有效的頻道連結",
+    "alreadyTracked": "已追蹤此頻道",
+    "notFound": "競品頻道不存在"
+  },
+  "trendRadar": {
+    "rateLimited": "請等待 10 分鐘後再重新掃描",
+    "invalidFingerprint": "無效的指紋格式",
+    "trendNotFound": "找不到趨勢",
+    "keywordAlreadyTracked": "此關鍵字已追蹤",
+    "keywordNotFound": "關鍵字不存在",
+    "maxKeywords": "最多追蹤 {max} 個關鍵字",
+    "maxRssSources": "最多新增 10 個自訂 RSS 來源",
+    "rssAlreadyAdded": "此 RSS 來源已新增",
+    "rssNotFound": "RSS 來源不存在"
+  },
+  "interactions": {
+    "commentNotFound": "留言不存在"
+  },
+  "emailMarketing": {
+    "alreadySent": "此活動已寄送",
+    "noEmailTemplate": "此活動沒有郵件模板",
+    "noMatchingSubscribers": "沒有符合條件的訂閱者",
+    "invalidUnsubscribeLink": "無效的取消訂閱連結",
+    "subscriberNotFound": "找不到訂閱者"
+  },
+  "payment": {
+    "stripeNotConfigured": "Stripe 尚未設定",
+    "stripeNotConfiguredAdmin": "Stripe 尚未設定，請聯繫管理員",
+    "cannotCheckoutFree": "免費方案無法結帳",
+    "missingRawBody": "缺少原始請求內容",
+    "invalidWebhookSignature": "無效的 Webhook 簽章"
+  },
+  "membership": {
+    "tierNotFound": "找不到方案",
+    "tierNotActive": "方案不存在或未啟用",
+    "tierAtCapacity": "此方案已達人數上限",
+    "alreadySubscribed": "已訂閱此方案",
+    "cannotDeleteWithMembers": "無法刪除有活躍會員的方案，請先停用。",
+    "membershipNotFound": "找不到會員資格",
+    "alreadyCancelled": "會員已取消"
+  },
+  "social": {
+    "invalidOAuthState": "無效的 OAuth 狀態參數",
+    "platformMismatch": "OAuth 狀態中的平台不匹配",
+    "missingPkce": "缺少 PKCE code_verifier",
+    "accountNotFound": "找不到社群帳號",
+    "notAccountOwner": "不是帳號擁有者",
+    "noRefreshToken": "此帳號沒有可用的 refresh token"
+  },
+  "bot": {
+    "notFound": "找不到 Bot",
+    "notPublic": "此 Bot 不是公開的",
+    "conversationNotFound": "找不到對話"
+  },
+  "knowledgeBase": {
+    "notFound": "找不到知識庫"
+  },
+  "brandDeal": {
+    "notFound": "找不到品牌合作"
+  },
+  "contentRepurpose": {
+    "videoNotFound": "找不到影片",
+    "notVideoOwner": "不是影片擁有者",
+    "videoNotProcessed": "影片必須處於已處理狀態",
+    "alreadyInProgress": "內容生成已在進行中",
+    "jobNotFound": "找不到任務",
+    "noValidSocialPosts": "找不到有效的社群貼文項目",
+    "notEmailType": "項目不是 Email 類型",
+    "itemNotFound": "找不到項目",
+    "notItemOwner": "不是項目擁有者"
+  },
+  "postScheduler": {
+    "clipNotFound": "找不到片段",
+    "scheduleMustBeFuture": "排程時間必須在未來",
+    "postNotFound": "找不到貼文",
+    "notPostOwner": "不是貼文擁有者"
+  },
+  "apiGateway": {
+    "maxApiKeys": "最多 10 個有效 API 金鑰",
+    "apiKeyNotFound": "找不到 API 金鑰",
+    "maxWebhooks": "最多 5 個有效 Webhook",
+    "webhookNotFound": "找不到 Webhook",
+    "tenantNotFound": "找不到租戶"
+  },
+  "user": {
+    "notFound": "找不到使用者",
+    "onboardingCompleted": "新手引導已完成",
+    "socialNotFound": "找不到社群帳號",
+    "cannotDisconnectOthers": "無法斷開其他使用者的社群帳號"
+  },
+  "landingPage": {
+    "notFound": "找不到頁面",
+    "notPublished": "頁面尚未發布"
+  },
+  "digitalProduct": {
+    "notFound": "找不到商品",
+    "paymentNotConfigured": "支付系統尚未設定",
+    "orderNotFound": "找不到訂單",
+    "paymentNotCompleted": "付款未完成",
+    "invalidDownloadToken": "無效的下載 token",
+    "downloadExpired": "下載連結已過期"
+  },
+  "affiliate": {
+    "linkNotFound": "找不到聯盟連結",
+    "trackingNotFound": "找不到追蹤碼",
+    "useRedirectEndpoint": "請使用重導向端點進行點擊事件"
+  },
+  "tenant": {
+    "notFound": "找不到租戶",
+    "domainConflict": "自訂網域已被其他租戶使用"
+  },
+  "contentClip": {
+    "notFound": "找不到收藏"
+  }
+}

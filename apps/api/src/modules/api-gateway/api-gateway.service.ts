@@ -90,7 +90,7 @@ export class ApiGatewayService {
 
     // Limit number of API keys
     if (apiKeys.filter((k) => k.isActive).length >= 10) {
-      throw new BadRequestException('Maximum 10 active API keys allowed');
+      throw new BadRequestException('errors.apiGateway.maxApiKeys');
     }
 
     // Generate API key: prefix_randomBytes
@@ -150,7 +150,7 @@ export class ApiGatewayService {
 
     const keyIndex = apiKeys.findIndex((k) => k.id === keyId);
     if (keyIndex === -1) {
-      throw new NotFoundException('API key not found');
+      throw new NotFoundException('errors.apiGateway.apiKeyNotFound');
     }
 
     apiKeys[keyIndex].isActive = false;
@@ -208,7 +208,7 @@ export class ApiGatewayService {
     const webhooks = settings.webhooks ?? [];
 
     if (webhooks.filter((w) => w.isActive).length >= 5) {
-      throw new BadRequestException('Maximum 5 active webhooks allowed');
+      throw new BadRequestException('errors.apiGateway.maxWebhooks');
     }
 
     const secret = `whsec_${randomBytes(24).toString('hex')}`;
@@ -262,7 +262,7 @@ export class ApiGatewayService {
 
     const index = webhooks.findIndex((w) => w.id === webhookId);
     if (index === -1) {
-      throw new NotFoundException('Webhook not found');
+      throw new NotFoundException('errors.apiGateway.webhookNotFound');
     }
 
     webhooks[index].isActive = false;
@@ -286,7 +286,7 @@ export class ApiGatewayService {
     const webhooks = settings.webhooks ?? [];
 
     const webhook = webhooks.find((w) => w.id === webhookId);
-    if (!webhook) throw new NotFoundException('Webhook not found');
+    if (!webhook) throw new NotFoundException('errors.apiGateway.webhookNotFound');
 
     const testPayload = {
       event: 'webhook.test',
@@ -345,7 +345,7 @@ export class ApiGatewayService {
       select: { plan: true, settings: true },
     });
 
-    if (!tenant) throw new NotFoundException('Tenant not found');
+    if (!tenant) throw new NotFoundException('errors.apiGateway.tenantNotFound');
 
     const settings = (tenant.settings as unknown as TenantSettings) ?? {};
     const customLimits = settings.rateLimits;
@@ -366,7 +366,7 @@ export class ApiGatewayService {
       select: { id: true, settings: true },
     });
 
-    if (!tenant) throw new NotFoundException('Tenant not found');
+    if (!tenant) throw new NotFoundException('errors.apiGateway.tenantNotFound');
     return tenant;
   }
 

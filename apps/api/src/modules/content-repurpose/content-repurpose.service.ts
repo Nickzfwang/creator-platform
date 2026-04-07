@@ -100,10 +100,10 @@ export class ContentRepurposeService {
       select: { id: true, userId: true, status: true },
     });
 
-    if (!video) throw new NotFoundException('Video not found');
-    if (video.userId !== userId) throw new ForbiddenException('Not the video owner');
+    if (!video) throw new NotFoundException('errors.contentRepurpose.videoNotFound');
+    if (video.userId !== userId) throw new ForbiddenException('errors.contentRepurpose.notVideoOwner');
     if (video.status !== VideoStatus.PROCESSED) {
-      throw new BadRequestException('Video must be in PROCESSED state');
+      throw new BadRequestException('errors.contentRepurpose.videoNotProcessed');
     }
 
     // Check for existing job
@@ -113,7 +113,7 @@ export class ContentRepurposeService {
 
     if (existing) {
       if (existing.status === RepurposeJobStatus.PROCESSING) {
-        throw new ConflictException('Content generation is already in progress');
+        throw new ConflictException('errors.contentRepurpose.alreadyInProgress');
       }
       // Delete old items and reset job
       await this.prisma.repurposeItem.deleteMany({ where: { jobId: existing.id } });
@@ -161,7 +161,7 @@ export class ContentRepurposeService {
       },
     });
 
-    if (!job) throw new NotFoundException('Job not found');
+    if (!job) throw new NotFoundException('errors.contentRepurpose.jobNotFound');
 
     await this.prisma.repurposeJob.update({
       where: { id: jobId },
@@ -483,8 +483,8 @@ ${styleInstructions}
       select: { id: true, userId: true },
     });
 
-    if (!video) throw new NotFoundException('Video not found');
-    if (video.userId !== userId) throw new ForbiddenException('Not the video owner');
+    if (!video) throw new NotFoundException('errors.contentRepurpose.videoNotFound');
+    if (video.userId !== userId) throw new ForbiddenException('errors.contentRepurpose.notVideoOwner');
 
     const job = await this.prisma.repurposeJob.findUnique({
       where: { videoId },
@@ -566,7 +566,7 @@ ${styleInstructions}
       },
     });
 
-    if (!job) throw new NotFoundException('Job not found');
+    if (!job) throw new NotFoundException('errors.contentRepurpose.jobNotFound');
 
     const { video } = job;
     const transcript = typeof video.transcript === 'string'
@@ -622,7 +622,7 @@ ${styleInstructions}
     });
 
     if (items.length === 0) {
-      throw new BadRequestException('No valid social post items found');
+      throw new BadRequestException('errors.contentRepurpose.noValidSocialPosts');
     }
 
     const scheduled: Array<{ itemId: string; postId: string; platform: string; status: string }> = [];
@@ -684,7 +684,7 @@ ${styleInstructions}
     const item = await this.findItemWithOwnerCheck(itemId, userId);
 
     if (item.type !== 'EMAIL') {
-      throw new BadRequestException('Item is not an EMAIL type');
+      throw new BadRequestException('errors.contentRepurpose.notEmailType');
     }
 
     const content = (item.editedContent ?? item.originalContent) as unknown as EmailContent;
@@ -728,8 +728,8 @@ ${styleInstructions}
       include: { job: { select: { userId: true } } },
     });
 
-    if (!item) throw new NotFoundException('Item not found');
-    if (item.job.userId !== userId) throw new ForbiddenException('Not the item owner');
+    if (!item) throw new NotFoundException('errors.contentRepurpose.itemNotFound');
+    if (item.job.userId !== userId) throw new ForbiddenException('errors.contentRepurpose.notItemOwner');
 
     return item;
   }

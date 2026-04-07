@@ -32,7 +32,7 @@ export class PostSchedulerService {
         select: { id: true, tenantId: true, clipUrl: true },
       });
       if (!clip || clip.tenantId !== tenantId) {
-        throw new NotFoundException('Clip not found');
+        throw new NotFoundException('errors.postScheduler.clipNotFound');
       }
       if (clip.clipUrl && (!dto.mediaUrls || dto.mediaUrls.length === 0)) {
         dto.mediaUrls = [clip.clipUrl];
@@ -42,7 +42,7 @@ export class PostSchedulerService {
     let status: PostStatus = PostStatus.DRAFT;
     if (dto.scheduledAt) {
       if (new Date(dto.scheduledAt) <= new Date()) {
-        throw new BadRequestException('scheduledAt must be in the future');
+        throw new BadRequestException('errors.postScheduler.scheduleMustBeFuture');
       }
       status = PostStatus.SCHEDULED;
     }
@@ -136,10 +136,10 @@ export class PostSchedulerService {
     });
 
     if (!post) {
-      throw new NotFoundException('Post not found');
+      throw new NotFoundException('errors.postScheduler.postNotFound');
     }
     if (post.userId !== userId) {
-      throw new ForbiddenException('Not the post owner');
+      throw new ForbiddenException('errors.postScheduler.notPostOwner');
     }
     return post;
   }
@@ -156,7 +156,7 @@ export class PostSchedulerService {
     let newStatus = post.status;
     if (dto.scheduledAt) {
       if (new Date(dto.scheduledAt) <= new Date()) {
-        throw new BadRequestException('scheduledAt must be in the future');
+        throw new BadRequestException('errors.postScheduler.scheduleMustBeFuture');
       }
       newStatus = PostStatus.SCHEDULED;
       // Remove old BullMQ job, create new delayed job
@@ -262,7 +262,7 @@ export class PostSchedulerService {
         },
       });
       if (!clip) {
-        throw new NotFoundException('Clip not found');
+        throw new NotFoundException('errors.postScheduler.clipNotFound');
       }
       // Build rich context: title + summary + transcript (truncated)
       const parts = [`影片標題: ${clip.video.title}`, `片段標題: ${clip.title}`];

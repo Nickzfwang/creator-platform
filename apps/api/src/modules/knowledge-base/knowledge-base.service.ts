@@ -75,7 +75,7 @@ export class KnowledgeBaseService {
       include: { _count: { select: { chunks: true } } },
     });
 
-    if (!kb) throw new NotFoundException('Knowledge base not found');
+    if (!kb) throw new NotFoundException('errors.knowledgeBase.notFound');
     if (kb.userId !== userId || kb.tenantId !== tenantId) {
       throw new ForbiddenException();
     }
@@ -88,7 +88,7 @@ export class KnowledgeBaseService {
 
   async remove(userId: string, tenantId: string, id: string) {
     const kb = await this.prisma.knowledgeBase.findUnique({ where: { id } });
-    if (!kb) throw new NotFoundException('Knowledge base not found');
+    if (!kb) throw new NotFoundException('errors.knowledgeBase.notFound');
     if (kb.userId !== userId || kb.tenantId !== tenantId) {
       throw new ForbiddenException();
     }
@@ -104,7 +104,7 @@ export class KnowledgeBaseService {
 
   async ingest(userId: string, tenantId: string, kbId: string, dto: IngestContentDto) {
     const kb = await this.prisma.knowledgeBase.findUnique({ where: { id: kbId } });
-    if (!kb) throw new NotFoundException('Knowledge base not found');
+    if (!kb) throw new NotFoundException('errors.knowledgeBase.notFound');
     if (kb.userId !== userId || kb.tenantId !== tenantId) {
       throw new ForbiddenException();
     }

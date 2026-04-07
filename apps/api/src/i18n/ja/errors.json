@@ -1,0 +1,167 @@
+{
+  "common": {
+    "internalError": "サーバー内部エラー",
+    "forbidden": "権限が不足しています",
+    "tenantRequired": "テナントコンテキストが必要です"
+  },
+  "auth": {
+    "userNotFound": "ユーザーが見つかりません",
+    "emailRegistered": "このメールアドレスは既に登録されています",
+    "invalidCredentials": "メールアドレスまたはパスワードが正しくありません",
+    "invalidRefreshToken": "無効または期限切れの refresh token です",
+    "googleNotConfigured": "Google OAuth が設定されていません",
+    "googleMissingEmail": "Google アカウントにメールアドレスがありません",
+    "invalidGoogleCredential": "無効な Google 認証情報です"
+  },
+  "video": {
+    "notFound": "動画が見つかりません",
+    "notOwner": "この動画の所有者ではありません",
+    "notProcessed": "動画はまだ処理中です。処理完了後に再度お試しください。",
+    "fileNotFound": "動画ファイルが存在しません。削除された可能性があります。動画を再アップロードしてください。",
+    "noAudioTrack": "この動画には音声トラックがないため、音声分析ができません。音声を含む動画をアップロードしてください。",
+    "whisperNoWordData": "Whisper が単語レベルのデータを返しませんでした。OPENAI_API_KEY が設定されていること、音声品質が正常であることを確認してください。",
+    "noValidFillers": "有効なフィラーワードマーカーが選択されていません",
+    "tooShortForChapters": "動画が短すぎます（30秒未満）。チャプターマーカーを生成できません。",
+    "tooShortForScript": "動画が短すぎます（30秒未満）。スクリプト要約を生成できません。",
+    "noTranscript": "動画の文字起こしがまだありません。先に動画処理を完了してください。",
+    "chapterGenFailed": "AI がチャプターマーカーを生成できませんでした。再度お試しください。",
+    "scriptGenFailed": "AI がスクリプト要約を生成できませんでした。再度お試しください。",
+    "noEmbeddedSubtitles": "埋め込み字幕を抽出できません。音声または字幕を含む動画をアップロードしてください。",
+    "noAudioNoSubtitles": "この動画には音声トラックも埋め込み字幕もないため、字幕を生成できません。音声を含む動画をアップロードしてください。",
+    "notUploading": "動画はアップロード中の状態ではありません",
+    "onlyVideoFiles": "動画ファイルのみ許可されています",
+    "noFileProvided": "ファイルが提供されていません",
+    "clipNotFound": "クリップが見つかりません"
+  },
+  "shortVideo": {
+    "sourceFileNotFound": "元の動画ファイルが存在しません。再アップロードしてください。",
+    "noClips": "この動画にはまだクリップがありません。先に AI クリップを生成してください。"
+  },
+  "contentStrategy": {
+    "nicheRequired": "新規ユーザーは提案を生成するためにニッチ分野を指定する必要があります",
+    "generateFailed": "AI が提案の生成に失敗しました。後ほど再度お試しください。",
+    "invalidCursor": "無効な cursor パラメータです",
+    "suggestionNotFound": "提案が見つかりません",
+    "alreadyAdopted": "提案は既に採用されています",
+    "alreadyDismissed": "提案は既に却下されています",
+    "replaceFailed": "代替提案を生成できません。後ほど再度お試しください。",
+    "calendarItemNotFound": "カレンダー項目が見つかりません",
+    "publishNeedsVideo": "公開するには関連する動画 ID が必要です",
+    "cannotDeletePublished": "公開済みまたは測定済みの項目は削除できません"
+  },
+  "competitor": {
+    "invalidYoutubeUrl": "YouTube チャンネル URL を解析できません。有効なチャンネルリンクを入力してください。",
+    "alreadyTracked": "このチャンネルは既に追跡されています",
+    "notFound": "競合チャンネルが見つかりません"
+  },
+  "trendRadar": {
+    "rateLimited": "10分後に再スキャンしてください",
+    "invalidFingerprint": "無効なフィンガープリント形式です",
+    "trendNotFound": "トレンドが見つかりません",
+    "keywordAlreadyTracked": "このキーワードは既に追跡されています",
+    "keywordNotFound": "キーワードが見つかりません",
+    "maxKeywords": "キーワードは最大 {max} 個まで追跡できます",
+    "maxRssSources": "カスタム RSS ソースは最大 10 個まで追加できます",
+    "rssAlreadyAdded": "この RSS ソースは既に追加されています",
+    "rssNotFound": "RSS ソースが見つかりません"
+  },
+  "interactions": {
+    "commentNotFound": "コメントが見つかりません"
+  },
+  "emailMarketing": {
+    "alreadySent": "このキャンペーンは既に送信されています",
+    "noEmailTemplate": "このキャンペーンにはメールテンプレートがありません",
+    "noMatchingSubscribers": "条件に一致する購読者がいません",
+    "invalidUnsubscribeLink": "無効な購読解除リンクです",
+    "subscriberNotFound": "購読者が見つかりません"
+  },
+  "payment": {
+    "stripeNotConfigured": "Stripe が設定されていません",
+    "stripeNotConfiguredAdmin": "Stripe が設定されていません。管理者にお問い合わせください。",
+    "cannotCheckoutFree": "無料プランは決済できません",
+    "missingRawBody": "リクエストの生データがありません",
+    "invalidWebhookSignature": "無効な Webhook 署名です"
+  },
+  "membership": {
+    "tierNotFound": "プランが見つかりません",
+    "tierNotActive": "プランが存在しないか、有効ではありません",
+    "tierAtCapacity": "このプランは定員に達しています",
+    "alreadySubscribed": "このプランは既に購読されています",
+    "cannotDeleteWithMembers": "アクティブな会員がいるプランは削除できません。先に無効化してください。",
+    "membershipNotFound": "会員資格が見つかりません",
+    "alreadyCancelled": "会員は既にキャンセルされています"
+  },
+  "social": {
+    "invalidOAuthState": "無効な OAuth 状態パラメータです",
+    "platformMismatch": "OAuth 状態のプラットフォームが一致しません",
+    "missingPkce": "PKCE code_verifier がありません",
+    "accountNotFound": "ソーシャルアカウントが見つかりません",
+    "notAccountOwner": "アカウントの所有者ではありません",
+    "noRefreshToken": "このアカウントには使用可能な refresh token がありません"
+  },
+  "bot": {
+    "notFound": "Bot が見つかりません",
+    "notPublic": "この Bot は公開されていません",
+    "conversationNotFound": "会話が見つかりません"
+  },
+  "knowledgeBase": {
+    "notFound": "ナレッジベースが見つかりません"
+  },
+  "brandDeal": {
+    "notFound": "ブランド案件が見つかりません"
+  },
+  "contentRepurpose": {
+    "videoNotFound": "動画が見つかりません",
+    "notVideoOwner": "動画の所有者ではありません",
+    "videoNotProcessed": "動画は処理済み状態である必要があります",
+    "alreadyInProgress": "コンテンツ生成は既に進行中です",
+    "jobNotFound": "ジョブが見つかりません",
+    "noValidSocialPosts": "有効なソーシャル投稿が見つかりません",
+    "notEmailType": "この項目はメールタイプではありません",
+    "itemNotFound": "項目が見つかりません",
+    "notItemOwner": "項目の所有者ではありません"
+  },
+  "postScheduler": {
+    "clipNotFound": "クリップが見つかりません",
+    "scheduleMustBeFuture": "スケジュール時間は未来でなければなりません",
+    "postNotFound": "投稿が見つかりません",
+    "notPostOwner": "投稿の所有者ではありません"
+  },
+  "apiGateway": {
+    "maxApiKeys": "有効な API キーは最大 10 個までです",
+    "apiKeyNotFound": "API キーが見つかりません",
+    "maxWebhooks": "有効な Webhook は最大 5 個までです",
+    "webhookNotFound": "Webhook が見つかりません",
+    "tenantNotFound": "テナントが見つかりません"
+  },
+  "user": {
+    "notFound": "ユーザーが見つかりません",
+    "onboardingCompleted": "オンボーディングは既に完了しています",
+    "socialNotFound": "ソーシャルアカウントが見つかりません",
+    "cannotDisconnectOthers": "他のユーザーのソーシャルアカウントを切断できません"
+  },
+  "landingPage": {
+    "notFound": "ページが見つかりません",
+    "notPublished": "ページはまだ公開されていません"
+  },
+  "digitalProduct": {
+    "notFound": "商品が見つかりません",
+    "paymentNotConfigured": "決済システムが設定されていません",
+    "orderNotFound": "注文が見つかりません",
+    "paymentNotCompleted": "決済が完了していません",
+    "invalidDownloadToken": "無効なダウンロード token です",
+    "downloadExpired": "ダウンロードリンクの有効期限が切れています"
+  },
+  "affiliate": {
+    "linkNotFound": "アフィリエイトリンクが見つかりません",
+    "trackingNotFound": "トラッキングコードが見つかりません",
+    "useRedirectEndpoint": "クリックイベントにはリダイレクトエンドポイントを使用してください"
+  },
+  "tenant": {
+    "notFound": "テナントが見つかりません",
+    "domainConflict": "カスタムドメインは既に他のテナントに使用されています"
+  },
+  "contentClip": {
+    "notFound": "保存済みクリップが見つかりません"
+  }
+}

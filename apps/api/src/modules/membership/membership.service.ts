@@ -112,7 +112,7 @@ export class MembershipService {
 
   async updateTier(userId: string, tenantId: string, id: string, dto: UpdateTierDto) {
     const tier = await this.prisma.membershipTier.findUnique({ where: { id } });
-    if (!tier) throw new NotFoundException('Tier not found');
+    if (!tier) throw new NotFoundException('errors.membership.tierNotFound');
     if (tier.userId !== userId || tier.tenantId !== tenantId) {
       throw new ForbiddenException();
     }
@@ -140,13 +140,13 @@ export class MembershipService {
       where: { id },
       include: { _count: { select: { memberships: true } } },
     });
-    if (!tier) throw new NotFoundException('Tier not found');
+    if (!tier) throw new NotFoundException('errors.membership.tierNotFound');
     if (tier.userId !== userId || tier.tenantId !== tenantId) {
       throw new ForbiddenException();
     }
 
     if (tier._count.memberships > 0) {
-      throw new BadRequestException('Cannot delete tier with active members. Deactivate it instead.');
+      throw new BadRequestException('errors.membership.cannotDeleteWithMembers');
     }
 
     await this.prisma.membershipTier.delete({ where: { id } });
@@ -156,7 +156,7 @@ export class MembershipService {
 
   async subscribe(fanUserId: string, tenantId: string, dto: SubscribeDto) {
     const tier = await this.prisma.membershipTier.findUnique({ where: { id: dto.tierId } });
-    if (!tier || !tier.isActive) throw new NotFoundException('Tier not found or inactive');
+    if (!tier || !tier.isActive) throw new NotFoundException('errors.membership.tierNotActive');
     if (tier.tenantId !== tenantId) throw new ForbiddenException();
 
     // Check max members
@@ -165,7 +165,7 @@ export class MembershipService {
         where: { tierId: tier.id, status: MembershipStatus.ACTIVE },
       });
       if (currentCount >= tier.maxMembers) {
-        throw new BadRequestException('This tier has reached maximum capacity');
+        throw new BadRequestException('errors.membership.tierAtCapacity');
       }
     }
 
@@ -180,7 +180,7 @@ export class MembershipService {
     });
 
     if (existing) {
-      throw new ConflictException('Already subscribed to this tier');
+      throw new ConflictException('errors.membership.alreadySubscribed');
     }
 
     // Get creator's Stripe Connect ID
@@ -246,14 +246,14 @@ export class MembershipService {
 
   async createConnectAccount(userId: string) {
     if (!this.stripe) {
-      throw new BadRequestException('Stripe 尚未設定');
+      throw new BadRequestException('errors.payment.stripeNotConfigured');
     }
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { stripeConnectId: true, email: true },
     });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException('errors.user.notFound');
 
     // Return existing account link if already created
     if (user.stripeConnectId) {
@@ -435,12 +435,12 @@ export class MembershipService {
     const membership = await this.prisma.membership.findUnique({
       where: { id: membershipId },
     });
-    if (!membership) throw new NotFoundException('Membership not found');
+    if (!membership) throw new NotFoundException('errors.membership.membershipNotFound');
     if (membership.fanUserId !== fanUserId || membership.tenantId !== tenantId) {
       throw new ForbiddenException();
     }
     if (membership.status === MembershipStatus.CANCELLED) {
-      throw new BadRequestException('Membership already cancelled');
+      throw new BadRequestException('errors.membership.alreadyCancelled');
     }
 
     // Cancel Stripe subscription at period end
@@ -473,11 +473,11 @@ export class MembershipService {
       where: { id: userId },
       select: { stripeCustomerId: true, email: true, displayName: true },
     });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException('errors.user.notFound');
 
     if (user.stripeCustomerId) return user.stripeCustomerId;
 
-    if (!this.stripe) throw new BadRequestException('Stripe not configured');
+    if (!this.stripe) throw new BadRequestException('errors.payment.stripeNotConfigured');
 
     const customer = await this.stripe.customers.create({
       email: user.email,

@@ -78,7 +78,7 @@ export class VideoController {
         if (file.mimetype.startsWith('video/')) {
           cb(null, true);
         } else {
-          cb(new BadRequestException('Only video files are allowed'), false);
+          cb(new BadRequestException('errors.video.onlyVideoFiles'), false);
         }
       },
     }),
@@ -91,7 +91,7 @@ export class VideoController {
     @UploadedFile() file: Express.Multer.File,
   ) {
     if (!file) {
-      throw new BadRequestException('No file provided');
+      throw new BadRequestException('errors.video.noFileProvided');
     }
     return this.videoService.handleDirectUpload(userId, tenantId, file);
   }

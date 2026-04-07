@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
+import { I18nContext } from 'nestjs-i18n';
 import { SentryService } from './sentry.service';
 
 @Catch()
@@ -35,14 +36,31 @@ export class SentryExceptionFilter implements ExceptionFilter {
       });
     }
 
-    const message =
+    const exceptionResponse =
       exception instanceof HttpException
         ? exception.getResponse()
-        : { statusCode: 500, message: '伺服器內部錯誤' };
+        : { statusCode: 500, message: 'errors.common.internalError' };
 
-    const body = typeof message === 'string'
-      ? { statusCode: status, message }
-      : message;
+    // Translate i18n keys in error messages
+    const i18n = I18nContext.current();
+    let body: any;
+
+    if (typeof exceptionResponse === 'string') {
+      const translated = this.tryTranslate(i18n, exceptionResponse);
+      body = { statusCode: status, message: translated };
+    } else if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
+      const resp = exceptionResponse as any;
+      if (typeof resp.message === 'string') {
+        resp.message = this.tryTranslate(i18n, resp.message);
+      } else if (Array.isArray(resp.message)) {
+        resp.message = resp.message.map((m: string) =>
+          typeof m === 'string' ? this.tryTranslate(i18n, m) : m,
+        );
+      }
+      body = resp;
+    } else {
+      body = exceptionResponse;
+    }
 
     if (status >= 500) {
       this.logger.error(
@@ -52,5 +70,16 @@ export class SentryExceptionFilter implements ExceptionFilter {
     }
 
     response.status(status).json(body);
+  }
+
+  /**
+   * Try to translate a message key. If it looks like an i18n key (contains a dot
+   * and starts with "errors."), translate it. Otherwise return as-is.
+   */
+  private tryTranslate(i18n: I18nContext | undefined, message: string): string {
+    if (!i18n || !message.startsWith('errors.')) return message;
+    const translated = i18n.t(message) as string;
+    // If translation returns the key itself, it wasn't found — return original
+    return translated === message ? message : translated;
   }
 }

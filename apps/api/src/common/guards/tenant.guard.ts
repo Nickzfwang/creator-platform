@@ -14,7 +14,7 @@ export class TenantGuard implements CanActivate {
       request.user?.tenantId || request.headers['x-tenant-id'];
 
     if (!tenantId) {
-      throw new ForbiddenException('Tenant context is required');
+      throw new ForbiddenException('errors.common.tenantRequired');
     }
 
     request.tenantId = tenantId;
