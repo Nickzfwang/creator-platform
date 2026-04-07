@@ -136,9 +136,14 @@ export class VideoService {
     }
 
     // Step 2: AI summary (use transcript if available for much better quality)
-    const aiSummary = transcript
-      ? await this.generateAiSummaryFromTranscript(title, estimatedDuration, transcript)
-      : await this.generateAiSummary(title, estimatedDuration);
+    let aiSummary: string | null = null;
+    try {
+      aiSummary = transcript
+        ? await this.generateAiSummaryFromTranscript(title, estimatedDuration, transcript)
+        : await this.generateAiSummary(title, estimatedDuration);
+    } catch (e) {
+      this.logger.warn(`AI summary generation failed for ${video.id}: ${e}`);
+    }
 
     // Step 2.5: If title looks like a filename (e.g. IMG_5518), generate a meaningful title from transcript
     let finalTitle = title;
@@ -163,14 +168,18 @@ export class VideoService {
       where: { id: video.id },
       data: {
         title: finalTitle,
-        aiSummary,
+        ...(aiSummary ? { aiSummary } : {}),
         ...(transcript ? { transcript } : {}),
         status: VideoStatus.PROCESSED,
       },
     });
 
     // Step 4: Generate AI clips (uses transcript for smarter cuts) + FFmpeg cut
-    await this.generateAiClips(video.id, tenantId, title, estimatedDuration, transcript);
+    try {
+      await this.generateAiClips(video.id, tenantId, title, estimatedDuration, transcript);
+    } catch (e) {
+      this.logger.warn(`AI clips generation failed for ${video.id}: ${e}`);
+    }
 
     // Step 5: Trigger content repurpose generation (async, non-blocking)
     try {
