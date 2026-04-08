@@ -257,7 +257,7 @@ describe('Payment E2E Flows', () => {
     it('should reject webhook with missing body', async () => {
       await expect(
         paymentService.handleWebhook('sig', undefined),
-      ).rejects.toThrow('Missing raw body');
+      ).rejects.toThrow('errors.payment.missingRawBody');
     });
   });
 });
