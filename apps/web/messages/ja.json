@@ -315,7 +315,8 @@
       "reanalyze": "再分析",
       "loadingMessage": "AIがデータを分析中...",
       "analyzedAt": "分析日時：{time}",
-      "noData": "分析するデータがありません。まずSNSアカウントを連携してください。"
+      "noData": "分析するデータがありません。まずSNSアカウントを連携してください。",
+      "clickToAnalyze": "「再分析」ボタンをクリックして、AIにデータインサイトを生成させましょう。"
     },
     "tabs": {
       "platform": "プラットフォーム分析",

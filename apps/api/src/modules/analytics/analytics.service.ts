@@ -374,26 +374,38 @@ export class AnalyticsService {
   private async getPlatformBreakdown(userId: string, tenantId: string, start: Date, end: Date) {
     const accounts = await this.prisma.socialAccount.findMany({
       where: { userId, tenantId, isActive: true },
-      select: { id: true, platform: true },
+      select: { id: true, platform: true, followerCount: true },
     });
 
-    const breakdown: Record<string, { views: number; likes: number; comments: number; shares: number }> = {};
+    const breakdown: Record<string, { followers: number; views: number; likes: number; comments: number; shares: number }> = {};
 
     for (const account of accounts) {
-      const agg = await this.prisma.platformAnalytics.aggregate({
-        where: {
-          socialAccountId: account.id,
-          date: { gte: start, lte: end },
-        },
-        _sum: {
-          views: true,
-          likes: true,
-          comments: true,
-          shares: true,
-        },
-      });
+      const [agg, latestFollowers] = await Promise.all([
+        this.prisma.platformAnalytics.aggregate({
+          where: {
+            socialAccountId: account.id,
+            date: { gte: start, lte: end },
+          },
+          _sum: {
+            views: true,
+            likes: true,
+            comments: true,
+            shares: true,
+          },
+        }),
+        this.prisma.platformAnalytics.findFirst({
+          where: {
+            socialAccountId: account.id,
+            date: { gte: start, lte: end },
+            followers: { not: null },
+          },
+          orderBy: { date: 'desc' },
+          select: { followers: true },
+        }),
+      ]);
 
       breakdown[account.platform] = {
+        followers: latestFollowers?.followers ?? account.followerCount ?? 0,
         views: agg._sum.views ?? 0,
         likes: agg._sum.likes ?? 0,
         comments: agg._sum.comments ?? 0,

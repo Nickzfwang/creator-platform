@@ -315,7 +315,8 @@
       "reanalyze": "Reanalyze",
       "loadingMessage": "AI is analyzing your data...",
       "analyzedAt": "Analyzed at: {time}",
-      "noData": "No data to analyze. Please connect a social account first."
+      "noData": "No data to analyze. Please connect a social account first.",
+      "clickToAnalyze": "Click \"Reanalyze\" to let AI generate data insights."
     },
     "tabs": {
       "platform": "Platform Analytics",

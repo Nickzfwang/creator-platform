@@ -315,7 +315,8 @@
       "reanalyze": "重新分析",
       "loadingMessage": "AI 正在分析您的數據...",
       "analyzedAt": "分析時間：{time}",
-      "noData": "暫無數據可分析，請先連結社群帳號。"
+      "noData": "暫無數據可分析，請先連結社群帳號。",
+      "clickToAnalyze": "點擊「重新分析」按鈕，讓 AI 為您分析數據洞察。"
     },
     "tabs": {
       "platform": "平台分析",

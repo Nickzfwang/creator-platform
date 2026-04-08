@@ -116,7 +116,8 @@ export function useAiInsights(params: AnalyticsParams = {}) {
         `/v1/analytics/ai-insights${qs ? `?${qs}` : ""}`,
       );
     },
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes to avoid excessive API calls
+    enabled: false, // Manual trigger only — user clicks the button
+    staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 }

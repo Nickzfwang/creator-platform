@@ -53,7 +53,7 @@ export class AiService {
         return 'claude-haiku-4-5-20251001';
       case 'gpt-4o':
       default:
-        return 'claude-sonnet-4-6-20250514';
+        return 'claude-sonnet-4-6';
     }
   }
 
@@ -244,16 +244,16 @@ export class AiService {
           system: systemPrompt + '\n\nRespond in valid JSON only. Do not include any text outside the JSON.',
           messages: [
             { role: 'user', content: userMessage },
-            { role: 'assistant', content: '{' }, // prefill to force JSON output
           ],
         });
 
         this.recordAiUsage(options?.context?.tenantId);
         const block = response.content[0];
         const raw = block.type === 'text' ? block.text.trim() : '';
-        // Prepend the '{' we used as prefill
-        const jsonStr = '{' + raw;
-        return JSON.parse(jsonStr);
+        // Extract JSON from response (strip markdown fences if present)
+        const jsonMatch = raw.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error('No JSON object found in Claude response');
+        return JSON.parse(jsonMatch[0]);
       } catch (error) {
         this.logger.error(`Claude JSON generation error: ${error}`);
         if (this.openai) {
@@ -385,7 +385,7 @@ export class AiService {
     if (useProvider === 'claude' && this.anthropic) {
       try {
         const response = await this.anthropic.messages.create({
-          model: 'claude-sonnet-4-6-20250514',
+          model: 'claude-sonnet-4-6',
           max_tokens: 2000,
           system: systemPrompt,
           messages: [{ role: 'user', content: srtContent }],

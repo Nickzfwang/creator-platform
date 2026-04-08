@@ -158,7 +158,7 @@ export default function AnalyticsPage() {
               </p>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">{t("aiInsights.noData")}</p>
+            <p className="text-sm text-muted-foreground">{t("aiInsights.clickToAnalyze")}</p>
           )}
         </CardContent>
       </Card>
