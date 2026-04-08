@@ -1,7 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
+import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PLAN_LIMITS, PlanLimits } from '../payment/constants/plan-limits';
+
+export type AiProvider = 'claude' | 'openai';
 
 interface AiUsageContext {
   tenantId: string;
@@ -11,19 +14,47 @@ interface AiUsageContext {
 export class AiService {
   private readonly logger = new Logger(AiService.name);
   private openai: OpenAI | null = null;
+  private anthropic: Anthropic | null = null;
+  private defaultProvider: AiProvider = 'claude';
 
   constructor(private readonly prisma: PrismaService) {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (apiKey) {
-      this.openai = new OpenAI({ apiKey });
+    const openaiKey = process.env.OPENAI_API_KEY;
+    if (openaiKey) {
+      this.openai = new OpenAI({ apiKey: openaiKey });
       this.logger.log('OpenAI client initialized');
     } else {
-      this.logger.warn('OPENAI_API_KEY not set — AI features will use fallback responses');
+      this.logger.warn('OPENAI_API_KEY not set — Whisper/Embedding features unavailable');
+    }
+
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    if (anthropicKey) {
+      this.anthropic = new Anthropic({ apiKey: anthropicKey });
+      this.logger.log('Anthropic client initialized');
+    } else {
+      this.logger.warn('ANTHROPIC_API_KEY not set — Claude features unavailable');
+    }
+
+    // Default to Claude if available, fallback to OpenAI
+    if (this.anthropic) {
+      this.defaultProvider = 'claude';
+    } else if (this.openai) {
+      this.defaultProvider = 'openai';
     }
   }
 
   get isAvailable(): boolean {
-    return this.openai !== null;
+    return this.anthropic !== null || this.openai !== null;
+  }
+
+  /** Map OpenAI model names to Claude equivalents */
+  private mapModelToClaude(openaiModel?: string): string {
+    switch (openaiModel) {
+      case 'gpt-4o-mini':
+        return 'claude-haiku-4-5-20251001';
+      case 'gpt-4o':
+      default:
+        return 'claude-sonnet-4-6-20250514';
+    }
   }
 
   /**
@@ -74,14 +105,54 @@ export class AiService {
   async chat(
     systemPrompt: string,
     userMessage: string,
+    options?: { model?: string; maxTokens?: number; temperature?: number; context?: AiUsageContext; provider?: AiProvider },
+  ): Promise<string> {
+    const provider = options?.provider ?? this.defaultProvider;
+
+    if (provider === 'claude' && this.anthropic) {
+      return this.chatWithClaude(systemPrompt, userMessage, options);
+    }
+    if (this.openai) {
+      return this.chatWithOpenAI(systemPrompt, userMessage, options);
+    }
+    return this.fallbackReply(userMessage);
+  }
+
+  private async chatWithClaude(
+    systemPrompt: string,
+    userMessage: string,
     options?: { model?: string; maxTokens?: number; temperature?: number; context?: AiUsageContext },
   ): Promise<string> {
-    if (!this.openai) {
+    try {
+      const response = await this.anthropic!.messages.create({
+        model: this.mapModelToClaude(options?.model),
+        max_tokens: options?.maxTokens ?? 1024,
+        temperature: options?.temperature ?? 0.7,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMessage }],
+      });
+
+      this.recordAiUsage(options?.context?.tenantId);
+      const block = response.content[0];
+      return block.type === 'text' ? block.text.trim() : '';
+    } catch (error) {
+      this.logger.error(`Claude chat error: ${error}`);
+      // Fallback to OpenAI if available
+      if (this.openai) {
+        this.logger.log('Falling back to OpenAI...');
+        return this.chatWithOpenAI(systemPrompt, userMessage, options);
+      }
       return this.fallbackReply(userMessage);
     }
+  }
 
+  private async chatWithOpenAI(
+    systemPrompt: string,
+    userMessage: string,
+    options?: { model?: string; maxTokens?: number; temperature?: number; context?: AiUsageContext },
+  ): Promise<string> {
     try {
-      const response = await this.openai.chat.completions.create({
+      const response = await this.openai!.chat.completions.create({
         model: options?.model ?? 'gpt-4o',
         max_tokens: options?.maxTokens ?? 1024,
         temperature: options?.temperature ?? 0.7,
@@ -105,12 +176,35 @@ export class AiService {
   async chatWithHistory(
     systemPrompt: string,
     messages: Array<{ role: 'user' | 'assistant'; content: string }>,
-    options?: { model?: string; maxTokens?: number; temperature?: number; context?: AiUsageContext },
+    options?: { model?: string; maxTokens?: number; temperature?: number; context?: AiUsageContext; provider?: AiProvider },
   ): Promise<string> {
-    if (!this.openai) {
-      const lastMsg = messages[messages.length - 1]?.content ?? '';
-      return this.fallbackReply(lastMsg);
+    const provider = options?.provider ?? this.defaultProvider;
+    const lastMsg = messages[messages.length - 1]?.content ?? '';
+
+    if (provider === 'claude' && this.anthropic) {
+      try {
+        const response = await this.anthropic.messages.create({
+          model: this.mapModelToClaude(options?.model),
+          max_tokens: options?.maxTokens ?? 1024,
+          temperature: options?.temperature ?? 0.7,
+          system: systemPrompt,
+          messages: messages.map(m => ({ role: m.role, content: m.content })),
+        });
+
+        this.recordAiUsage(options?.context?.tenantId);
+        const block = response.content[0];
+        return block.type === 'text' ? block.text.trim() : '';
+      } catch (error) {
+        this.logger.error(`Claude chat error: ${error}`);
+        if (this.openai) {
+          this.logger.log('Falling back to OpenAI...');
+        } else {
+          return this.fallbackReply(lastMsg);
+        }
+      }
     }
+
+    if (!this.openai) return this.fallbackReply(lastMsg);
 
     try {
       const response = await this.openai.chat.completions.create({
@@ -127,7 +221,6 @@ export class AiService {
       return response.choices[0]?.message?.content?.trim() ?? '';
     } catch (error) {
       this.logger.error(`OpenAI chat error: ${error}`);
-      const lastMsg = messages[messages.length - 1]?.content ?? '';
       return this.fallbackReply(lastMsg);
     }
   }
@@ -138,8 +231,39 @@ export class AiService {
   async generateJson<T>(
     systemPrompt: string,
     userMessage: string,
-    options?: { model?: string; maxTokens?: number; context?: AiUsageContext },
+    options?: { model?: string; maxTokens?: number; context?: AiUsageContext; provider?: AiProvider },
   ): Promise<T | null> {
+    const provider = options?.provider ?? this.defaultProvider;
+
+    if (provider === 'claude' && this.anthropic) {
+      try {
+        const response = await this.anthropic.messages.create({
+          model: this.mapModelToClaude(options?.model),
+          max_tokens: options?.maxTokens ?? 2048,
+          temperature: 0.5,
+          system: systemPrompt + '\n\nRespond in valid JSON only. Do not include any text outside the JSON.',
+          messages: [
+            { role: 'user', content: userMessage },
+            { role: 'assistant', content: '{' }, // prefill to force JSON output
+          ],
+        });
+
+        this.recordAiUsage(options?.context?.tenantId);
+        const block = response.content[0];
+        const raw = block.type === 'text' ? block.text.trim() : '';
+        // Prepend the '{' we used as prefill
+        const jsonStr = '{' + raw;
+        return JSON.parse(jsonStr);
+      } catch (error) {
+        this.logger.error(`Claude JSON generation error: ${error}`);
+        if (this.openai) {
+          this.logger.log('Falling back to OpenAI for JSON generation...');
+        } else {
+          return null;
+        }
+      }
+    }
+
     if (!this.openai) return null;
 
     try {
@@ -227,19 +351,12 @@ export class AiService {
   }
 
   /**
-   * Polish/correct subtitle text using GPT
+   * Polish/correct subtitle text using AI
    */
-  async polishSubtitles(srtContent: string): Promise<string> {
-    if (!this.openai) return srtContent;
+  async polishSubtitles(srtContent: string, provider?: AiProvider): Promise<string> {
+    const useProvider = provider ?? this.defaultProvider;
 
-    try {
-      const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
-        max_tokens: 2000,
-        messages: [
-          {
-            role: 'system',
-            content: `你是專業的字幕校正專家，擅長處理科技、教學、生活類影片字幕。請修正以下 SRT 字幕，保持 SRT 格式不變。
+    const systemPrompt = `你是專業的字幕校正專家，擅長處理科技、教學、生活類影片字幕。請修正以下 SRT 字幕，保持 SRT 格式不變。
 
 校正規則（嚴格遵守）：
 1. **語音辨識錯誤修正**：
@@ -263,15 +380,44 @@ export class AiService {
    - 不增加或刪除字幕段落
    - 不改變原意
 
-直接回覆修正後的完整 SRT 內容，不要加任何說明。`,
-          },
+直接回覆修正後的完整 SRT 內容，不要加任何說明。`;
+
+    if (useProvider === 'claude' && this.anthropic) {
+      try {
+        const response = await this.anthropic.messages.create({
+          model: 'claude-sonnet-4-6-20250514',
+          max_tokens: 2000,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: srtContent }],
+        });
+
+        const block = response.content[0];
+        return block.type === 'text' ? block.text.trim() : srtContent;
+      } catch (error) {
+        this.logger.error(`Claude subtitle polishing failed: ${error}`);
+        if (this.openai) {
+          this.logger.log('Falling back to OpenAI for subtitle polishing...');
+        } else {
+          return srtContent;
+        }
+      }
+    }
+
+    if (!this.openai) return srtContent;
+
+    try {
+      const response = await this.openai.chat.completions.create({
+        model: 'gpt-4o',
+        max_tokens: 2000,
+        messages: [
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: srtContent },
         ],
       });
 
       return response.choices[0]?.message?.content?.trim() ?? srtContent;
     } catch (error) {
-      this.logger.error(`Subtitle polishing failed: ${error}`);
+      this.logger.error(`OpenAI subtitle polishing failed: ${error}`);
       return srtContent;
     }
   }
@@ -315,6 +461,6 @@ export class AiService {
   }
 
   private fallbackReply(message: string): string {
-    return `感謝您的訊息！目前 AI 功能尚未啟用（OPENAI_API_KEY 未設定），請聯繫管理員。您的訊息：「${message.slice(0, 50)}...」`;
+    return `感謝您的訊息！目前 AI 功能尚未啟用（ANTHROPIC_API_KEY / OPENAI_API_KEY 未設定），請聯繫管理員。您的訊息：「${message.slice(0, 50)}...」`;
   }
 }

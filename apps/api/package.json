@@ -16,6 +16,7 @@
     "db:seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.85.0",
     "@aws-sdk/client-s3": "^3.637.0",
     "@aws-sdk/s3-request-presigner": "^3.637.0",
     "@nestjs/bullmq": "^10.2.0",
