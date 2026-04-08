@@ -30,7 +30,7 @@ interface ContentClip {
 
 const platformIcons: Record<string, string> = {
   facebook: "📘", youtube: "▶️", threads: "🧵", instagram: "📷",
-  dcard: "💬", twitter: "𝕏", unknown: "🌐",
+  twitter: "𝕏", unknown: "🌐",
 };
 
 const categoryColors: Record<string, string> = {

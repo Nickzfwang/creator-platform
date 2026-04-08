@@ -51,6 +51,12 @@ const RSS_FEED_CONFIGS: RssSourceConfig[] = [
     sourcePlatform: 'RSS_REDDIT',
     category: '國際科技',
   },
+  {
+    name: 'AI郵報 AIPostHub',
+    url: 'https://www.aiposthub.com/rss/',
+    sourcePlatform: 'RSS_AIPOSTHUB',
+    category: 'AI',
+  },
 ];
 
 export class RssSource implements TrendSource {

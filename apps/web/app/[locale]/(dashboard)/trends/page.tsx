@@ -54,7 +54,7 @@ const platformFilterKeys = [
   { key: "platformYouTube", value: "API_YOUTUBE_TRENDING" },
   { key: "platformTikTok", value: "SCRAPER_TIKTOK" },
   { key: "platformThreads", value: "SCRAPER_THREADS" },
-  { key: "platformDcard", value: "API_DCARD" },
+  { key: "platformAIPostHub", value: "RSS_AIPOSTHUB" },
   { key: "platformReddit", value: "RSS_REDDIT" },
   { key: "platformClaudeCode", value: "RSS_CLAUDE_CODE" },
   { key: "platformMedia", value: "rss" },
@@ -92,7 +92,7 @@ const dedicatedPlatforms = new Set([
   "API_YOUTUBE_TRENDING",
   "SCRAPER_TIKTOK",
   "SCRAPER_THREADS",
-  "API_DCARD",
+  "RSS_AIPOSTHUB",
   "RSS_REDDIT",
   "RSS_CLAUDE_CODE",
 ]);

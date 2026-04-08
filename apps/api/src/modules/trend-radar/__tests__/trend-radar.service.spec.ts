@@ -46,14 +46,6 @@ jest.mock('../sources/threads-scraper.source', () => ({
   })),
 }));
 
-jest.mock('../sources/dcard-scraper.source', () => ({
-  DcardScraperSource: jest.fn().mockImplementation(() => ({
-    name: 'MockDcard',
-    sourcePlatform: 'DCARD',
-    fetch: mockFetch,
-  })),
-}));
-
 describe('TrendRadarService', () => {
   let service: TrendRadarService;
   let prisma: jest.Mocked<PrismaService>;
@@ -87,7 +79,7 @@ describe('TrendRadarService', () => {
   const mockSnapshot = (overrides: Partial<any> = {}) => ({
     id: 'snap-1',
     generatedAt: ONE_HOUR_AGO,
-    sources: ['RSS_ITHOME', 'DCARD'],
+    sources: ['RSS_ITHOME'],
     topicCount: 2,
     aiAnalysis: '今日 AI 趨勢分析摘要',
     topics: [
@@ -158,7 +150,7 @@ describe('TrendRadarService', () => {
       expect(result.topics).toHaveLength(2);
       expect(result.aiAnalysis).toBe('今日 AI 趨勢分析摘要');
       expect(result.generatedAt).toBe(ONE_HOUR_AGO.toISOString());
-      expect(result.sources).toEqual(['RSS_ITHOME', 'DCARD']);
+      expect(result.sources).toEqual(['RSS_ITHOME']);
       expect(result.nextRefreshAt).toBeDefined();
       expect(result.topics[0].id).toBe('topic-1');
       expect(result.topics[0].firstSeenAt).toBe('2026-03-29T00:00:00.000Z');

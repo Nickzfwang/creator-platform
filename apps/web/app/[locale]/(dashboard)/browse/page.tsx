@@ -35,9 +35,9 @@ interface ExploreResult {
   completedAt: string;
 }
 
-const CATEGORY_IDS = ["all", "tech", "dcard", "threads", "tiktok", "global", "lifestyle"] as const;
+const CATEGORY_IDS = ["all", "tech", "threads", "tiktok", "global", "lifestyle"] as const;
 const CATEGORY_EMOJIS: Record<string, string> = {
-  all: "🌐", tech: "💻", dcard: "💬", threads: "🧵", tiktok: "🎵", global: "🌍", lifestyle: "☕",
+  all: "🌐", tech: "💻", threads: "🧵", tiktok: "🎵", global: "🌍", lifestyle: "☕",
 };
 
 const categoryColors: Record<string, string> = {
@@ -258,7 +258,6 @@ export default function ExplorePage() {
             {t("emptyDescription")}
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-2 text-xs text-muted-foreground">
-            <span>💬 Dcard</span>
             <span>🧵 Threads</span>
             <span>🎵 TikTok</span>
             <span>📰 TechNews</span>

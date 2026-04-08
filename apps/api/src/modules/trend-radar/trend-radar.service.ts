@@ -7,7 +7,7 @@ import { createRssSources } from './sources/rss.source';
 import { YouTubeTrendingSource } from './sources/youtube-trending.source';
 import { TikTokScraperSource } from './sources/tiktok-scraper.source';
 import { ThreadsScraperSource } from './sources/threads-scraper.source';
-import { DcardScraperSource } from './sources/dcard-scraper.source';
+
 import { ClaudeCodeDocsSource } from './sources/claude-code-docs.source';
 import { TrendPhase, TrendSourcePlatform } from '@prisma/client';
 
@@ -122,7 +122,7 @@ export class TrendRadarService {
     ];
 
     const scraperSources: TrendSource[] = includeScraper
-      ? [new TikTokScraperSource(), new ThreadsScraperSource(), new DcardScraperSource()]
+      ? [new TikTokScraperSource(), new ThreadsScraperSource()]
       : [];
 
     const allSources = [...rssSources, ...apiSources, ...scraperSources];
