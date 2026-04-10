@@ -1400,7 +1400,9 @@ export default function VideosPage() {
   const deleteVideo = useDeleteVideo();
   const directUpload = useDirectUpload();
   const subtitleMutation = useGenerateSubtitles();
-  const [subtitleResult, setSubtitleResult] = useState<{ srtUrl: string; vttUrl: string; segmentCount: number; preview: string } | null>(null);
+  const [subtitleResult, setSubtitleResult] = useState<{ srtUrl: string; vttUrl: string; segmentCount: number; preview: string; source?: "embedded" | "whisper"; contentType?: "speech" | "music" } | null>(null);
+  const [subtitleContentType, setSubtitleContentType] = useState<"speech" | "music">("speech");
+  const [subtitleLanguage, setSubtitleLanguage] = useState<string>("zh");
 
   const handleCreate = () => {
     if (!title.trim()) {
@@ -1600,17 +1602,46 @@ export default function VideosPage() {
               )}
               {/* Subtitle Generation */}
               <div className="rounded-lg border p-4">
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
                   <h4 className="flex items-center gap-2 text-sm font-medium">
                     <Captions className="h-4 w-4" /> {t("subtitle.title")}
                   </h4>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={subtitleContentType}
+                      onChange={(e) => setSubtitleContentType(e.target.value as "speech" | "music")}
+                      disabled={subtitleMutation.isPending}
+                      className="h-8 rounded-md border bg-background px-2 text-xs"
+                    >
+                      <option value="speech">{t("subtitle.contentType.speech")}</option>
+                      <option value="music">{t("subtitle.contentType.music")}</option>
+                    </select>
+                    <select
+                      value={subtitleLanguage}
+                      onChange={(e) => setSubtitleLanguage(e.target.value)}
+                      disabled={subtitleMutation.isPending}
+                      className="h-8 rounded-md border bg-background px-2 text-xs"
+                    >
+                      <option value="zh">中文</option>
+                      <option value="yue">粵語</option>
+                      <option value="en">English</option>
+                      <option value="ja">日本語</option>
+                      <option value="ko">한국어</option>
+                    </select>
                   <Button
                     size="sm"
                     variant="outline"
                     disabled={subtitleMutation.isPending}
                     onClick={() => {
                       subtitleMutation.mutate(
-                        { videoId: selectedVideo.id, data: { language: "zh", polish: true } },
+                        {
+                          videoId: selectedVideo.id,
+                          data: {
+                            language: subtitleLanguage,
+                            contentType: subtitleContentType,
+                            polish: subtitleContentType !== "music",
+                          },
+                        },
                         {
                           onSuccess: (res) => {
                             setSubtitleResult(res);
@@ -1627,14 +1658,21 @@ export default function VideosPage() {
                       <><Sparkles className="mr-1 h-3 w-3" /> {t("subtitle.generateBtn")}</>
                     )}
                   </Button>
+                  </div>
                 </div>
                 {subtitleMutation.isPending && (
                   <p className="text-xs text-muted-foreground">{t("subtitle.transcribingDesc")}</p>
                 )}
                 {subtitleResult && (
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                       <Badge variant="secondary">{t("subtitle.segmentCount", { count: subtitleResult.segmentCount })}</Badge>
+                      {subtitleResult.source === "embedded" && (
+                        <Badge variant="outline">{t("subtitle.sourceEmbedded")}</Badge>
+                      )}
+                      {subtitleResult.source === "whisper" && (
+                        <Badge variant="outline">{t("subtitle.sourceWhisper")}</Badge>
+                      )}
                       <span>{t("subtitle.polished")}</span>
                     </div>
                     <pre className="max-h-32 overflow-y-auto rounded-md bg-muted p-3 text-xs whitespace-pre-wrap">{subtitleResult.preview}</pre>

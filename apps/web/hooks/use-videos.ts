@@ -20,6 +20,13 @@ export function useVideos(params: VideoListParams = {}) {
   return useQuery({
     queryKey: ["videos", params],
     queryFn: () => api<PaginatedResponse<Video>>(`/v1/videos${qs ? `?${qs}` : ""}`),
+    // Auto-poll while any video is still processing in the background.
+    // Stops once everything settles into PROCESSED/READY/etc.
+    refetchInterval: (query) => {
+      const data = query.state.data as PaginatedResponse<Video> | undefined;
+      const hasProcessing = data?.data?.some((v) => v.status === "PROCESSING");
+      return hasProcessing ? 5000 : false;
+    },
   });
 }
 
@@ -120,7 +127,12 @@ export function useGenerateSubtitles() {
       data,
     }: {
       videoId: string;
-      data?: { language?: string; polish?: boolean };
+      data?: {
+        language?: string;
+        polish?: boolean;
+        contentType?: "speech" | "music";
+        forceWhisper?: boolean;
+      };
     }) =>
       api<{
         videoId: string;
@@ -130,6 +142,8 @@ export function useGenerateSubtitles() {
         preview: string;
         language: string;
         polished: boolean;
+        source: "embedded" | "whisper";
+        contentType: "speech" | "music";
       }>(`/v1/videos/${videoId}/subtitles`, {
         method: "POST",
         body: JSON.stringify(data ?? {}),

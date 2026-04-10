@@ -111,47 +111,96 @@ export class VideoService {
       },
     });
 
-    // ─── Automated AI Pipeline ───
+    // Kick off the heavy AI pipeline in the background. We deliberately do
+    // NOT await it here — Whisper / GPT / clip generation can take minutes
+    // and would otherwise hang the upload request, causing the browser to
+    // show "Upload failed" even though the file has already been saved.
+    void this.runUploadPipeline({
+      videoId: video.id,
+      userId,
+      tenantId,
+      filePath: file.path,
+      filename: file.filename,
+      title,
+      estimatedDuration,
+    }).catch((e) => {
+      this.logger.error(`Upload pipeline failed for ${video.id}: ${e}`);
+    });
+
+    return {
+      id: video.id,
+      status: VideoStatus.PROCESSING,
+      message: 'Video uploaded, processing in background',
+    };
+  }
+
+  /**
+   * Heavy post-upload pipeline: thumbnail, transcription, AI summary,
+   * AI clips, content repurpose. Runs detached from the HTTP request so
+   * long-running steps cannot time out the browser upload.
+   */
+  private async runUploadPipeline(args: {
+    videoId: string;
+    userId: string;
+    tenantId: string;
+    filePath: string;
+    filename: string;
+    title: string;
+    estimatedDuration: number;
+  }): Promise<void> {
+    const { videoId, userId, tenantId, filePath, filename, title, estimatedDuration } = args;
+
     // Step 0: Generate thumbnail from video
     try {
-      const thumbnailUrl = await this.generateThumbnail(file.path, video.id, estimatedDuration);
+      const thumbnailUrl = await this.generateThumbnail(filePath, videoId, estimatedDuration);
       await this.prisma.video.update({
-        where: { id: video.id },
+        where: { id: videoId },
         data: { thumbnailUrl },
       });
-      this.logger.log(`Thumbnail generated for video ${video.id}`);
+      this.logger.log(`Thumbnail generated for video ${videoId}`);
     } catch (e) {
-      this.logger.warn(`Thumbnail generation failed for ${video.id}: ${e}`);
+      this.logger.warn(`Thumbnail generation failed for ${videoId}: ${e}`);
     }
 
     // Step 1: Whisper transcription (if audio exists and duration reasonable)
     let transcript: string | null = null;
     if (estimatedDuration >= 3 && estimatedDuration <= 3600) {
       try {
-        transcript = await this.transcribeVideo(file.path);
-        this.logger.log(`Transcript generated for ${video.id} (${transcript.length} chars)`);
+        transcript = await this.transcribeVideo(filePath);
+        this.logger.log(`Transcript generated for ${videoId} (${transcript.length} chars)`);
       } catch (e) {
-        this.logger.warn(`Transcription failed for ${video.id}: ${e}`);
+        this.logger.warn(`Transcription failed for ${videoId}: ${e}`);
       }
     }
 
-    // Step 2: AI summary (use transcript if available for much better quality)
+    // Step 2: AI summary — only when we have a real transcript. Without one
+    // the LLM has nothing factual to summarize and will hallucinate from the
+    // filename, so we skip rather than invent.
     let aiSummary: string | null = null;
-    try {
-      aiSummary = transcript
-        ? await this.generateAiSummaryFromTranscript(title, estimatedDuration, transcript)
-        : await this.generateAiSummary(title, estimatedDuration);
-    } catch (e) {
-      this.logger.warn(`AI summary generation failed for ${video.id}: ${e}`);
+    const usableTranscript = transcript && transcript.trim().length >= 30 ? transcript : null;
+    if (usableTranscript) {
+      try {
+        aiSummary = await this.generateAiSummaryFromTranscript(
+          title,
+          estimatedDuration,
+          usableTranscript,
+        );
+      } catch (e) {
+        this.logger.warn(`AI summary generation failed for ${videoId}: ${e}`);
+      }
+    } else {
+      this.logger.log(
+        `Skipping AI summary for ${videoId}: no usable transcript (avoiding hallucination)`,
+      );
     }
 
     // Step 2.5: If title looks like a filename (e.g. IMG_5518), generate a meaningful title from transcript
     let finalTitle = title;
-    if (transcript && /^(IMG|VID|MOV|DSC|WP|Screen|Untitled|video)[_\-\s]?\d*/i.test(title)) {
+    if (usableTranscript && /^(IMG|VID|MOV|DSC|WP|Screen|Untitled|video)[_\-\s]?\d*/i.test(title)) {
       try {
         const aiTitle = await this.aiService.chat(
           '你是影片標題生成器。根據逐字稿內容，生成一個簡潔、吸引人的繁體中文標題（10-25字）。只回覆標題文字，不要加引號或其他說明。',
-          `逐字稿（前 500 字）：${transcript.slice(0, 500)}`,
+          `逐字稿（前 500 字）：${usableTranscript.slice(0, 500)}`,
           { maxTokens: 60 },
         );
         if (aiTitle && aiTitle.length >= 3 && aiTitle.length <= 50) {
@@ -165,32 +214,31 @@ export class VideoService {
 
     // Step 3: Update video with transcript, summary, and potentially better title
     await this.prisma.video.update({
-      where: { id: video.id },
+      where: { id: videoId },
       data: {
         title: finalTitle,
         ...(aiSummary ? { aiSummary } : {}),
-        ...(transcript ? { transcript } : {}),
+        ...(usableTranscript ? { transcript: usableTranscript } : {}),
         status: VideoStatus.PROCESSED,
       },
     });
 
     // Step 4: Generate AI clips (uses transcript for smarter cuts) + FFmpeg cut
     try {
-      await this.generateAiClips(video.id, tenantId, title, estimatedDuration, transcript);
+      await this.generateAiClips(videoId, tenantId, title, estimatedDuration, usableTranscript);
     } catch (e) {
-      this.logger.warn(`AI clips generation failed for ${video.id}: ${e}`);
+      this.logger.warn(`AI clips generation failed for ${videoId}: ${e}`);
     }
 
-    // Step 5: Trigger content repurpose generation (async, non-blocking)
+    // Step 5: Trigger content repurpose generation
     try {
-      await this.contentRepurposeService.triggerGeneration(video.id, userId, tenantId);
-      this.logger.log(`Content repurpose triggered for video ${video.id}`);
+      await this.contentRepurposeService.triggerGeneration(videoId, userId, tenantId);
+      this.logger.log(`Content repurpose triggered for video ${videoId}`);
     } catch (e) {
-      this.logger.warn(`Content repurpose trigger failed for ${video.id}: ${e}`);
+      this.logger.warn(`Content repurpose trigger failed for ${videoId}: ${e}`);
     }
 
-    this.logger.log(`Video ${video.id} fully processed: ${file.filename}`);
-    return { id: video.id, status: 'PROCESSED', message: 'Video uploaded and processed' };
+    this.logger.log(`Video ${videoId} fully processed: ${filename}`);
   }
 
   async generateClips(videoId: string, userId: string) {
@@ -213,12 +261,12 @@ export class VideoService {
     const duration = video.durationSeconds ?? 300;
     const clips = await this.generateAiClips(videoId, video.tenantId, video.title, duration);
 
-    // Update video status to PROCESSED
+    // Update video status to PROCESSED. Do NOT auto-generate an AI summary
+    // here — without a transcript the LLM would invent content from the title.
     if (video.status !== VideoStatus.PROCESSED) {
-      const aiSummary = await this.generateAiSummary(video.title, duration);
       await this.prisma.video.update({
         where: { id: videoId },
-        data: { status: VideoStatus.PROCESSED, aiSummary },
+        data: { status: VideoStatus.PROCESSED },
       });
     }
 
@@ -319,32 +367,24 @@ export class VideoService {
       : transcript;
 
     const summary = await this.aiService.chat(
-      `你是一位專業的影片內容分析師。根據影片的逐字稿內容，生成一段 80-150 字的深度摘要。使用繁體中文。
+      `你是一位嚴謹的影片內容分析師。請根據「逐字稿」生成一段 80-150 字的繁體中文摘要。
 
-要求：
-- 準確反映影片的實際內容和核心觀點
-- 點出影片的關鍵知識點或亮點
-- 評估影片對目標觀眾的價值
-- 語氣專業但親切`,
-      `影片標題：「${title}」
+絕對規則（嚴格遵守，違反則任務失敗）：
+1. 只能根據逐字稿中實際出現的內容撰寫，不得從標題、檔名或常識自行推測。
+2. 嚴禁編造逐字稿沒有提到的人名、歌名、作品名、歌詞、引言、數據或情節。
+3. 若逐字稿主要是歌詞 / 音樂 / 演唱會內容，請如實描述其為音樂演出片段，並引用逐字稿中真實出現的歌詞片段，不要分析未出現的歌曲。
+4. 若逐字稿過短、模糊或主要為背景音樂與雜訊，請直接回覆：「逐字稿內容不足以生成準確摘要。」
+5. 標題僅供參考，不得作為摘要內容的依據。`,
+      `影片標題（僅供參考，不得作為內容依據）：「${title}」
 時長：${Math.round(duration / 60)} 分鐘
 
-逐字稿內容：
+逐字稿內容（唯一可信來源）：
 ${truncated}
 
-請生成深度 AI 分析摘要：`,
+請僅根據以上逐字稿生成摘要：`,
       { maxTokens: 400 },
     );
-    return summary || `AI 分析完成：影片「${title}」已自動處理並識別出多個精華片段。`;
-  }
-
-  private async generateAiSummary(title: string, duration: number): Promise<string> {
-    const summary = await this.aiService.chat(
-      '你是一個影片分析 AI。根據影片標題和時長，生成一段 50-80 字的影片摘要。使用繁體中文。要像是真正分析過影片內容一樣，描述可能的主題、亮點和價值。',
-      `影片標題：「${title}」\n時長：${Math.round(duration / 60)} 分鐘\n\n請生成 AI 分析摘要：`,
-      { maxTokens: 200 },
-    );
-    return summary || `AI 分析完成：影片「${title}」已自動處理，識別出多個精華片段。`;
+    return summary || '逐字稿內容不足以生成準確摘要。';
   }
 
   private async generateAiClips(videoId: string, tenantId: string, title: string, duration: number, transcript?: string | null) {
@@ -785,8 +825,15 @@ ${clipResponseFormat}`,
   async generateSubtitles(
     videoId: string,
     userId: string,
-    options?: { language?: string; polish?: boolean },
+    options?: {
+      language?: string;
+      polish?: boolean;
+      contentType?: 'speech' | 'music';
+      forceWhisper?: boolean;
+    },
   ) {
+    const contentType = options?.contentType ?? 'speech';
+    const forceWhisper = options?.forceWhisper ?? false;
     const video = await this.prisma.video.findUnique({ where: { id: videoId } });
     if (!video || video.userId !== userId) throw new NotFoundException('errors.video.notFound');
 
@@ -824,50 +871,56 @@ ${clipResponseFormat}`,
     })();
 
     let srtContent: string;
+    let usedEmbeddedSubtitles = false;
 
-    if (!hasAudio && hasSubtitle) {
-      // No audio but has embedded subtitles — extract subtitle track directly
-      this.logger.log(`No audio but found embedded subtitles for ${videoId}, extracting...`);
+    // Prefer embedded subtitles when present (unless caller forces Whisper).
+    // Embedded tracks are usually authored / human-corrected and far more
+    // accurate than re-transcribing audio — especially for music, lyrics,
+    // and non-Mandarin Chinese (e.g. Cantonese) where Whisper struggles.
+    if (hasSubtitle && !forceWhisper) {
+      this.logger.log(`Found embedded subtitles for ${videoId}, extracting...`);
       const extractedSrt = join(subtitlesDir, `${videoId}-extracted.srt`);
       try {
         execSync(`ffmpeg -i "${sourceFile}" -map 0:s:0 -y "${extractedSrt}" 2>/dev/null`);
         srtContent = require('fs').readFileSync(extractedSrt, 'utf-8');
         try { unlinkSync(extractedSrt); } catch {}
+        usedEmbeddedSubtitles = true;
         this.logger.log(`Extracted embedded subtitles (${srtContent.length} chars)`);
       } catch (e) {
-        throw new NotFoundException('errors.video.noEmbeddedSubtitles');
+        if (!hasAudio) throw new NotFoundException('errors.video.noEmbeddedSubtitles');
+        this.logger.warn(
+          `Embedded subtitle extraction failed for ${videoId}, falling back to Whisper`,
+        );
+        srtContent = await this.transcribeWithWhisper(
+          sourceFile,
+          videoId,
+          subtitlesDir,
+          options?.language ?? 'zh',
+        );
       }
     } else if (!hasAudio) {
       throw new NotFoundException('errors.video.noAudioNoSubtitles');
     } else {
-      // Has audio — use Whisper transcription
-      const audioFile = join(subtitlesDir, `${videoId}-audio.mp3`);
-
-      await new Promise<void>((resolve, reject) => {
-        ffmpeg(sourceFile)
-          .outputOptions(['-vn', '-acodec', 'libmp3lame', '-ar', '16000', '-ac', '1', '-y'])
-          .output(audioFile)
-          .on('end', () => resolve())
-          .on('error', (err: Error) => reject(err))
-          .run();
-      });
-
-      this.logger.log(`Audio extracted for ${videoId}`);
-
-      srtContent = await this.aiService.transcribe(audioFile, {
-        language: options?.language ?? 'zh',
-        responseFormat: 'srt',
-      });
-
-      // Clean up audio file
-      try { unlinkSync(audioFile); } catch {}
+      srtContent = await this.transcribeWithWhisper(
+        sourceFile,
+        videoId,
+        subtitlesDir,
+        options?.language ?? 'zh',
+      );
     }
 
     this.logger.log(`Subtitle content ready (${srtContent.length} chars)`);
 
-    // Step 4: GPT polish (optional, default true)
-    if (options?.polish !== false) {
+    // GPT polish — skip for music content (the tech/teaching-oriented polish
+    // prompt rewrites lyrics, breaks line structure, and adds punctuation that
+    // doesn't belong in song lyrics). Also skip embedded subtitle tracks by
+    // default since they're usually already human-authored.
+    let polished = false;
+    if (contentType === 'music') {
+      this.logger.log('Skipping GPT polish: contentType=music');
+    } else if (options?.polish === true || (options?.polish !== false && !usedEmbeddedSubtitles)) {
       srtContent = await this.aiService.polishSubtitles(srtContent);
+      polished = true;
       this.logger.log('Subtitles polished by GPT');
     }
 
@@ -893,8 +946,34 @@ ${clipResponseFormat}`,
       segmentCount,
       preview: srtContent.slice(0, 500),
       language: options?.language ?? 'zh',
-      polished: options?.polish !== false,
+      polished,
+      source: usedEmbeddedSubtitles ? 'embedded' : 'whisper',
+      contentType,
     };
+  }
+
+  private async transcribeWithWhisper(
+    sourceFile: string,
+    videoId: string,
+    subtitlesDir: string,
+    language: string,
+  ): Promise<string> {
+    const audioFile = join(subtitlesDir, `${videoId}-audio.mp3`);
+    await new Promise<void>((resolve, reject) => {
+      ffmpeg(sourceFile)
+        .outputOptions(['-vn', '-acodec', 'libmp3lame', '-ar', '16000', '-ac', '1', '-y'])
+        .output(audioFile)
+        .on('end', () => resolve())
+        .on('error', (err: Error) => reject(err))
+        .run();
+    });
+    this.logger.log(`Audio extracted for ${videoId}`);
+    const srtContent = await this.aiService.transcribe(audioFile, {
+      language,
+      responseFormat: 'srt',
+    });
+    try { unlinkSync(audioFile); } catch {}
+    return srtContent;
   }
 
   private findSourceFile(originalUrl: string | null): string | null {

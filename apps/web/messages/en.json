@@ -157,7 +157,13 @@
       "polished": "Polished by GPT",
       "downloadSrt": "Download SRT",
       "downloadVtt": "Download VTT",
-      "desc": "Use OpenAI Whisper to auto-recognize video speech, then GPT corrects and generates SRT/VTT subtitle files"
+      "desc": "Prefers embedded subtitles when present; otherwise uses OpenAI Whisper",
+      "sourceEmbedded": "Source: Embedded",
+      "sourceWhisper": "Source: Whisper",
+      "contentType": {
+        "speech": "Speech",
+        "music": "Music / Lyrics"
+      }
     },
     "postProduction": {
       "title": "Post-Production Tools",

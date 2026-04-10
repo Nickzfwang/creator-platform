@@ -157,7 +157,13 @@
       "polished": "GPT에 의해 교정됨",
       "downloadSrt": "SRT 다운로드",
       "downloadVtt": "VTT 다운로드",
-      "desc": "OpenAI Whisper로 영상 음성을 자동 인식하고, GPT 교정 후 SRT/VTT 자막 파일을 생성합니다"
+      "desc": "내장 자막이 있으면 우선 사용, 없으면 OpenAI Whisper로 음성 인식",
+      "sourceEmbedded": "출처: 내장 자막",
+      "sourceWhisper": "출처: Whisper",
+      "contentType": {
+        "speech": "음성 / 말하기",
+        "music": "음악 / 가사"
+      }
     },
     "postProduction": {
       "title": "후반 작업 도구",

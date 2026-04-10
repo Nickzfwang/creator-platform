@@ -157,7 +157,13 @@
       "polished": "GPTにより校正済み",
       "downloadSrt": "SRT をダウンロード",
       "downloadVtt": "VTT をダウンロード",
-      "desc": "OpenAI Whisperで動画音声を自動認識し、GPT校正後にSRT/VTT字幕ファイルを生成します"
+      "desc": "埋め込み字幕があれば優先使用、なければ OpenAI Whisper で音声認識",
+      "sourceEmbedded": "ソース：埋め込み字幕",
+      "sourceWhisper": "ソース：Whisper",
+      "contentType": {
+        "speech": "音声 / スピーチ",
+        "music": "音楽 / 歌詞"
+      }
     },
     "postProduction": {
       "title": "ポストプロダクション",

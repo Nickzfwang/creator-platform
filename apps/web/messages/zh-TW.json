@@ -157,7 +157,13 @@
       "polished": "已由 GPT 校正潤飾",
       "downloadSrt": "下載 SRT",
       "downloadVtt": "下載 VTT",
-      "desc": "使用 OpenAI Whisper 自動辨識影片語音，GPT 校正後生成 SRT/VTT 字幕檔"
+      "desc": "優先使用內嵌字幕；無內嵌字幕時用 OpenAI Whisper 辨識語音",
+      "sourceEmbedded": "來源：內嵌字幕",
+      "sourceWhisper": "來源：Whisper",
+      "contentType": {
+        "speech": "語音/口說",
+        "music": "音樂/歌詞"
+      }
     },
     "postProduction": {
       "title": "後製工具",

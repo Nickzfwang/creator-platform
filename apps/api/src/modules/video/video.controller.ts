@@ -225,11 +225,18 @@ export class VideoController {
   async generateSubtitles(
     @CurrentUser('id') userId: string,
     @Param('id', ParseUUIDPipe) videoId: string,
-    @Body() body: { language?: string; polish?: boolean },
+    @Body() body: {
+      language?: string;
+      polish?: boolean;
+      contentType?: 'speech' | 'music';
+      forceWhisper?: boolean;
+    },
   ) {
     return this.videoService.generateSubtitles(videoId, userId, {
       language: body.language,
       polish: body.polish,
+      contentType: body.contentType,
+      forceWhisper: body.forceWhisper,
     });
   }
 }
